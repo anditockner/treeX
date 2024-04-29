@@ -220,26 +220,40 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       finLaz <- strfind(tempName, ".laz")
     }
 
+    
+    
+    
     cat("TRAJECTORY: Trying to find file in",paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1),"...\n    ..._results_traj.txt "))
-
-
-    trajfile <- paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1), "_results_traj.txt")
+    
+    
+    trajfile <- paste0(dirname(LASfile), 
+                       "/", substr(tempName, 1, finLaz-1), "_results_traj.txt")
+    if(!file.exists(trajfile)){
+      trajfile <- paste0(dirname(LASfile), 
+                         "/", substr(tempName, 1, finLaz-1), ".gs-traj")
+    }
+    if(!file.exists(trajfile)){
+      trajfile <- paste0(dirname(LASfile), 
+                         "/", substr(tempName, 1, finLaz-1), ".txt")
+    }
+    if(!file.exists(trajfile)){
+      trajfile <- paste0(dirname(LASfile), 
+                         "/", substr(tempName, 1, finLaz-1), "_traj.txt")
+    }
+    if(!file.exists(trajfile) & clip.trajectory.distance > 0){
+      return("No trajectory found! Clipping cannot be done...\n\n")
+    }
+    
     if(file.exists(trajfile)){
       txtExists <- TRUE
       file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.txt"), overwrite = T)
       cat("ok!    ")
     } else {
-      trajfile <- paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1), ".txt")
-      if(file.exists(trajfile)){
-        txtExists <- TRUE
-        file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.txt"), overwrite = T)
-        cat("ok!    ")
-      } else {
-        cat("xXx non ")
-      }
+      cat("xXx non ")
     }
     oneDone <- TRUE
     cat("..._results_traj_time.ply ")
+    
 
     trajfile <- paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1), "_results_traj_time.ply")
     if(file.exists(trajfile)){
@@ -321,15 +335,23 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   #big <- decimate_points(big, random(10))
 
 
+  
   if(clip.trajectory.distance > 0 && txtExists){
     clipTime <- Sys.time()
     cat("Reading trajectory for clipping input... ")
     try({
       traj <- read.csv(paste0(dirPath, groundPath, fileFinder, "_traj.txt"), sep = " ")
-      duration_sec <- max(traj$X.time) - min(traj$X.time)
+      if(is.element("X.time", colnames(traj))){
+        duration_sec <- max(traj$X.time) - min(traj$X.time)
+      } else if(is.element("X..world_time", colnames(traj))){
+        duration_sec <- max(traj$X..world_time) - min(traj$X..world_time)
+      } else {
+        duration_sec <- max(traj[, 1]) - min(traj[, 1])
+      }
       cat("(scan went", round(duration_sec/60,1), "mins)\n")
     })
-
+    
+    
 
 
     traj2 <- traj[seq(from = 1, to = nrow(traj), by = 50),]
@@ -402,7 +424,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
          xlab = "x [m]", ylab = "y [m]", xlim = hull.traj$xrange, ylim = hull.traj$yrange,
          main = paste0(fileFinder, "_traj.txt (+", clip.trajectory.distance, "m) area=", round(area.traj/10000,2), "ha"))
     points(traj$y ~ traj$x, col = traj$col, cex = 0.5, pch = 16)
-    legend("topright", col = c("red", "blue"), lwd = 3,
+    legend("topright", col = c("blue", "red"), lwd = 3,
            legend = c("start", paste0(round(duration_sec/60,1), " min")),
            bty = "n")
     #legend("bottomleft", legend = c("1", "2", "3"), cex = 0.5)
