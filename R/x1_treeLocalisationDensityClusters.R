@@ -565,8 +565,8 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
 
   i=1
   j=1
-  suppressPackageStartupMessages(library("rgl", quietly = T))
-  suppressPackageStartupMessages(library("conicfit", quietly = T))
+  suppressPackageStartupMessages(library("rgl", character.only = T))
+  suppressPackageStartupMessages(library("conicfit", character.only = T))
 
 
   timePar1 <- Sys.time()
@@ -598,7 +598,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     nr_cores <- length(cluster.vec)
   }
 
-  cl <- makeCluster(nr_cores, outfile="")
+  cl <- makeCluster(nr_cores)#, outfile="")
 
 
   registerDoParallel(cl)
@@ -609,38 +609,38 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     # ERRORS INDUCED BY LEAVING EMPTY BRACKETS OVER WHOLE PARALLEL ROUTINE! ###
 
 
-    suppressPackageStartupMessages(library("doParallel", quietly = T))
-    suppressPackageStartupMessages(library("data.table", quietly = T))
-    suppressPackageStartupMessages(library("ADPclust", quietly = T))
-    suppressPackageStartupMessages(library("densityClust", quietly = T))
-    suppressPackageStartupMessages(library("dae", quietly = T))
-    suppressPackageStartupMessages(library("plyr", quietly = T))
-    suppressPackageStartupMessages(library("spatstat", quietly = T))
-    suppressPackageStartupMessages(library("alphahull", quietly = T))
-    suppressPackageStartupMessages(library("RANN", quietly = T))
-    suppressPackageStartupMessages(library("flexclust", quietly = T))
-    suppressPackageStartupMessages(library("sp", quietly = T))
-    suppressPackageStartupMessages(library("matrixStats", quietly = T))
-    suppressPackageStartupMessages(library("Distance", quietly = T))
-    suppressPackageStartupMessages(library("lmfor", quietly = T))
-    suppressPackageStartupMessages(library("rgl", quietly = T))
-    suppressPackageStartupMessages(library("conicfit", quietly = T))
-    suppressPackageStartupMessages(library("MASS", quietly = T))
-    suppressPackageStartupMessages(library("igraph", quietly = T))
-    suppressPackageStartupMessages(library("geosphere", quietly = T))
-    suppressPackageStartupMessages(library("pracma", quietly = T))
-    suppressPackageStartupMessages(library("DescTools", quietly = T))
-    suppressPackageStartupMessages(library("mgcv", quietly = T))
-    suppressPackageStartupMessages(library("recexcavAAR", quietly = T))
-    suppressPackageStartupMessages(library("raster", quietly = T))
-    suppressPackageStartupMessages(library("rlas", quietly = T))
-    suppressPackageStartupMessages(library("lidR", quietly = T))
-    suppressPackageStartupMessages(library("TreeLS", quietly = T))
-    suppressPackageStartupMessages(library("dbscan", quietly = T))
-    #suppressPackageStartupMessages(library("VoxR", quietly = T))
-    #suppressPackageStartupMessages(library("spatialEco", quietly = T))
-    #suppressPackageStartupMessages(library("Rdistance", quietly = T))
-    #suppressPackageStartupMessages(library("edci", quietly = T))
+    suppressPackageStartupMessages(library("doParallel", character.only = T))
+    suppressPackageStartupMessages(library("data.table", character.only = T))
+    suppressPackageStartupMessages(library("ADPclust", character.only = T))
+    suppressPackageStartupMessages(library("densityClust", character.only = T))
+    suppressPackageStartupMessages(library("dae", character.only = T))
+    suppressPackageStartupMessages(library("plyr", character.only = T))
+    suppressPackageStartupMessages(library("spatstat", character.only = T))
+    suppressPackageStartupMessages(library("alphahull", character.only = T))
+    suppressPackageStartupMessages(library("RANN", character.only = T))
+    suppressPackageStartupMessages(library("flexclust", character.only = T))
+    suppressPackageStartupMessages(library("sp", character.only = T))
+    suppressPackageStartupMessages(library("matrixStats", character.only = T))
+    suppressPackageStartupMessages(library("Distance", character.only = T))
+    suppressPackageStartupMessages(library("lmfor", character.only = T))
+    suppressPackageStartupMessages(library("rgl", character.only = T))
+    suppressPackageStartupMessages(library("conicfit", character.only = T))
+    suppressPackageStartupMessages(library("MASS", character.only = T))
+    suppressPackageStartupMessages(library("igraph", character.only = T))
+    suppressPackageStartupMessages(library("geosphere", character.only = T))
+    suppressPackageStartupMessages(library("pracma", character.only = T))
+    suppressPackageStartupMessages(library("DescTools", character.only = T))
+    suppressPackageStartupMessages(library("mgcv", character.only = T))
+    suppressPackageStartupMessages(library("recexcavAAR", character.only = T))
+    suppressPackageStartupMessages(library("raster", character.only = T))
+    suppressPackageStartupMessages(library("rlas", character.only = T))
+    suppressPackageStartupMessages(library("lidR", character.only = T))
+    suppressPackageStartupMessages(library("TreeLS", character.only = T))
+    suppressPackageStartupMessages(library("dbscan", character.only = T))
+    #suppressPackageStartupMessages(library("VoxR", character.only = T))
+    #suppressPackageStartupMessages(library("spatialEco", character.only = T))
+    #suppressPackageStartupMessages(library("Rdistance", character.only = T))
+    #suppressPackageStartupMessages(library("edci", character.only = T))
 
     angle_points <- function(xp, yp, xz, yz) {
       if(xp>xz&yp>yz|xp==xz&yp>yz|xp>xz&yp==yz){#1.Quadrant
