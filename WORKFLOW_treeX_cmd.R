@@ -1,11 +1,21 @@
-time1 <- Sys.time()
-# devtools::install_git("https://github.com/anditockner/treeX")
+
+# this script can be run on cmd and uses 4 arguments:
 
 # arguments for cmd run of this script:
 # [1] path to .las or .laz input ground-based point cloud
 # [2] path to configuration file (config.R) defining hyper-parameters
 # [3] (optional) path for saving output files
-# [4] (optional) new name string for output files (fileFinder)
+# [4] (optional) string for renaming output files (fileFinder)
+
+# sample line to run it on cmd: 
+# (use R 4.3.2 or 4.3.3)
+# "C:/Programme/R/R-4.3.2/bin/x64/Rscript" "D:/WORKFLOW_treeX_cmd.R" "D:/input.laz" "D:/output/" "firstSet"
+#  path to R                                  [1]                       [2]            [3]          [4]
+time1 <- Sys.time()
+# devtools::install_git("https://github.com/anditockner/treeX")
+
+
+
 
 args <- commandArgs(trailingOnly = TRUE)
 
