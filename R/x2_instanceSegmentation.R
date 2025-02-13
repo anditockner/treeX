@@ -1,5 +1,8 @@
 
-globalTimeDiff <<- "still running firstly..."
+
+
+globalTimeDiff <<- "not run yet..."
+
 
 
 #' @export
@@ -62,6 +65,12 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     bottomCut <- 0.2
     selector <- "xyzcitRBG0"
   }
+
+  # Creates values with thousandmark (are prettier to look at)
+  # thMk <- function(val) {
+  # val2 <- format(val, big.mark = ".", decimal.mark = ",", scientific = FALSE)
+  # return(val2)
+  # }
 
 
   ## TROUBLESHOOTING #
@@ -247,13 +256,8 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
   }
 
 
-  #append to set:
-  #totalCloud <- readLAS("D:/ato/Maissau/KBKI2_full_15_100to500_l11a400_x-11y-3dim50_loops/KBKI2_fullblanksx-11y-3dim50.las")
-  #stemCloud <- readLAS("D:/ato/Maissau/KBKI2_full_15_100to500_l11a400_x-11y-3dim50_loops/KBKI2_fullcrowns.las")
-
   if(mode == "COMP"){
     #### READING IN DATA ####
-    #stemCloud.name <- "D:/ato/Maissau/out.las"
     stemCloud.name <- paste0(dbhPath, setString, "_intSeg_Trees.las")
     if(!file.exists(stemCloud.name)){
       stemCloud.name <- paste0(dbhPath, setString, "_intSeg_Stems.las")
@@ -326,13 +330,17 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
 
       # FIXING Z MISSINGNOS
-      if(!is.element("z", allCols) | sum(is.na(clustList$z)) > 1){
+      if(!is.element("z", allCols) | sum(is.na(clustList$z)) > 1 | sum(clustList$z == 0.0) >= 10){
         updateTreeList <- TRUE
         cat("\nAttaching missing z-values from ground model... ")
+        dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_min.grd")
+        if(!file.exists(dtmFile)){
+          dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_clip.grd")
+        }
         tryCatch(
           {
             # read in raster file
-            dtm_z <- raster(paste0(dirPath, groundPath, fileFinder, "_ground_min.grd"))
+            dtm_z <- raster(dtmFile)
           }, error = function(error_condition) {
             cat("Error in reading the dtm-model, next loop!")
             next
@@ -350,8 +358,14 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       if(is.element("species", allCols)){
         clustList$species[is.na(clustList$species)] <- ""
       }
-      if(!is.element("randomCol", allCols) | sum(clustList$randomCol == 0) > 0 |
-         sum(clustList$randomCol == "") == nrow(clustList)){
+
+      if(class(clustList$randomCol) == "character"){
+        cat("Moving the comments from randomCol to a separate column!\n")
+        clustList$comment <- clustList$randomCol
+        clustList$randomCol <- NULL
+        allCols <- colnames(clustList)
+      }
+      if(!is.element("randomCol", allCols) | sum(clustList$randomCol == 0) >= 2){
         updateTreeList <- TRUE
         cat("We need new random numbers, as there were none in the stem list!\n")
         rnlist <- sample(1:65535, length(idlist))
@@ -447,6 +461,10 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
       } else {
 
+        #cut out a circle from point cloud
+        # frame.up <- 0.3 #m
+        # frame.down <- 0.3 #m
+        # frame.rad <- 1.6 #times DBH
 
 
         cat("Cutting a cylinder of each seed tree:\n")
@@ -666,6 +684,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
 
 
+
         if(length(dropoutList[, 1])!=0){
           cat("\nThese seeds were deleted as false positives, no points present at DBH region:\n")
           print(dropoutList)
@@ -790,7 +809,6 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
 
 
-      ### MODIFIED 06-23, filtering double points from seedLAS
       pointsBefore <- sum(is.na(stemCloud@data$StemID))
       stemCloud <- filter_duplicates(stemCloud)
       pointsAfter <- sum(is.na(stemCloud@data$StemID))
@@ -805,7 +823,6 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       rm(totalCloud)
 
     }
-
 
   ##### PREPARATION #####
   # cutting out sample rectangle
@@ -854,9 +871,6 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     seedSet <- seedSet[order(seedSet$size, decreasing = FALSE), ]
     #head(seedSet[, c(1:3, 20, 21)])
     seeds@data <- seedSet
-    #head(seeds@data[, c(1:3, 20, 21)])
-    #lidR::plot(seeds, color = "StemID")
-    #lidR::plot(filter_duplicates(seeds), color = "StemID")
     seeds <- filter_duplicates(seeds)
   }
 
@@ -886,7 +900,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
   #### watch out, different concept UP != DOWN ;)
   # justDown <- TRUE #this variable remembers if instantly went down the searching distance,
   # if that happened and next round we need to go up again, no taking of all seeds again.
-  # NOT IMPLEMENTED: leaving out some seeds and they are stagnating...
+  # NOT IMPLEMENTED: leaving out some seeds as they are not growing (stagnating)
 
 
   # old settings normal
@@ -1233,12 +1247,6 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     prgsFrame[j, ]$pctSeeds <- round(nrow(seedSet)*100 / (pointNumber), 2)
 
 
-    ### here
-    # closest <- as.data.table(
-    #   nn2(seedSet[, ..select_cols],
-    #       query = blankSet.sub[, ..select_cols],
-    #       k = howManyClosestPoints, searchtype = "standard")
-    # )
     # add an point identifier for all Million seeds
     seedSet <- seedSet[, nn.idx := c(1:nrow(seedSet))]
 
@@ -1258,6 +1266,8 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         thMk(blankSetLength),
         "(nowShare =", nowShare,"%)\n")
 
+
+
     distanceCounter_cm <- distanceCounter_cm + round(searchDistance*100, 1)
     prgsFrame[j, ]$dist <- searchDistance
     prgsFrame[j, ]$cumDist <- distanceCounter_cm
@@ -1265,17 +1275,25 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     prgsFrame[j, ]$pctPuzzle <- round(100*assignedPoints / pointNumber, 3)
     # these numbers were used for troubleshooting with packaging and crown feeling problems
 
+    # if(1 == 2){
+    #
+    #   # cat("1 -- ")
+    #   stemidL <- list(StemID = rep(0L, length(blankSet.sub$X)))
+    #
+    #   # cat("2 -- ")
+    #   for(i in 1:limit){
+    #     stemidL$StemID[closest.sub$nn.point[i]] <- (seedSet$StemID[closest.sub$nn.idx[i]])
+    #   }
+    #
+    #   # cat("3 -- ")
+    #   blankSet.sub$StemID <- data.frame(stemidL)[, 1]
+    #
+    # }
+
     blankSet.sub$StemID <- closest$StemID
 
 
 
-    # cat("1 -- ")
-    # cat(str(stemidL))
-    # cat("useAllBlanks = ", useAllBlanks, " ")
-    # print(head(blankLAS@data))
-    # print(head(blankSet.sub))
-    # print(head(blankSet.sub$StemID))
-    # print(str(blankSet.sub$StemID))
 
     # informations, about which seed tree entities have been assigned this round
     nowStems <- unique(blankSet.sub[StemID!=0, "StemID"])$StemID
@@ -1339,7 +1357,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       grLAS <- outLAS
       try(grLAS@data$Z <- grLAS@data$Z*zScale)
       grLAS <- add_lasattribute_manual(grLAS, grLAS@data$StemID, "StemID", "Single Stem ID", type = "short")
-      grLAS <- add_lasattribute_manual(grLAS, grLAS@data$randomCol, "randomCol", "Random Stem ID", type = "short")
+      grLAS <- add_lasattribute_manual(grLAS, 0, "randomCol", "Random Stem ID", type = "short")
       try(grLAS@data$randomCol <- rnlist[match(grLAS@data$StemID, idlist)])
       grLAS@data$randomCol[is.na(grLAS@data$randomCol)] <- 0
       writeLAS(grLAS, paste0(crownPath, fileFinder, "_grounded_stems", locationStr, ".las"))
@@ -1700,5 +1718,6 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
   sink()
   gc()
 }
+
 
 

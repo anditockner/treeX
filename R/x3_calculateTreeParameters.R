@@ -1,11 +1,560 @@
-# library("lidR")
-# library("RANN")
-# library("conicfit")
-# library("alphashape3d")
-# library("alphahull")
-# library("plotrix")
 
-# library("Metrics")
+measureNewDBH <- function(treeLAS, nowMeta, picPath = getwd(),
+                          threshold_percent = 50,
+                          threshold_percent_kde = 94){
+
+  library("lidR")
+  library("ks")
+  library("mgcv")
+  library("stats")
+  library("treeX")
+
+  if(1==2){
+    threshold_percent = 50
+    threshold_percent_kde = 94
+  }
+
+
+
+  dbhMeta <- data.frame("id" = nowMeta$id, "dbh_ref" = nowMeta$dbh)
+  dbhMeta$dbh <- -1
+  dbhMeta$dbh.gam <- -1
+  dbhMeta$sd.gam <- -1
+  dbhMeta$var.dbh <- -1
+  dbhMeta$var.dbh.gam <- -1
+  dbhMeta$var.sd.gam <- -1
+  dbhMeta$x <- -1
+  dbhMeta$x.ref <- nowMeta$x
+  dbhMeta$y <- -1
+  dbhMeta$y.ref <- nowMeta$y
+  dbhMeta$slices <- -1
+  dbhMeta$move <- -1
+
+
+  cat("Remeasure DBH properly - intensity filtering",threshold_percent,"% and KDE filtering per slice",threshold_percent_kde,"%.\n")
+
+  # clipping to z-value
+  treeLAS <- filter_poi(treeLAS, Z > nowMeta$z - 0.3, Z < nowMeta$z + 0.3)
+  # suffice: 6 slices from 1 m to 1.60 m
+  nowId <- nowMeta$id
+
+  # INTENSITY FILTERING
+  threshold <- quantile(treeLAS@data$Intensity, 1 - threshold_percent / 100) # all above are 5 %
+  clustInt <- filter_poi(treeLAS, Intensity > threshold)
+  #cat(" ", clustInt@header@PHB$`Number of point records`, "pts ")
+
+  # WEIGHED KERNEL DENSITY 2D
+  #image(kde$eval.points[[1]], kde$eval.points[[2]], kde$estimate,
+  # col = viridis::viridis(20), xlab = "x", ylab = "y")
+  kde_dat <- data.frame("x" = clustInt@data$X, "y" = clustInt@data$Y)
+  if(length(kde_dat$x) < 10){
+    cat("\n",dbhMeta$id, "- too few points in seed, skip this one\n")
+    next()
+  }
+  kde_sample <- ks::kde(x = kde_dat, eval.points = kde_dat)
+  #n_cols <- 20
+  #quantiles <- quantile(kde_sample$estimate, probs = seq(0, 1, l = n_cols + 1))
+  #col <- viridis::viridis(n_cols)[cut(kde_sample$estimate, breaks = quantiles)]
+  #points(kde$x, pch = ".", col = col) # The data is returned in $x
+  #plot(kde$x, col = col, pch = 19, xlab = "x", ylab = "y")
+  clustInt <- add_lasattribute(clustInt, kde_sample$estimate, name = "kde", desc = "2D kernel density")
+
+  # KDE filtering for circles density
+  #hist(kde_sample$estimate)
+  threshold_kde <- quantile(clustInt@data$kde, 1 - threshold_percent_kde / 100) # all above are 5 %
+  clustInt <- filter_poi(clustInt, kde > threshold_kde)
+
+  #plot(clustInt@data$X, clustInt@data$Y, pch = ".", col = clustInt@data$kde, asp = 1)
+
+  sliceHeight <- 0.1 # m
+  slices <- seq(from = clustInt@header@PHB$`Min Z`,
+                to = clustInt@header@PHB$`Max Z`, by = sliceHeight)
+
+
+
+
+  thisId <- ifelse(is.null(nowMeta$treeName), nowMeta$id, nowMeta$treeName)
+
+  par(mfrow = c(1, 1))
+  {
+    png(filename = paste0(picPath, thisId, "_circles.png"), width = 1400, height = 800)
+    par(mfrow = c(3, 4), oma = c(1,1,4,1))
+    circles <- NULL
+
+    cat("slice ")
+    dbhStart <- Sys.time()
+    for(j in 1:length(slices)){
+      cat(j, "- ")
+      par.circle.1 <- rep(-1, 7)
+      slice <- filter_poi(clustInt, Z >= slices[j], Z < slices[j] + sliceHeight)
+      #cat("There were", thMk(slice@header@PHB$`Number of point records`), "points found.\n")
+      #plot(slice@data$Y, slice@data$X, pch = ".", col = slice@data$Intensity)
+      #hist(slice@data$Intensity)
+      #threshold_percent <- 100
+      #threshold <- quantile(slice@data$Intensity, 1 - threshold_percent / 100) # all above are 5 %
+      #lasInt <- filter_poi(slice, Intensity >= threshold)
+      #cat("After Intensity filtering there are", thMk(lasInt@header@PHB$`Number of point records`), "points remaining (equals only",
+      # round(lasInt@header@PHB$`Number of point records` / slice@header@PHB$`Number of point records`*100, 1), "% of original data).\n")
+      lasInt <- slice # no intensity filtering
+
+      if(lasInt@header@PHB$`Number of point records` < 5){
+        #cat("SLICE",j,"- TOO LITTLE POINTS IN SLICE!\n")
+        next()
+      }
+
+      class(try({
+        plot(lasInt@data$X, lasInt@data$Y, pch = 16, col = "black", asp = 1, cex = 0.5)
+        points(dbhMeta$x.ref, dbhMeta$y.ref, col = "grey", cex = 2, pch = 4)
+
+        # c2 <- CircleFitByLandau(cbind(lasInt@data$X, lasInt@data$Y), IterMAX = 1000)
+        #
+        # draw.circle(c2[1], c2[2], c2[3] / 2, border = "red")
+        #
+
+        nowErr <- FALSE
+
+        tryCatch({
+          co <- capture.output(
+            find.clust.circ <- circMclust(datax=lasInt@data$X,
+                                          datay=lasInt@data$Y,
+                                          method="const",
+                                          # nx=1, ny=1, nr=1, # nx=10, ny=10, nr=25,
+                                          #nx=25, ny=25, nr=5,
+                                          nx=10, ny=10, nr=5,
+                                          minsr=0.01, maxsr=0.5,
+                                          brmaxit = 200,
+                                          nc=2, # nc=1,
+                                          # minsd=0.1, maxsd=0.5,
+                                          bw=0.01 # bw=0.05
+            ))},
+          error = function(error_condition) {
+            #cat("Error in the circle finding in slice",j,"!\n")
+            nowErr <<- TRUE
+          })
+
+
+        if(nowErr){
+          #cat("NEXT SLICE\n")
+          plot(1, type = "n")
+          next()
+        }
+
+        if(!is.null(find.clust.circ)){
+          par.circle.1 <- as.numeric(bestMclust(find.clust.circ, 1))
+          dbh.circle <- round(2 * par.circle.1[3] * 100, 3)
+          x.circle <- par.circle.1[1]
+          y.circle <- par.circle.1[2]
+          mtext(paste0("x=", round(x.circle, 1), " \ny=", round(y.circle, 1),
+                       " \nd=", round(dbh.circle, 1), " "),
+                side = 1, adj = 1, line = -2, col = "red", cex = 1.5)
+
+          mtext(paste0(" move ", round(100*sqrt((x.circle - dbhMeta$x.ref)^2 + (y.circle - dbhMeta$y.ref)^2), 1)),
+                side = 1, adj = 0, line = -2, col = "grey", cex = 1.5)
+          draw.circle(x.circle, y.circle, dbh.circle / 200, border = "red")
+
+          points(x.circle, y.circle, col = "red", cex = 2, pch = 4)
+          lines(x = c(x.circle, dbhMeta$x.ref),
+                y = c(y.circle, dbhMeta$y.ref), col = "grey")
+
+          par.circle.1[6] <- NA
+          par.circle.1[7] <- NA
+        } else {
+          circles <- cbind(circles, par.circle.1)
+          #cat("SLICE",j,"- IMPLEMENT SOMETHING, CIRCLE DOESN'T WORK!\n")
+          next()
+        }
+
+
+        # ESTIMATE GAM DBH FROM POINTS
+        if(!is.null(find.clust.circ)){
+
+          #plot(plot.j$X, plot.j$Y, asp=1)
+          auffalten <- lasInt@data
+          x_null <- auffalten$X - x.circle
+          y_null <- auffalten$Y - y.circle
+
+          auffalten$dist <- sqrt(x_null**2 + y_null**2)
+          auffalten$winkel <- atan2(y_null, x_null)
+
+
+
+
+          # shift starting point
+          if(1==1){
+
+            # detect quarter with max points and then sixteenth with max points, take average as starting point
+            ho <- hist(auffalten$winkel, breaks = c(seq(from=-pi, to = pi + 0.1, by = pi/2)), plot = F)
+            quarter.from <- ho$breaks[which(max(ho$counts) == ho$counts)[1]]
+            quarter.to <- quarter.from + pi/2
+            auffalten_quart <- auffalten[auffalten$winkel >= quarter.from & auffalten$winkel <= quarter.to,]
+            ho2 <- hist(auffalten_quart$winkel, breaks = c(seq(from=quarter.from, to = quarter.to + 0.1, by = pi/8)), plot = F)
+            piece.from <- ho2$breaks[which(max(ho2$counts) == ho2$counts)[1]]
+            piece.to <- piece.from + pi/8
+            shift_maxDensity <- mean(piece.from, piece.to)
+
+
+
+            auffalten$winkel_old <- auffalten$winkel
+            #plot(auffalten$winkel_old, auffalten$dist, xlim=c(-pi, pi), ylim=c(0, 0.5), xlab="Winkel", ylab="Distanz")
+            #abline(v = shift_maxDensity, col = "green")
+
+            auffalten$winkel <- auffalten$winkel - (shift_maxDensity + pi)
+            auffalten$winkel[auffalten$winkel < -pi] <- auffalten$winkel[auffalten$winkel < -pi] + 2*pi
+
+          }
+
+          #range(auffalten$winkel)
+
+          nowErr <- FALSE
+          tryCatch({
+            gam_winkel <- gam(dist ~ s(winkel, bs="cc"), data = auffalten)},
+            error = function(error_condition) {
+              #cat("Error in the gam in slice",j,"!\n")
+              nowErr <<- TRUE
+            })
+
+
+          if(nowErr){
+            #cat("NEEEXTice!")
+            plot(1, type = "n")
+            circles <- cbind(circles, par.circle.1)
+            next()
+          }
+
+          #gam.check(gam_winkel)
+          #summary(gam_winkel)
+          res_gam <- residuals(gam_winkel) #Residuen vom GAM
+          #hist(res_gam)
+          sd(res_gam) #Standardabweichung Residuen #0.02072122
+
+          #st_res_gam <- (res_gam - mean(res_gam))/sd(res_gam) #Standardisierte Residuen vom Gam
+          #hist(st_res_gam)
+
+
+          gamfunc <- function(winkel) { predict(gam_winkel, newdata=data.frame("winkel"=winkel)) }
+
+          werte <- data.frame("winkel"=seq(-pi, pi, 2*pi/360))
+          werte$ergeb <- gamfunc(werte$winkel)
+
+          #title(main = paste(cluster.vec[i], "_", cluster2[clust2], "_", cluster3[clust3], ", ", u.grenzen.vec[j], sep=""))
+
+          #?gam
+
+          vorhersage <- data.frame("winkel"=seq(-pi, pi, 2*pi/360))
+          vorhersage$dist <- gamfunc(vorhersage$winkel)
+          vorhersage$winkel <- vorhersage$winkel + (shift_maxDensity + pi)
+          vorhersage$X <- x.circle + cos(vorhersage$winkel) * vorhersage$dist
+          vorhersage$Y <- y.circle + sin(vorhersage$winkel) * vorhersage$dist
+
+          #plot(auffalten$X, auffalten$Y, asp=1) #Zeichnen der Punkte
+
+          w <- owin(poly=list(x=c(vorhersage$X), y=c(vorhersage$Y)))
+
+          #d aus flaeche
+          area <- area.owin(w)
+          d.gam <- sqrt(area/pi*4) * 100 #d aus flaeche
+
+
+          #points(vorhersage$X, vorhersage$Y, col=2, cex=1.5, pch=18)
+          # green line is the starting point of the gam
+          lines(x = c(x.circle, x.circle + d.gam/200 * cos(shift_maxDensity)),
+                y = c(y.circle, y.circle + d.gam/200 * sin(shift_maxDensity)), col = "green")
+          plot(w, add=T, border = "green")
+
+          plot(auffalten$winkel, auffalten$dist, xlim=c(-pi, pi), ylim=c(0, 0.5), xlab="Winkel", ylab="Distanz")
+          lines(werte$winkel, werte$ergeb, col="green", lwd=2)
+          mtext(paste0("sd=", round(sd(res_gam)*100,1),
+                       " \nd.gam=", round(d.gam, 1), " "),
+                side = 3, adj = 1, line = -5, col = "green", cex = 1.5)
+
+          #title(main = paste(cluster.vec[i], "_", cluster2[clust2], "_", cluster3[clust3], ", ", u.grenzen.vec[j], ", \n d.circ: ",
+          #                   round(dbh.circle, 2), ", d.circ2: ", round(dbh.circle.2, 2), ", d.ell: ", round(dbh.ellipse, 2), ", d.gam: ", round(d.gam, 2), sep=""))
+
+          d.gam
+          par.circle.1[6] <- d.gam
+          par.circle.1[7] <- sd(res_gam)*100
+
+
+        }
+
+        circles <- cbind(circles, par.circle.1)
+      }))
+
+
+
+
+
+
+
+
+    }
+
+    try(mtext(
+      paste0(dbhMeta$id,
+             " dbhs: circ ", round(median(circles[3, ])*200, 1),
+             " (vr", round(sd(circles[3, ]*200, na.rm = T),2), ")",
+             " gam ", round(median(circles[6, ], na.rm = T), 1),
+             " (vr", round(sd(circles[6, ], na.rm = T),2), ")",
+             " sd ", round(median(circles[7, ], na.rm = T), 1),
+             " (vr", round(sd(circles[7, ], na.rm = T),2), ")",
+             " --- alt ", round(dbhMeta$dbh_ref, 1))
+      ,
+      outer = T, cex = 3
+    )
+    )
+
+    dev.off()
+    if(!is.null(circles)){
+      x.mean <- round(median(circles[1, ]), 3)
+      y.mean <- round(median(circles[2, ]), 3)
+      dbh.mean <- round(median(circles[3, ], na.rm = T)*200, 3)
+      dbh.gam.mean <- round(median(circles[6, ], na.rm = T), 3)
+      gam.sd.mean <- round(median(circles[7, ], na.rm = T), 3)
+      dbhStop <- Sys.time()
+      timeNB <- as.difftime(dbhStop - dbhStart)
+      #cat("DBH circle", dbh.mean, "cm and gam",dbh.gam.mean,"cm in", round(timeNB, 1), units(timeNB), "\n")
+
+      dbhMeta$dbh <- dbh.mean
+      dbhMeta$dbh.gam <- dbh.gam.mean
+      dbhMeta$sd.gam <- gam.sd.mean
+      dbhMeta$var.dbh <- round(sd(circles[3, ]*200, na.rm = T),2)
+      dbhMeta$var.dbh.gam <- round(sd(circles[6, ], na.rm = T),2)
+      dbhMeta$var.sd.gam <- round(sd(circles[7, ], na.rm = T),4)
+      # HUOM: Not real variance, but sd just to prevent name confusion with gam sd (scattering)
+      dbhMeta$x <- x.mean
+      dbhMeta$y <- y.mean
+      dbhMeta$slices <- length(slices)
+      dbhMeta$move <- round(100*sqrt((x.mean - dbhMeta$x.ref)^2 + (y.mean - dbhMeta$y.ref)^2), 1)
+    } else {
+      #timeNB <- as.difftime(dbhStop - dbhStart)
+      #cat("No DBH estimated in", round(timeNB, 1), units(timeNB), "\n")
+    }
+
+    circles <- rbind(circles, slices)
+    circles <- rbind(circles, slices + 0.1)
+    rownames(circles) <- c("cl.x", "cl.y", "cl.d", "cl.ka1", "cl.ka2", "cl.dgam", "cl.sdgam", "lower", "upper")
+
+    #dev.off()
+
+  }
+  #selectorius <- c(1:4, 8, 10, 12, 14)
+  #cat(paste(dbhMeta[selectorius]), sep = "\t")
+  #cat("\n")
+  write.table(dbhMeta, paste0(picPath, nowId, "_rem_dbhs.txt"), row.names = F, sep = "\t", dec = ".")
+  write.csv2(t(circles), paste0(picPath, nowId, "_circles_x6.csv"), row.names = F)
+
+
+
+  {
+    #cat("\nDeciding now, which new diameters to take as valid.\n")
+    # check which new measured to take into
+    # LADIWALDI RULEBOOK:
+    #    > 140 cm -> GAM dbh is considered invalid
+    #    take GAM
+    #    Label as BAD if:
+    #      REF - GAM > 5 cm absolute
+    #         still good if: CIRC / GAM between 0.9 and 1.1 (90 - 110 % relative)
+    #         still good if: CIRC - GAM < 5 cm absolute
+    #    take CIRC if:
+    #      BAD and REF - CIRC <= 5 cm
+    #    DBH < 1 cm = 1 cm
+    # # # # #
+    # shift if:
+    #    move distance < radius
+    #    move distance < 20 cm
+
+    allTrees <- T
+    if(allTrees){
+      improveList <- dbhMeta
+    } else {
+      improveList <- clustList[clustList$id >= 9000,]
+    }
+    improveList$dbh.gam[improveList$dbh.gam > 140] <- -11
+    improveList$dbh.gam[improveList$dbh.gam < 0] <- -11
+    improveList$dbh.gam[is.na(improveList$dbh.gam)] <- -11
+    improveList$dbh[improveList$dbh < 0] <- -11
+    improveList$dbh[is.na(improveList$dbh)] <- -11
+    #cat("In total there are", length(improveList$id),
+    #    "new measured dbhs ( na.gam =",sum(improveList$dbh.gam == -11),
+    #    "and na.circ =", sum(improveList$dbh == -11),").\n")
+
+    improveList$diff.dist <- sqrt((improveList$x.ref - improveList$x)^2 + (improveList$y.ref - improveList$y)^2 )
+    improveList$diff.dbh <- abs(improveList$dbh_ref - improveList$dbh)
+    improveList$diff.dbh.gam <- abs(improveList$dbh_ref - improveList$dbh.gam)
+
+    #cat("5 cm accepted tolerance to guessed DBH: ")
+    acceptToleranceCM <- 5
+    ##table(improveList$dbh.gam != -11)
+    improveList$dbh.check <- "Fi" #good ones
+    improveList$dbh.sugg <- improveList$dbh.gam
+    improveList$dbh.bad <- " "
+    improveList$dbh.bad[improveList$diff.dbh.gam > acceptToleranceCM] <- "X"
+    ##improveList$dbh.bad[improveList$dbh.gam == -11] <- "X"
+    #table(improveList$dbh.bad[improveList$dbh.gam != -11])
+
+    #cat(sum(improveList$dbh.bad[improveList$dbh.gam != -11] != "X"), "assigned\n")
+    #table(improveList$dbh.bad)
+
+
+
+    #cat("90-110 % accepted ratio to guessed DBH: ")
+    ##set 90 - 110 % circle/gam equivalence of both measures as acceptable (Buche)
+    improveList$dbh.check[improveList$dbh.bad == "X"] <- "Bu" #65 with 90-110% equivalence
+    improveList$dbh.est.ratio <- improveList$dbh/improveList$dbh.gam*100
+    improveList$dbh.bad[improveList$dbh.est.ratio >= 90 &
+                          improveList$dbh.est.ratio <= 110 &
+                          improveList$dbh.gam != -11] <- " "
+    #table(improveList$dbh.bad[improveList$dbh.gam != -11])
+    #cat(sum(improveList$dbh.bad[improveList$dbh.gam != -11] != "X"), "assigned\n")
+    #table(improveList$dbh.bad)
+
+
+
+
+    #cat("5 cm allowed discrepancy to circle DBH: ")
+    ##set absolute difference 5 cm as acceptable (Ulme)
+    improveList$dbh.check[improveList$dbh.bad == "X"] <- "Ul" #6 with 5cm difference
+    improveList$dbh.est.ratio.diff <- abs(improveList$dbh - improveList$dbh.gam)
+    improveList$dbh.bad[improveList$dbh.est.ratio.diff <= acceptToleranceCM &
+                          improveList$dbh.gam != -11] <- " "
+    #table(improveList$dbh.bad[improveList$dbh.gam != -11])
+    ##a_Rosalia: 1 bad ones + 133
+    ##b_Altmuenster: 2 bad ones + 58
+    #cat(sum(improveList$dbh.bad[improveList$dbh.gam != -11] != "X"), "assigned\n")
+    #table(improveList$dbh.bad)
+
+
+
+    #cat("CIRCLE 5 cm discrepancy to guessed DBH: ")
+    ## 133 bad gam ones: take the dbh of circular measurements if difference is less than 5 cm
+    improveList$dbh.check[improveList$dbh.bad == "X"] <- "Ta" #51 dbh circle values
+    choice.bad.takeCircledbh <- improveList$dbh.bad == "X" & improveList$diff.dbh <= 5
+    improveList$dbh.bad[choice.bad.takeCircledbh] <- " "
+    #table(improveList$dbh.bad) #82 left
+    improveList$dbh.sugg[choice.bad.takeCircledbh] <- improveList$dbh[choice.bad.takeCircledbh]
+    #table(improveList$dbh.bad) #82 no good measurement, Altmuenster: 18 no good
+    #cat(sum(improveList$dbh.bad != "X"), "assigned\n")
+    #improveList[improveList$dbh.bad=="X",]
+
+
+
+
+    # trees smaller than 1 cm dbh
+    #
+    thoseSmallerThanOneCm <- improveList$dbh.sugg != -11 & improveList$dbh.sugg < 1
+    if(sum(thoseSmallerThanOneCm) > 0){
+      #cat("Trees smaller than 1 cm correction for",sum(thoseSmallerThanOneCm),"trees.")
+      improveList[improveList$dbh.sugg != -11 & improveList$dbh.sugg < 1,]
+      improveList$dbh.sugg[improveList$dbh.sugg != -11 & improveList$dbh.sugg < 1] <- 1 # set to 1 cm
+
+    }
+    improveList$dbh.check[improveList$dbh.sugg == -11] <- "Ks" #82 not measured, stay estimates
+    #print(table(improveList$dbh.check))
+    #sum(improveList$dbh.gam == -11) #133 no gam
+    #sum(improveList$dbh.sugg == -11) #82 not measured (51 from circle dbh)
+    #notImprovedList <- improveList[improveList$dbh.sugg == -11,]
+    ##table(notImprovedList$dbh_ref) # only up to 5 cm dbh, Altmuenster one very outside 30 cm (not anymore in area)
+
+
+
+    #cat("There are",length(notImprovedList$dbh),"new trees without improved dbh.\n")
+    #cat(notImprovedList$id, sep = " - ")
+    #cat("\n")
+
+
+    ##improveList <- improveList[improveList$dbh.gam != -1,]
+    ##improveList$id[improveList$dbh.check == "X"] # check these ones, they have
+    ##improveList[improveList$dbh.sugg > 100,]
+
+
+
+
+
+    improveList$shift.x <- NA
+    improveList$shift.y <- NA
+
+    # SHIFT ALL
+    omitShifting <- TRUE
+    if(!omitShifting){
+      shiftAll <- FALSE
+      if(shiftAll){
+        cat("Force to shift all trees!\n")
+        shift.those <- improveList$move/100 < frame.minD
+        improveList[!shift.those,]
+        cat("\nShifting",sum(shift.those, na.rm = T),"to new center, at most", frame.minD * 100, "cm.")
+
+      } else {
+        shift.those <- improveList$diff.dist < improveList$dbh_ref/100*2
+        shift.those.also <- improveList$diff.dist < 0.2
+        shift.those <- shift.those | shift.those.also
+        table(shift.those)
+        cat("\nShifting",sum(shift.those, na.rm = T),"to new center, at most 20 cm or 2x dbh.")
+
+        # check the ones that need to be manually shifted
+        check.shift.man <- improveList[!is.na(improveList$diff.dist) & improveList$diff.dist > 0.2,]
+        check.shift.man <- check.shift.man[order(check.shift.man$id),]
+        check.shift.man[,c(1:3,8,9:12,14)]
+        #shift.man <- c(488, 9778, )
+      }
+
+      #
+      # dbhMeta$x[dbhMeta$x == -1] <- NA
+      # dbhMeta$y[dbhMeta$y == -1] <- NA
+
+      unshifted <- !shift.those & improveList$dbh.sugg != -11
+      if(sum(unshifted > 0)){
+        cat("Not shifted trees of improved file: \n")
+        print(improveList[unshifted,c(1,2,3,4,9:12,14)])
+      } else {
+        cat("All trees shifted!")
+      }
+
+      improveList$shift.x[shift.those] <- improveList$x[shift.those]
+      improveList$shift.y[shift.those] <- improveList$y[shift.those]
+      improveList$shift.col <- "Ta"
+      improveList$shift.col[shift.those] <- "Vb"
+
+
+
+
+      mergeImprove <- data.frame("id" = improveList$id,
+                                 "dbh.ref" = improveList$dbh_ref,
+                                 "dbh.sugg" = improveList$dbh.sugg,
+                                 "dbh.check" = improveList$dbh.check,
+                                 "shift.x" = improveList$shift.x,
+                                 "shift.y" = improveList$shift.y,
+                                 "shift.col" = improveList$shift.col)
+    } else {
+
+      mergeImprove <- data.frame("id" = improveList$id,
+                                 "dbh.ref" = improveList$dbh_ref,
+                                 "dbh.sugg" = improveList$dbh.sugg,
+                                 "dbh.check" = improveList$dbh.check)
+    }
+
+  }
+
+
+
+  if(mergeImprove$dbh.sugg == -11){
+    returnDF <- data.frame("x" = 0,
+                           "y" = 0,
+                           "dbh" = mergeImprove$dbh.ref)
+    return(returnDF)
+  } else {
+    cat("Changing dbh from", mergeImprove$dbh.ref, "to",
+        round(mergeImprove$dbh.sugg, 2),"cm!\n")
+    returnDF <- data.frame("x" = dbhMeta$x,
+                           "y" = dbhMeta$y,
+                           "dbh" = mergeImprove$dbh.sugg)
+    return(returnDF)
+  }
+
+}
+
+
+
+
 
 #' calculates the individual tree parameters for dedicated tree
 #'
@@ -19,17 +568,21 @@
 #' @export
 computeTree_i <- function(treeLAS.path,
                           treeName = "",
-
+                          drawImage = F,
                           z_stemBase = NA,
                           nowMeta = NA,
                           detail.level = 0,
+                          decimateTreeForFasterCrowns = FALSE,
+
                           #writeLAZ = TRUE, writePicture = TRUE,
                           #density.CrownLAS = 800, # how many points in random() filter for LAS to be kept for crown hulling
 
                           vol.alpha = 2, area.alpha = 0.3,
                           alternativeCrownBase.Ratio = 0.3, fogFilter.estHeight = FALSE,
                           measurePath = dirname(treeLAS.path),
+                          fileFinder = "",
 
+                          remeasureDBH = FALSE,
                           do.Plot = TRUE,
                           limitSpanSide = 30, limitSpanArea = 440,
                           referenceDiameterLimit = 150
@@ -49,14 +602,122 @@ computeTree_i <- function(treeLAS.path,
 
 
     cat("Reading file", basename(treeLAS.path), "...")
+    if(!file.exists(treeLAS.path)){
+      cat("File not found! Skipping...\n\n")
+      return(data.frame())
+    }
     treeLAS <- readLAS(treeLAS.path)
     cat(thMk(treeLAS@header$`Number of point records`), "pts ok.\n")
+
+
+
+
 
     if(treeName == ""){
       #treeName <- paste0(sprintf("%04d", trees[i]),".laz")
       treeName <- strRep(basename(treeLAS.path), ".las", "")
       treeName <- strRep(treeName, ".laz", "")
     }
+
+
+    metaVars <- data.frame("file"=treeLAS.path,
+                           "treeName"=treeName,
+                           "nPoints" = treeLAS@header@PHB$`Number of point records`,
+                           "est.z.StemBase" = nowMeta$z-1.3,
+                           "est.DBH"=0, "est.height"=0,
+                           "est.crownLength"=0, "est.crownBase"=0,
+                           "est.crownArea"=0, "est.crownAreaAlt"=0,
+                           "est.crownVolume"=0,
+                           #"est.crownDiameter"=0, "est.DiamCrownMax"=0, "est.DiamCrownMax.Angle"=0,
+                           #"est.DiamCrownMin"=0, "est.DiamCrownMin.Angle"=0,
+                           "est.x.DBH"=0, "est.y.DBH"=0, "est.z.DBH"=0,
+                           #"est.x.crownDiameter"=0, "est.y.crownDiameter"=0,
+                           stringsAsFactors=FALSE) #not implemented yet, was interesting!
+
+    if(remeasureDBH){
+      picPath <- paste0(measurePath, "/stemCircles/")
+      if(!dir.exists(picPath)){
+        dir.create(picPath)
+      }
+      nowMeta$treeName <- treeName
+      measureDF <- measureNewDBH(treeLAS, nowMeta, picPath = picPath)
+      if(measureDF$dbh < 100 && measureDF$dbh > 0 ){
+        metaVars$est.DBH <- measureDF$dbh
+        nowMeta$dbh <- measureDF$dbh
+        if(!(measureDF$x == 0 && measureDF$y == 0)){
+          metaVars$est.x.DBH <- measureDF$x
+          metaVars$est.y.DBH <- measureDF$y
+          nowMeta$x <- measureDF$x
+          nowMeta$y <- measureDF$y
+        }
+      }
+    }
+
+    if(drawImage){
+      up.h <- treeLAS@header@PHB$`Max Z`
+      if(fogFilter.estHeight){
+        up.h <- quantile(treeLAS@data$Z, 0.9999, names = F)
+      }
+      down.h <- nowMeta$z - 1.3
+      diffDraw <- treeLAS@header@PHB$`Max Z` - up.h
+      maxPoint <- treeLAS@data[which(treeLAS@data$Z == treeLAS@header@PHB$`Max Z`),c(1:3)]
+      maxPoint <- maxPoint[1,]
+      metaVars$est.height <- round(up.h - down.h, 2)
+
+      metaVars$topCrownX <- maxPoint$X
+      metaVars$topCrownY <- maxPoint$Y
+      metaVars$topCrownZ <- maxPoint$Z
+
+      metaVars$topLeanDist <- sqrt((maxPoint$Y - nowMeta$y)^2 + (maxPoint$X - nowMeta$x)^2)
+      metaVars$topLeanAngle <- atan2((maxPoint$Y - nowMeta$y), (maxPoint$X - nowMeta$x))/2/pi*360
+
+      crownPathSingles <- paste0(dirname(treeLAS.path), "/")
+      if(metaVars$nPoints > 1000 & decimateTreeForFasterCrowns){
+        # if(smallTrees){
+        #   treeLAS <- decimate_points(treeLAS, random(10000))
+        # } else {
+          treeLAS <- decimate_points(treeLAS, random(4000))
+
+      }
+      # Picture of tree from three sides with height measurement
+      png(paste0(crownPathSingles, treeName,".png"), height = 1024, width = 2048, type = "cairo")
+      tryCatch(
+        {
+          par(mfrow=c(1, 3), oma = c(0, 0, 3, 0))
+          plot(treeLAS@data$X, treeLAS@data$Z, asp = 1, cex = 0.001, ylim = c(down.h, up.h))
+          abline(h = c(up.h, down.h), col = "red")
+          lines(x = c(nowMeta$x, maxPoint$X), y = c(down.h, up.h), col = "green", lty = 2)
+          plot(treeLAS@data$Y, treeLAS@data$Z, asp = 1, cex = 0.001, ylim = c(down.h, up.h))
+          abline(h = c(up.h, down.h), col = "red")
+          lines(x = c(nowMeta$y, maxPoint$Y), y = c(down.h, up.h), col = "green", lty = 2)
+          plot(treeLAS@data$X, treeLAS@data$Y, asp = 1, cex = 0.001)
+          lines(x = c(nowMeta$x, maxPoint$X), y = c(nowMeta$y, maxPoint$Y), col = "green", lwd = 2)
+          plotTitle.sin <- paste0(fileFinder, "   ", treeName, "   dbh = ", round(nowMeta$dbh,2), "cm   est.h = ",metaVars$est.height, "m")
+          if(is.element("species", colnames(nowMeta))){
+            if(!is.null(nowMeta$species)){
+              plotTitle.sin <- paste0(fileFinder, "   ", nowMeta$species,"   ", treeName, "   dbh = ", round(nowMeta$dbh,2), "cm   est.h = ",metaVars$est.height, "m")
+            }
+          } else if(is.element("Bart", colnames(nowMeta))){
+            if(!is.null(nowMeta$Bart)){
+              plotTitle.sin <- paste0(fileFinder, "   ", nowMeta$Bart,"   ", treeName, "   dbh = ", round(nowMeta$dbh,2), "cm   est.h = ",metaVars$est.height, "m")
+            }
+          }
+
+          mtext(plotTitle.sin, outer = TRUE, cex = 2.0)
+          drawNumberPoints <- T
+          if(drawNumberPoints){
+            mtext(paste0("nPoints = ", thMk(metaVars$nPoints)), outer = TRUE, cex = 1.6, line = -2.7)
+          }
+
+        }, error=function(e){
+          cat("Error when writing the image, closing device.\n")
+        })
+      dev.off()
+      #par(mfrow=c(1,1))
+
+    }
+
+
 
     if(is.null(nrow(nowMeta))){
       cat("No meta-data specified.\n")
@@ -79,20 +740,6 @@ computeTree_i <- function(treeLAS.path,
         cat("  -> we used 1 % quantile of z-coordinates.\n")
       }
     }
-
-    metaVars <- data.frame("file"=treeLAS.path,
-                           "treeName"=treeName,
-                           "nPoints" = treeLAS@header@PHB$`Number of point records`,
-                           "est.z.StemBase" = nowMeta$z-1.3,
-                           "est.DBH"=0, "est.height"=0,
-                           "est.crownLength"=0, "est.crownBase"=0,
-                           "est.crownArea"=0, "est.crownAreaAlt"=0,
-                           "est.crownVolume"=0, "est.crownDiameter"=0,
-                           "est.DiamCrownMax"=0, "est.DiamCrownMax.Angle"=0,
-                           "est.DiamCrownMin"=0, "est.DiamCrownMin.Angle"=0,
-                           "est.x.DBH"=0, "est.y.DBH"=0, "est.z.DBH"=0,
-                           "est.x.crownDiameter"=0, "est.y.crownDiameter"=0,
-                           stringsAsFactors=FALSE) #not implemented yet, was interesting!
 
   }
 
@@ -171,8 +818,6 @@ computeTree_i <- function(treeLAS.path,
 
 
       # ESTIMATE HEIGHT
-      #treeLAS <- readLAS("D:/Ebensee/EB149_ALLGO_100to300_dbh/crowns_lim0.002_Z2_vox5/singleTrees/tree0018.las")
-      #metaVars$est.height <- round(treeLAS@header@PHB$`Max Z` - nowMeta$z + 1.3, 2)
 
       cat("height is ")
       up.h <- treeLAS@header@PHB$`Max Z`
@@ -196,7 +841,12 @@ computeTree_i <- function(treeLAS.path,
 
       # we use these heights to get the mean stem axis point
       heightGrip <- seq(from = 0.0, to = max(treeLAS@data$Z) - minZ, by = slice.height)
-      centers <- data.frame("x" = 0, "y" = 0, "z" = 0, "d" = 0, "lower" = 0)
+      centers <- data.frame("x" = nowMeta$x, "y" = nowMeta$y, "z" = minZ + 1.3,
+                            "d" = nowMeta$dbh/100, "lower" = 0)
+      firstCenter <- centers
+      stems <- data.frame("x" = nowMeta$x, "y" = nowMeta$y, "z" = minZ,
+                          "d" = nowMeta$dbh/100, "movedCM" = 0, "angle" = 0, "lower" = 0)
+
       crownCounter <- 0
       groundCutHeight <- 0 # if floor was removed, set dbh higher
 
@@ -213,6 +863,7 @@ computeTree_i <- function(treeLAS.path,
         t1 <- Sys.time()
         altCrownLAS <- filter_poi(treeLAS, Z >= altCrownBase)
         if(plot.now) tempTree <- altCrownLAS
+
 
 
         # # possibility to do noise filter
@@ -259,17 +910,13 @@ computeTree_i <- function(treeLAS.path,
       }
 
 
-
-
-
-      ### LOADING or DETECTING CROWN BASE (slicing up stem) ####
       crownBaseMissing <- TRUE
-
       crownBase <- NA
 
+
+      ### READING CROWN BASE FROM FILE ####
       if(is.element("crownBase", colnames(nowMeta))){
         #TODO, never used the reading from file...
-        ### READING CROWN BASE FROM FILE ######
         crownBase <- nowMeta$crownBase
           if(!length(crownBase)==1){
             if(length(crownBase)==0){
@@ -337,103 +984,332 @@ computeTree_i <- function(treeLAS.path,
         png(paste0(stemAnalysisPath,"",treeName,"_stem_diameters.png"), height = 6000, width = 6000, type = "cairo")
         par(mfrow=c(ceiling(length(heightGrip)/20),20),oma = c(0, 0, 3, 0))
 
-        for(j in 1:length(heightGrip)){ #for every slice of stem diameter
+        ### CROWN BASE DETECTION LOOP ####
+        previousCenter <- firstCenter
+
+        dbhPosition <- which(heightGrip == 1.3)
+        if(length(dbhPosition) == 0){
+          dbhPosition <- 9999999
+          measureOrder <- c(1:length(heightGrip))
+        } else {
+          measureOrder <- c(dbhPosition:1, (dbhPosition+1):length(heightGrip))
+        }
+
+
+        considerTrunkStart <- -1 # if slices down from dbh already
+        # contain the crown, this value holds
+        # how many slices we have to consider
+        for(k in 1:length(measureOrder)){ #for every slice of stem diameter
+          j <- measureOrder[k]
           # SLICING
           sliceLAS <- filter_poi(treeLAS, Z >= (minZ + heightGrip[j]), Z < (minZ + heightGrip[j] + slice.height))
-          sliceLAS <- filter_poi(sliceLAS, Classification != LASGROUND)
+
+          #sliceLAS <- filter_poi(sliceLAS, Classification != LASGROUND)
+
+          if(k == dbhPosition + 1){
+            # now going upwards
+            previousCenter <- firstCenter # reset to DBH location
+          }
+
+          nextCircleRadiusIncrease <- 0.05 # 5 cm more diameter for next stem circle
+          multiplyReferenceD <- 1
+          if(j < 10){
+            multiplyReferenceD <- (10-j)^2/(10^2)*2+1
+          }
+          nowClipRadius <- (previousCenter$d/2*multiplyReferenceD) + nextCircleRadiusIncrease
+
+
+
+          if(sliceLAS@header@PHB$`Number of point records` == 0){
+            if(do.Plot) plot(x = 0, y = 0, asp = 1, main = "",
+                             type = "n", xlab = "x", ylab = "y")
+          } else {
+
+            if(crownBaseMissing || k <= dbhPosition){
+              if(do.Plot) plot(sliceLAS@data$X, sliceLAS@data$Y,
+                               asp = 1, main = "",
+                               type = "n", xlab = "x", ylab = "y")
+            } else {
+              if(do.Plot) plot(0,
+                               xlim = c(previousCenter$x - 3*nowClipRadius,
+                                        previousCenter$x + 3*nowClipRadius),
+                               ylim = c(previousCenter$y - 1.6*nowClipRadius,
+                                        previousCenter$y + 1.6*nowClipRadius),
+                               asp = 1, main = "",
+                               type = "n", xlab = "x", ylab = "y")
+            }
+
+
+          }
+
+          if(k <= dbhPosition){
+            box(col="red")
+            # going downwards to stem base indicated by a red box
+          }
 
           if(sliceLAS@header@PHB$`Number of point records`<=20){
             if(sliceLAS@header@PHB$`Number of point records`==0){
-              if(do.Plot) plot(x = 0, y = 0, asp = 1, main = "", type = "n", xlab = "", ylab = "")
               if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",round(minZ + heightGrip[j],2),") EMPTY"))
-              cat("Empty Slice at",(minZ + heightGrip[j]),"m - next!\n")
+              #cat("Empty Slice at",(minZ + heightGrip[j]),"m - next!\n")
               next()
             }
             center <- data.frame("x" = median(sliceLAS@data$X, na.rm = T), "y" = median(sliceLAS@data$Y, na.rm = T),
                                  "z" = (minZ + heightGrip[j]), "d" = -1, "lower" = heightGrip[j])
             centers[j,] <- center
-            if(do.Plot) plot(sliceLAS@data$X, sliceLAS@data$Y, asp = 1, main = "", col = "green",  pch = ".")
+            if(do.Plot) points(sliceLAS@data$X, sliceLAS@data$Y, col = "green",  cex = 0.001)
             if(do.Plot) points(center$x, center$y, cex = 2, col = "red")
             if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",round(minZ + heightGrip[j],2),") LESS THAN 20 POINTS"))
-            cat("There are too few points in slice at",(minZ + heightGrip[j]),"m - next!\n")
+            #cat("There are too few points in slice at",(minZ + heightGrip[j]),"m - next!\n")
             next()
           }
 
-          # FILTERING
-          referenceCounter <- referenceCounter + 1
-          filter.x <- quantile(sliceLAS@data$X, c(filter.quant, 1 - filter.quant))
-          filter.y <- quantile(sliceLAS@data$Y, c(filter.quant, 1 - filter.quant))
-          if(do.Plot) plot(sliceLAS@data$X, sliceLAS@data$Y, asp = 1, main = "", col = "red",  pch = ".")
-          sliceLAS <- filter_poi(sliceLAS, X > min(filter.x)-tolerance, X < max(filter.x)+tolerance,
-                                 Y > min(filter.y)-tolerance, Y < max(filter.y)+tolerance)
-          rm(filter.x, filter.y)
-          if(do.Plot) points(sliceLAS@data$X, sliceLAS@data$Y, asp = 1, main = treeName, pch = ".")
-
-          # FITTING DIAMETER CIRCLE
-          # CircleFitByLandau used by now (tight grip)
-          c2 <- CircleFitByLandau(cbind(sliceLAS@data$X, sliceLAS@data$Y))
-          center <- data.frame("x" = c2[1], "y" = c2[2], "z" = (minZ + heightGrip[j]),
-                               "d" = c2[3]*2, "lower" = heightGrip[j])
-
-          if(do.Plot) draw.circle(center$x, center$y, radius = center$d/2, border = "blue", lty = 2)
-          if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",round(minZ + heightGrip[j],2),"), d=",round(center$d*100,1),"cm"))
-          centers[j,] <- center
-          #print(center)
 
 
-          # DETERMINING reference diameter for crown base
-          if(referenceCounter <= 10 && referenceCounter > 5){
-            # reference Diameter is taken between 5x slice (25 cm) and 10x slice (50 cm) from floor
-            # if slice of course is 5 cm...
-            refList <- c(refList, center$d)
+
+          stemLAS <- clip_circle(sliceLAS, previousCenter$x, previousCenter$y, nowClipRadius)
+
+
+
+
+          if(crownBaseMissing){
+            # FILTERING
+            referenceCounter <- referenceCounter + 1
+            if(do.Plot) points(sliceLAS@data$X, sliceLAS@data$Y,
+                               col = "red", pch = ".")
+            filter.x <- quantile(sliceLAS@data$X, c(filter.quant, 1 - filter.quant))
+            filter.y <- quantile(sliceLAS@data$Y, c(filter.quant, 1 - filter.quant))
+            sliceLAS <- filter_poi(sliceLAS, X > min(filter.x)-tolerance, X < max(filter.x)+tolerance,
+                                   Y > min(filter.y)-tolerance, Y < max(filter.y)+tolerance)
+            rm(filter.x, filter.y)
+            if(do.Plot) points(sliceLAS@data$X, sliceLAS@data$Y, col = "blue", pch = ".")
+            if(do.Plot) points(stemLAS@data$X, stemLAS@data$Y,
+                               col = "black",  pch = ".")
+
+            # FITTING DIAMETER CIRCLE
+            # CircleFitByLandau used by now (tight grip)
+            c2 <- CircleFitByLandau(cbind(sliceLAS@data$X, sliceLAS@data$Y))
+            center <- data.frame("x" = c2[1], "y" = c2[2], "z" = (minZ + heightGrip[j]),
+                                 "d" = c2[3]*2, "lower" = heightGrip[j])
+
+            if(do.Plot) draw.circle(center$x, center$y, radius = center$d/2, border = "red", lty = 2)
+
+            # criteria for crown basal height!
+            exceedingLimitForCrownBase <- center$d > 2*referenceDiameter
+
+
+
+            if(do.Plot) mtext(paste0("d.cr=",round(center$d*100,1),"cm  "),
+                  side = 3, adj = 1, line = -2, col = "#2244CC")
+            if(exceedingLimitForCrownBase){
+              if(do.Plot) mtext("EXCEEDS  ",
+                    side = 3, adj = 1, line = -3.5, col = "#2244CC")
+            }
+
+            centers[j,] <- center
+            #print(center)
+
+
+
+          } else {
+            # plot crown points in red with right xlim values
+            if(do.Plot) points(sliceLAS@data$X, sliceLAS@data$Y,
+                             col = "red", pch = ".")
+            # plot points of the slice in green
+            if(do.Plot) points(stemLAS@data$X, stemLAS@data$Y,
+                               col = "#448711", pch = ".")
+
+
+
           }
-          # we take referenceDiamter now from tree_dbh.txt list!
-          # only if we don't have a valid referenceDiameter, then we take the newly measured one
-          if(referenceDiameter == 100){
-            # nowMeta doesn't contain a dbh or bhd field, so we measure it from slice 5 - 10
-            if(referenceCounter == 10){
-              referenceDiameter <- mean(refList)
-              cat("- with reference stem diameter",round(referenceDiameter*100,2),"cm.\n")
-              cat("CBH Crown basal height ")
 
-              if(referenceDiameter > referenceDiameterLimit/100){
-                #exceededReferenceLimit <- exceededReferenceLimit + 1
-                #treeTooBig <- T
-                #cat("Too big reference diameter for",treeName," - we take the alternative ratio!\n")
-                cat("Very big reference diameter for",treeName," - no consequences!\n")
+          if(do.Plot) mtext(paste0(" x=", round(previousCenter$x,2), "\n",
+                                   " y=", round(previousCenter$y,2), ""),
+                            side = 1, adj = 0, line = -1.5, col = "black")
+          if(do.Plot) mtext(paste0("cl.d=",round(nowClipRadius*100,1)*2," \n",
+                                   "prv.d=",round(previousCenter$d*100,1), " "),
+                            side = 1, adj = 1, line = -1.5, col = "black")
+
+          if(stemLAS@header@PHB$`Number of point records`> 10){
+            #cat("Too few points in this stem circle at", (minZ + heightGrip[j]), "m - next!...\n")
+
+            c3stem <- CircleFitByLandau(cbind(stemLAS@data$X, stemLAS@data$Y),
+                                        ParIni = c(previousCenter$x, previousCenter$y, previousCenter$d/2))
+
+            stemCenter <- data.frame("x" = c3stem[1], "y" = c3stem[2], "z" = (minZ + heightGrip[j]),
+                                     "d" = c3stem[3]*2, "movedCM" = 0,
+                                     "angle" = 0, "lower" = heightGrip[j])
+            stemMovedAngle <- atan2((stemCenter$y - previousCenter$y),
+                                    (stemCenter$x - previousCenter$x))/2/pi*360
+            if(stemMovedAngle < -45){
+              stemMovedAngle <- stemMovedAngle + 360
+            }
+            stemMovedDist <- sqrt((stemCenter$y - previousCenter$y)^2 +
+                                    (stemCenter$x - previousCenter$x)^2)
+
+            stemCenter$movedCM <- round(stemMovedDist*100,2)
+            stemCenter$angle <- round(stemMovedAngle,1)
+
+
+
+            flatNess <- (stemCenter$movedCM)/abs(stemCenter$z - previousCenter$z)
+
+            if(do.Plot) mtext(paste0("  +",stemCenter$movedCM," cm\n",
+                                     "  +", round(flatNess, 1),"%\n",
+                                     "  ", stemCenter$angle,"°"),
+                              side = 3, adj = 0, line = -4.5, col = "#448711")
+
+            if(do.Plot) draw.circle(stemCenter$x, stemCenter$y,
+                                    radius = stemCenter$d/2, border = "black", lty = 2, lwd = 2)
+
+            if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",
+                                            round(minZ + heightGrip[j],2),"), d=",
+                                            round(stemCenter$d*100,1),"cm"))
+
+
+            stems[j,] <- stemCenter
+
+            if(stemCenter$d < (previousCenter$d - 0.1) |
+               stemCenter$d > (previousCenter$d + 0.05) |
+               flatNess > 150){
+
+              #stemCenter$d <- previousCenter$d
+              # if suddenly the diameter is shrinked by more than 10 cm,
+              # or if suddenly expanded by more than 5 cm,
+              # or moved more than 5 cm (k = 100%) each 5 cm slice
+              # rather stay with the old diameter, seems more stable...
+            } else {
+              previousCenter <- stemCenter
+            }
+
+
+
+          } else {
+            if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",
+                                            round(minZ + heightGrip[j],2),"), LESS THAN 10 STEM POINTS"))
+
+          }
+
+
+
+          if(crownBaseMissing || k <= dbhPosition){
+            # DETERMINING reference diameter for crown base
+            # only if crown base was not found yet
+
+            if(referenceCounter <= 10 && referenceCounter > 5){
+              # reference Diameter is taken between 5x slice (25 cm) and 10x slice (50 cm) from floor
+              # if slice of course is 5 cm...
+              refList <- c(refList, center$d)
+            }
+            # we take referenceDiameter now from tree_dbh.txt list!
+            # only if we don't have a valid referenceDiameter, then we take the newly measured one
+            if(referenceDiameter == 100){
+              # nowMeta doesn't contain a dbh or bhd field, so we measure it from slice 5 - 10
+              if(referenceCounter == 10){
+                referenceDiameter <- mean(refList)
+                cat("- CALCULATING NEW REFERENCE STEM DIAMETER",round(referenceDiameter*100,2),"cm.\n")
+                cat("CBH Crown basal height ")
+
+                if(referenceDiameter > referenceDiameterLimit/100){
+                  #exceededReferenceLimit <- exceededReferenceLimit + 1
+                  #treeTooBig <- T
+                  #cat("Too big reference diameter for",treeName," - we take the alternative ratio!\n")
+                  cat("Very big reference diameter for",treeName," - no consequences!\n")
+                }
               }
             }
-          }
-          # CHECKING if we are now at crown base
-          if(referenceCounter >= 10){
-            # above 50 cms we can detect crown starting point
-            if(center$d > 2*referenceDiameter){ #criteria is here!
-              crownCounter <- crownCounter + 1
-              if(crownCounter > 1/slice.height){ #must be steady over 1 m (20 slices)
-                crownStart <- heightGrip[trunc(j-1/slice.height)] #go down again for that one meter (20 slices)
-                crownBase <- crownStart+minZ
-                cat("at z =",crownBase,"(rel. height",crownStart,"m).\n")
-                crownBaseMissing <- FALSE
 
-                crownLength <- treeLAS@header@PHB$`Max Z` - crownBase
-                mtext(paste0(treeName," filtering - reference Diameter: ",round(referenceDiameter*100,1),"cm - minZ = ",round(minZ,2),". "), outer = TRUE, cex = 2.0)
+            # CHECKING if we are now at crown base
+            if(referenceCounter >= 0){ # change noiw 06.02.2025 crown base can be zero!
+              # above 50 cms we can detect crown starting point (10*5cm)
+              if(exceedingLimitForCrownBase){
+                crownCounter <- crownCounter + 1
+                if(crownCounter > 1/slice.height || #must be steady over 1 m if going down from dbh
+                   (k > dbhPosition && # if going up from dbh, we need to consider the trunkstart below
+                    (crownCounter + considerTrunkStart) > 1/slice.height)){
+                  if(j < 1.3){
+                    crownStart <- heightGrip[j] #go down again for that one meter (20 slices)
+                  } else {
+                    crownStart <- heightGrip[trunc(j - 1/slice.height)] #go down again for that one meter (20 slices)
+                  }
+                  crownBase <- crownStart+minZ
+                  cat("at z =",crownBase,"(rel. height",crownStart,"m).\n")
+                  crownBaseMissing <- FALSE
 
+                  crownLength <- treeLAS@header@PHB$`Max Z` - crownBase
 
-                #cat("Automatized crown base for tree",treeName,"is at z",crownBase,"\n")
-                break() #out from for loop
+                  #cat("Automatized crown base for tree",treeName,"is at z",crownBase,"\n")
+                  #break() #out from for loop
+                  # new 2025-01-29 continue for stem circles upwards
+                }
+              } else {
+                if(k <= dbhPosition){
+                  if(considerTrunkStart == -1){
+                    considerTrunkStart <- crownCounter
+                  }
+                } else {
+                  if(considerTrunkStart > 0){
+                    considerTrunkStart <- 0 #reset trunk start, if stem above dbh does not have crown points in it
+                  }
+                }
+                # as soon as diameter springs back to normal, we need to reset crownbase counter
+                crownCounter <- 0
               }
-            } else {
-              # as soon as diameter springs back to normal, we need to reset crownbase counter
-              crownCounter <- 0
             }
           }
         } #for every slice of stem diameter
         #rm(referenceCounter, crownCounter, j, sliceLAS, center, refList, heightGrip, c2)
 
+        mtext(paste0(treeName," stem and crown circles   reference Diameter: ",round(referenceDiameter*100,1),"cm    minZ = ",round(minZ,2),". "), outer = TRUE, cex = 2.0)
+
 
         # conclude image of slices, output and start new picture with crown base
         dev.off()
-        write.table(centers, file = paste0(stemAnalysisPath,treeName,"_stem_centers.txt"), sep = "\t", dec = ".", row.names = FALSE)
+
+
+
+        centerPoint1m <- stems[trunc(1/slice.height),]
+        centerPoint2m <- stems[trunc(2/slice.height),]
+        centerPoint160cm <- stems[trunc(1.6/slice.height),]
+
+
+        centers <- centers[!is.na(centers$d),]
+        stems <- stems[!is.na(stems$d),]
+
+        if(is.na(centerPoint1m$x)){
+          centerPoint1m <- stems[trunc(1/slice.height),] # if first measurement was invalid
+        }
+        if(is.na(centerPoint2m$x)){
+          centerPoint2m <- stems[trunc(2/slice.height),]
+        }
+        if(is.na(centerPoint160cm$x)){
+          centerPoint160cm <- stems[trunc(2/slice.height),]
+        }
+
+
+        metaVars$center100cmX <- centerPoint1m$x
+        metaVars$center100cmY <- centerPoint1m$y
+        metaVars$center100cmZ <- centerPoint1m$z
+        metaVars$center160cmX <- centerPoint160cm$x
+        metaVars$center160cmY <- centerPoint160cm$y
+        metaVars$center160cmZ <- centerPoint160cm$z
+        metaVars$center200cmX <- centerPoint2m$x
+        metaVars$center200cmY <- centerPoint2m$y
+        metaVars$center200cmZ <- centerPoint2m$z
+        metaVars$center100cmD <- centerPoint1m$d
+        metaVars$center160cmD <- centerPoint160cm$d
+        metaVars$center200cmD <- centerPoint2m$d
+
+        metaVars$stemLeanDist1to2 <- sqrt((centerPoint2m$y - centerPoint1m$y)^2 + (centerPoint2m$x - centerPoint1m$x)^2)
+        metaVars$stemLeanAngle1to2 <- atan2((centerPoint2m$y - centerPoint1m$y), (centerPoint2m$x - centerPoint1m$x))/2/pi*360
+
+        metaVars$stemLeanDist1to160 <- sqrt((centerPoint160cm$y - centerPoint1m$y)^2 + (centerPoint160cm$x - centerPoint1m$x)^2)
+        metaVars$stemLeanAngle1to160 <- atan2((centerPoint160cm$y - centerPoint1m$y), (centerPoint160cm$x - centerPoint1m$x))/2/pi*360
+
+        metaVars$taper1to2 <- centerPoint1m$d - centerPoint2m$d
+        metaVars$taper1to160 <- centerPoint1m$d - centerPoint160cm$d
+
+        write.table(centers, file = paste0(stemAnalysisPath,treeName,"_crown_centers.txt"), row.names = FALSE, sep = "\t", dec = ".")
+        write.table(stems, file = paste0(stemAnalysisPath,treeName,"_stem_centers.txt"), row.names = FALSE, sep = "\t", dec = ".")
 
         if(crownBaseMissing){
           ## NO CROWN DETECTED SECTION ###
@@ -465,18 +1341,18 @@ computeTree_i <- function(treeLAS.path,
           }
 
           DBH <- centers[centers$lower==1.3-groundCutHeight,]
-          DBH <- DBH[!is.na(DBH$d),]
-          metaVars$est.DBH <- round(DBH$d*100,1)
-          metaVars$est.x.DBH <- DBH$x
-          metaVars$est.y.DBH <- DBH$y
-          metaVars$est.z.DBH <- nowMeta$z
-          cat(paste0("DBH alternative ",round(DBH$d*100,1)," cm at position x="
-                     ,round(DBH$x,2),"  y=",round(DBH$y,2),"  z=",round(nowMeta$z,2),"m\n"))
+          # DBH <- DBH[!is.na(DBH$d),]
+          # metaVars$est.DBH <- round(DBH$d*100,1)
+          # metaVars$est.x.DBH <- DBH$x
+          # metaVars$est.y.DBH <- DBH$y
+          # metaVars$est.z.DBH <- nowMeta$z
+          # cat(paste0("DBH alternative ",round(DBH$d*100,1)," cm at position x="
+          #            ,round(DBH$x,2),"  y=",round(DBH$y,2),"  z=",round(nowMeta$z,2),"m\n"))
+          cat("HERE DBH ALTERNATIVE IS NOT IMPLEMENTED YET!\n")
 
           #metaVars$est.height <- round(crownLength+crownStart+groundCutHeight,2)
           metaVars$est.crownLength <- round(crownLength,2)
           metaVars$est.crownBase <- round(crownBase,2)
-
 
           if(do.Plot){
             if(crownBaseMissing){
@@ -554,6 +1430,16 @@ computeTree_i <- function(treeLAS.path,
         #metaVars$est.crownVolume <- 1
 
         crownLAS <- filter_poi(treeLAS, Z >= crownBase)
+        distVect <- sqrt((crownLAS@data$X - nowMeta$x)^2 + (crownLAS@data$Y - nowMeta$x)^2)
+
+        metaVars$meanCrownX <- mean(crownLAS@data$X)
+        metaVars$meanCrownY <- mean(crownLAS@data$Y)
+        metaVars$meanCrownZ <- mean(crownLAS@data$Z)
+        metaVars$meanweightedCrownX <- weighted.mean(crownLAS@data$X, distVect)
+        metaVars$meanweightedCrownY <- weighted.mean(crownLAS@data$Y, distVect)
+        metaVars$meanweightedCrownZ <- weighted.mean(crownLAS@data$Z, distVect)
+
+
         # all 15x15 cm we keep 3 points
         set.seed(15)
         if(detail.level < 0){
@@ -718,37 +1604,6 @@ computeTree_i <- function(treeLAS.path,
         draw.circle(x = crownCircle[1], y = crownCircle[2], radius = crownCircle[3], border = "lightblue")
         points(x = crownCircle[1], y = crownCircle[2], col = "lightblue", pch = 4, cex = 2)
 
-        #find a value how imperfect the mean crown diameter is...
-        #library(polyclip)
-        #not implemented
-        #
-        # library(rgdal)
-        # library(dismo)
-        # library("sampSurf")
-        #
-        # #crop raster with polygon
-        # library(raster)
-        # circ <- spCircle(crownCircle[3], centerPoint = c(x=crownCircle[1],y=crownCircle[2]))
-        # circPlus <- SpatialPoints(rbind(borderPoints,
-        #                                 circ$spCircle@polygons$pgsCircle@Polygons$circPlot@coords))
-        #
-        # r.crop <- crop(circPlus, SpatialPoints(borderPoints))
-        # r.crop <- crop(circPlus, circ$spCircle)
-        #
-        #
-        #
-        # lines(borderPoints) #not continuous
-        # polygon(borderPoints) #same problem, need all in a row
-        #
-        #
-        #
-        # plot(circPlus, col = "black")
-        # plot(r.crop, col = "green", add = TRUE)
-        # plot(circ$spCircle, add = TRUE)
-        # plot(SpatialPoints(borderPoints), add = TRUE)
-        # plot(ashape(unique(r.crop@coords), alpha = 0.1), bg = "red")
-        #
-
 
 
 
@@ -803,6 +1658,9 @@ computeTree_i <- function(treeLAS.path,
 #'
 #' @export
 computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
+                               drawImages = T,
+                               remeasureDBH = F,
+                               decimateTreeForFasterCrowns = FALSE,
 
                                mode = "ALLGO", maxRadius = 0, ipad = FALSE,
 
@@ -971,6 +1829,10 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
     nr_cores <- detectCores()
     cat(nr_cores, "cores available - take two less ")
     nr_cores <- nr_cores - 2
+    if(nr_cores > 15){
+      cat("but maximum 15!")
+      nr_cores <- 15
+    }
 
     # maxCores <- floor(totalRAM / oSize / 2) - 1
     # cat(maxCores, "cores recommended (RAM ratio of", round(totalRAM / oSize, 1), "/ 2 - 1).\n")
@@ -998,7 +1860,14 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
 
       if(is.null(treeNames)){
         #treeName <- paste0("tree",sprintf("%04d", trees[i]),".laz")
-        treeName <- paste0(sprintf("%04d", stemCoord$id[i]),"")
+        treeName <- paste0(stemCoord$id[i])
+        tryCatch({
+          treeName <- paste0(sprintf("%04d", stemCoord$id[i]),"")
+        }, error = function(e) {
+          #cat("Warning - there are weird names present...\n")
+        })
+        if(treeName == "") treeName <- paste0(stemCoord$id[i])
+
       } else {
         treeName <- treeNames[i]
       }
@@ -1023,17 +1892,24 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
 
       outPut <- data.frame()
 
-      tryCatch({
-        outPut <- computeTree_i(treeLAS.path = paste0(crownPathSingles, treeName, ".laz"),
-                                treeName = treeName,
-                                detail.level = detail.level,
-                                nowMeta = nowMeta,
-                                measurePath = crownPath)
-      })
+      nowTreeFile <- paste0(crownPathSingles, treeName, ".laz")
 
+      if(file.exists(paste0(nowTreeFile))){
+        tryCatch({
+          outPut <- computeTree_i(treeLAS.path = nowTreeFile,
+                                  decimateTreeForFasterCrowns = decimateTreeForFasterCrowns,
+                                  treeName = treeName,
+                                  fileFinder = fileFinder,
+                                  drawImage = drawImages,
+                                  detail.level = detail.level,
+                                  nowMeta = nowMeta,
+                                  remeasureDBH = remeasureDBH,
+                                  measurePath = crownPath)
+        })
 
+        metaFrame <<- rbind(metaFrame, outPut)
+      }
 
-      metaFrame <<- rbind(metaFrame, outPut)
 
     }
 
@@ -1056,7 +1932,7 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
     timePar1 <- Sys.time()
 
     fdc <<- foreach(i = loopStart:loopEnd, .errorhandling = 'remove',
-                    .packages = c("treeX"), .verbose = FALSE) %dopar% {
+                    .packages = c("treeX", "mgcv"), .verbose = FALSE) %dopar% {
 
                       # cat("Serial measuring of", (loopEnd-loopStart+1), "trees:\n\n")
 
@@ -1066,7 +1942,14 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
 
                       if(is.null(treeNames)){
                         #treeName <- paste0("tree",sprintf("%04d", trees[i]),".laz")
-                        treeName <- paste0(sprintf("%04d", stemCoord$id[i]),"")
+                        treeName <- paste0(stemCoord$id[i])
+                        tryCatch({
+                          treeName <- paste0(sprintf("%04d", stemCoord$id[i]),"")
+                        }, error = function(e) {
+                          #cat("Warning - there are weird names present...\n")
+                        })
+                        if(treeName == "") treeName <- paste0(stemCoord$id[i])
+
                       } else {
                         treeName <- treeNames[i]
                       }
@@ -1084,13 +1967,23 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
 
                       outPut <- data.frame()
 
-                      tryCatch({
-                        outPut <- computeTree_i(treeLAS.path = paste0(crownPathSingles, treeName, ".laz"),
-                                                treeName = treeName,
-                                                nowMeta = nowMeta,
-                                                measurePath = crownPath)
-                      })
+                      nowTreeFile <- paste0(crownPathSingles, treeName, ".laz")
 
+                      if(file.exists(paste0(nowTreeFile))){
+                        tryCatch({
+                          outPut <- computeTree_i(treeLAS.path = nowTreeFile,
+                                                  decimateTreeForFasterCrowns = decimateTreeForFasterCrowns,
+                                                  treeName = treeName,
+                                                  fileFinder = fileFinder,
+                                                  drawImage = drawImages,
+                                                  detail.level = detail.level,
+                                                  remeasureDBH = remeasureDBH,
+                                                  nowMeta = nowMeta,
+                                                  measurePath = crownPath)
+
+                        })
+
+                      }
 
 
                       #metaFrame <<- rbind(metaFrame, outPut)
@@ -1140,8 +2033,13 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
     } else {
       df <- data.frame(matrix(unlist(fdc), nrow=length(fdc), byrow=TRUE))
       colnames(df) <- colnames(fdc[[1]])
-      for(j in c(2:length(df[1,]))){ # all num unless tile
+      for(j in c(3:length(df[1,]))){ # all num unless file and treeName
         df[,j] <- as.numeric(as.character(df[,j]))
+      }
+      #special case, convert treeName if it works
+      tempTreeNames <- as.numeric(as.character(df[,2]))
+      if(sum(is.na(tempTreeNames))==0){
+        df[,2] <- tempTreeNames
       }
     }
 
@@ -1152,19 +2050,38 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
   }
 
 
+  metaFrame$id <- (metaFrame$treeName)
+  tryCatch({
+    tempIDs <- strtoi(metaFrame$treeName, base = 10L)
+    if(sum(is.na(tempIDs))<length(tempIDs)){
+      metaFrame$id <- tempIDs
+    } else {
+      metaFrame$id <- metaFrame$treeName
+    }
+  }, error = function(e) {
+    cat("Error in converting tree names to numbers - BEWARE!\n")
+  })
 
-  metaFrame$id <- metaFrame$treeName
-  checkList <- (merge(metaFrame, stemCoord, by = "id"))
+
+  checkList <- (merge(metaFrame, stemCoord, by = "id", suffixes = c("", ".old")))
   write.table(checkList, file = paste0(crownPath, fileFinder, "_metaCrowns_all_",format(Sys.time(), "%Y%m%d_%H%M"),".txt"),
               sep = "\t", na = "", row.names = FALSE)
 
 
+  #tempTreeNames <- tryCatch(as.integer(checkList$id), error=function(e) checkList$id, warning=function(w) checkList$id)
+  tempTreeNames <- strtoi(checkList$id, base = 10L)
+  if(sum(is.na(tempTreeNames)) > 0){
+    tempTreeNames <- checkList$id
+    }
+  checkList$id <- tempTreeNames
 
-
-  try({
-    checkList$id <- strtoi(checkList$id, base = 10L)
-  })
-
+# already done above
+  if(remeasureDBH){
+    applyThose <- !(checkList$est.x.DBH == 0 & checkList$est.y.DBH ==0)
+    checkList$dbh[applyThose] <- checkList[applyThose,which(colnames(checkList) == "est.DBH")]
+    checkList$x[applyThose]   <- checkList[applyThose,which(colnames(checkList) == "est.x.DBH")]
+    checkList$y[applyThose]   <- checkList[applyThose,which(colnames(checkList) == "est.y.DBH")]
+  }
   # long output format for crown parameters also measured
   checkList <- checkList[,c(which(colnames(checkList) == "x"),
                             which(colnames(checkList) == "y"),
@@ -1193,6 +2110,7 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                             which(colnames(checkList) == "inside"),
                             which(colnames(checkList) == "time_secs"))
   ]
+
   write.table(checkList, file = paste0(dbhPath, "trees_measured.txt"),
               sep = "\t", na = "", row.names = FALSE)
 
@@ -1229,6 +2147,7 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
 computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = FALSE,
                               detail.level = 0,
 
+                              drawNumberPoints = TRUE,
 
                               writeLAZ = TRUE, writePicture = TRUE, crownParameters = TRUE,
 
@@ -1316,28 +2235,6 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
 
 
 
-
-
-      #
-      # #WDEI
-      # fileFinder <- nowSet
-      # cutWindow = c(-150,-13, 65)
-      # cutWindow = c(-1000,-1000,2000)
-      #
-      # quantileIntensity = qI
-      # numberIntensity = 0
-      # CC_level = lev
-      # CC_numberPoints = numP
-      # clipHeight = h
-      # bottomCut = bot
-      # groundCutHeight = 0.5
-      #
-      # bushPreparation = FALSE
-      # filterSOR = TRUE
-      # do.CrownBase = TRUE
-      #
-      # rm(mode, cutWindow, quantileIntensity, CC_level, CC_numberPoints,
-      #     clipHeight, bottomCut, bushPreparation, filterSOR, do.CrownBase)
 
 
     }
@@ -1464,7 +2361,6 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
 
     stemCoord <- read.table(paste0(dbhPath,"trees_dbh.txt"), header = TRUE)
     stemCoord$dist <- sqrt(stemCoord$x^2 + stemCoord$y^2)
-    #stemCoord <- read.table("D:/Ebensee/EB149_ALLGO_100to300_dbh/trees_dbh.txt", header = T)
 
 
     # cat("We are analyzing the trees from the directory:\n",crownPathSingles,"\n")
@@ -1633,7 +2529,6 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
 
 
                         # ESTIMATE HEIGHT
-                        #treeLAS <- readLAS("D:/Ebensee/EB149_ALLGO_100to300_dbh/crowns_lim0.002_Z2_vox5/singleTrees/tree0018.las")
                         #metaVars$est.height <- round(treeLAS@header@PHB$`Max Z` - nowMeta$z + 1.3, 2)
 
                         up.h <- treeLAS@header@PHB$`Max Z`
@@ -1652,10 +2547,12 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                         if(writeLAZ) writeLAS(treeLAS, file = paste0(crownPathSingles, treeName, ".laz"))
 
                         if(writePicture){
-                          if(smallTrees){
-                            treeLAS <- decimate_points(treeLAS, random(10000))
-                          } else {
-                            treeLAS <- decimate_points(treeLAS, random(4000))
+                          if(metaVars$nPoints > 1000){
+                            if(smallTrees){
+                              treeLAS <- decimate_points(treeLAS, random(10000))
+                            } else {
+                              treeLAS <- decimate_points(treeLAS, random(4000))
+                            }
                           }
 
                           cat("save ")
@@ -1664,15 +2561,17 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                           tryCatch(
                             {
                               par(mfrow=c(1, 3), oma = c(0, 0, 3, 0))
-                              plot(treeLAS@data$X, treeLAS@data$Z, asp = 1, cex = 0.001)
+                              plot(treeLAS@data$X, treeLAS@data$Z, asp = 1, cex = 0.001, ylim = c(down.h, up.h))
                               abline(h = c(up.h, down.h), col = "red")
                               lines(x = c(nowMeta$x, maxPoint$X), y = c(down.h, up.h), col = "green", lty = 2)
-                              plot(treeLAS@data$Y, treeLAS@data$Z, asp = 1, cex = 0.001)
+                              plot(treeLAS@data$Y, treeLAS@data$Z, asp = 1, cex = 0.001, ylim = c(down.h, up.h))
                               abline(h = c(up.h, down.h), col = "red")
                               lines(x = c(nowMeta$y, maxPoint$Y), y = c(down.h, up.h), col = "green", lty = 2)
                               plot(treeLAS@data$X, treeLAS@data$Y, asp = 1, cex = 0.001)
                               lines(x = c(nowMeta$x, maxPoint$X), y = c(nowMeta$y, maxPoint$Y), col = "green", lwd = 2)
-                              plotTitle.sin <- paste0(fileFinder, "   ", treeName, "   dbh = ", nowMeta$dbh, "cm   est.h = ",metaVars$est.height, "m")
+                              plotTitle.sin <- paste0(fileFinder, "   ", treeName,
+                                                      "   dbh = ", nowMeta$dbh, "cm   est.h = ",
+                                                      metaVars$est.height, "m")
                               if(is.element("species", colnames(nowMeta))){
                                 if(!is.null(nowMeta$species)){
                                   plotTitle.sin <- paste0(fileFinder, "   ", nowMeta$species,"   ", treeName, "   dbh = ", nowMeta$dbh, "cm   est.h = ",metaVars$est.height, "m")
@@ -1684,7 +2583,9 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                               }
 
                               mtext(plotTitle.sin, outer = TRUE, cex = 2.0)
-
+                              if(drawNumberPoints){
+                                mtext(paste0("nPoints = ", thMk(metaVars$nPoints)), outer = TRUE, cex = 1.6, line = -2.7)
+                              }
                             }, error=function(e){
                               cat("Error when writing the image, closing device.\n")
                             })
@@ -1827,7 +2728,6 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
 
 
                         # ESTIMATE HEIGHT
-                        #treeLAS <- readLAS("D:/Ebensee/EB149_ALLGO_100to300_dbh/crowns_lim0.002_Z2_vox5/singleTrees/tree0018.las")
                         #metaVars$est.height <- round(treeLAS@header@PHB$`Max Z` - nowMeta$z + 1.3, 2)
 
                         up.h <- treeLAS@header@PHB$`Max Z`
@@ -1846,37 +2746,41 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                         if(writeLAZ) writeLAS(treeLAS, file = paste0(crownPathSingles, treeName, ".laz"))
 
                         if(writePicture){
-                          if(smallTrees){
-                            treeLAS <- decimate_points(treeLAS, random(10000))
-                          } else {
-                            treeLAS <- decimate_points(treeLAS, random(4000))
+                          if(metaVars$nPoints > 1000){
+                            if(smallTrees){
+                              treeLAS <- decimate_points(treeLAS, random(10000))
+                            } else {
+                              treeLAS <- decimate_points(treeLAS, random(4000))
+                            }
                           }
-
                           # Picture of tree from three sides with height measurement
                           png(paste0(crownPathSingles, treeName,".png"), height = 1024, width = 2048, type = "cairo")
                           tryCatch(
                             {
                               par(mfrow=c(1, 3), oma = c(0, 0, 3, 0))
-                              plot(treeLAS@data$X, treeLAS@data$Z, asp = 1, cex = 0.001)
+                              plot(treeLAS@data$X, treeLAS@data$Z, asp = 1, cex = 0.001, ylim = c(down.h, up.h))
                               abline(h = c(up.h, down.h), col = "red")
                               lines(x = c(nowMeta$x, maxPoint$X), y = c(down.h, up.h), col = "green", lty = 2)
-                              plot(treeLAS@data$Y, treeLAS@data$Z, asp = 1, cex = 0.001)
+                              plot(treeLAS@data$Y, treeLAS@data$Z, asp = 1, cex = 0.001, ylim = c(down.h, up.h))
                               abline(h = c(up.h, down.h), col = "red")
                               lines(x = c(nowMeta$y, maxPoint$Y), y = c(down.h, up.h), col = "green", lty = 2)
                               plot(treeLAS@data$X, treeLAS@data$Y, asp = 1, cex = 0.001)
                               lines(x = c(nowMeta$x, maxPoint$X), y = c(nowMeta$y, maxPoint$Y), col = "green", lwd = 2)
-                              plotTitle.sin <- paste0(fileFinder, "   ", treeName, "   dbh = ", nowMeta$dbh, "cm   est.h = ",metaVars$est.height, "m")
+                              plotTitle.sin <- paste0(fileFinder, "   ", treeName, "   dbh = ", round(nowMeta$dbh,2), "cm   est.h = ",metaVars$est.height, "m")
                               if(is.element("species", colnames(nowMeta))){
                                 if(!is.null(nowMeta$species)){
-                                  plotTitle.sin <- paste0(fileFinder, "   ", nowMeta$species,"   ", treeName, "   dbh = ", nowMeta$dbh, "cm   est.h = ",metaVars$est.height, "m")
+                                  plotTitle.sin <- paste0(fileFinder, "   ", nowMeta$species,"   ", treeName, "   dbh = ", round(nowMeta$dbh,2), "cm   est.h = ",metaVars$est.height, "m")
                                 }
                               } else if(is.element("Bart", colnames(nowMeta))){
                                 if(!is.null(nowMeta$Bart)){
-                                  plotTitle.sin <- paste0(fileFinder, "   ", nowMeta$Bart,"   ", treeName, "   dbh = ", nowMeta$dbh, "cm   est.h = ",metaVars$est.height, "m")
+                                  plotTitle.sin <- paste0(fileFinder, "   ", nowMeta$Bart,"   ", treeName, "   dbh = ", round(nowMeta$dbh,2), "cm   est.h = ",metaVars$est.height, "m")
                                 }
                               }
 
                               mtext(plotTitle.sin, outer = TRUE, cex = 2.0)
+                              if(drawNumberPoints){
+                                mtext(paste0("nPoints = ", thMk(metaVars$nPoints)), outer = TRUE, cex = 1.6, line = -2.7)
+                              }
 
                             }, error=function(e){
                               cat("Error when writing the image, closing device.\n")
@@ -2077,7 +2981,8 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                        do.CrownBase = do.CrownBase, groundCutHeight = groundCutHeight,
                        silent = silent, retainPointClouds = retainPointClouds,
                        nr_cores = nr_cores_params, treeNames = treeNames,
-                       smallTrees = smallTrees, dirPath = dirPath)
+                       smallTrees = smallTrees, dirPath = dirPath,
+                       drawImages = F)
 
 
 
@@ -2092,12 +2997,6 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
 
   cat("\n\n\n")
 
-
-
-  #cored <- read.table("D:/ato/Maissau/src/190809_first_Crowns_Maissau/cutCrowns_AllInfos.csv", sep = ";", dec = ",", header = TRUE)
-  #tspecies <- unique(cored$FK_Baumart[cored$cored == 1])
-  #cored[cored$cored == 1 & cored$FK_Baumart == tspecies[3],] #sonst Kirsche 1585 WDMX BHD 9cm
-  #cored[cored$cored == 1 & cored$FK_Baumart == tspecies[4],] #schwarzkiefer 1613 WDKI BHD 24cm
 
 
 

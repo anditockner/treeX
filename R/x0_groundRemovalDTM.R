@@ -5,6 +5,9 @@ if(!exists("LAS_veg")){
   LAS_veg_name <<- "blank"
   }
 
+# no longer supported in later R-versions
+# memory.limit(size = 100000)
+
 
 
 
@@ -13,7 +16,6 @@ if(!exists("LAS_veg")){
 #'
 #' Reads in a .las or .laz file from disk and extracts the vegetation cloud
 #' using the cloth simulation filter (scf) via lasground from the lidR package
-#' NEW: Can create an initial slice already! for the first faster clustering step
 #'
 #' @param LASfile input path of full (or cropped) geoslam .las data
 #' @param fileFinder user defined name to find this certain dataset in further processing
@@ -98,18 +100,11 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     }
 
 
-    # slicePath <- paste0(dirPath, "slice_", exportSlice.lowerLimit,
-    #           "to", exportSlice.upperLimit, "/")
-    slicePath <- groundPath
+     slicePath <- groundPath
 
 
 
     if(!dir.exists(slicePath)) dir.create(slicePath)
-    # if(!dir.exists(paste0(out.path20, groundPath))) dir.create(paste0(out.path20, groundPath))
-    # if(!dir.exists(paste0(out.path40, groundPath))) dir.create(paste0(out.path40, groundPath))
-    #
-    # inputFile.list <- list.files(inputFile.path, pattern = ".laz")
-    # inputFile <- "none.laz"
 
   }
 
@@ -220,40 +215,36 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       finLaz <- strfind(tempName, ".laz")
     }
 
-    
-    
-    
     cat("TRAJECTORY: Trying to find file in",paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1),"...\n    ..._results_traj.txt "))
-    
-    
-    trajfile <- paste0(dirname(LASfile), 
+
+
+    trajfile <- paste0(dirname(LASfile),
                        "/", substr(tempName, 1, finLaz-1), "_results_traj.txt")
     if(!file.exists(trajfile)){
-      trajfile <- paste0(dirname(LASfile), 
+      trajfile <- paste0(dirname(LASfile),
                          "/", substr(tempName, 1, finLaz-1), ".gs-traj")
     }
     if(!file.exists(trajfile)){
-      trajfile <- paste0(dirname(LASfile), 
+      trajfile <- paste0(dirname(LASfile),
                          "/", substr(tempName, 1, finLaz-1), ".txt")
     }
     if(!file.exists(trajfile)){
-      trajfile <- paste0(dirname(LASfile), 
+      trajfile <- paste0(dirname(LASfile),
                          "/", substr(tempName, 1, finLaz-1), "_traj.txt")
     }
     if(!file.exists(trajfile) & clip.trajectory.distance > 0){
       return("No trajectory found! Clipping cannot be done...\n\n")
     }
-    
+
     if(file.exists(trajfile)){
       txtExists <- TRUE
       file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.txt"), overwrite = T)
       cat("ok!    ")
     } else {
-      cat("xXx non ")
+        cat("xXx non ")
     }
     oneDone <- TRUE
     cat("..._results_traj_time.ply ")
-    
 
     trajfile <- paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1), "_results_traj_time.ply")
     if(file.exists(trajfile)){
@@ -330,12 +321,6 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
   # DTM SECTION ####
 
-  #dtm.path <- "D:/_later/Stefl_need_automatic_coregistration/_total_ground_veg/JA2_ground_min.grd"
-  #big <- readLAS("D:/_later/Stefl_need_automatic_coregistration/_total_ground_veg/JA2_clusterSlice_50to200.laz", select = "xyzcit0")
-  #big <- decimate_points(big, random(10))
-
-
-  
   if(clip.trajectory.distance > 0 && txtExists){
     clipTime <- Sys.time()
     cat("Reading trajectory for clipping input... ")
@@ -350,17 +335,15 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       }
       cat("(scan went", round(duration_sec/60,1), "mins)\n")
     })
-    
-    
 
 
-    traj2 <- traj[seq(from = 1, to = nrow(traj), by = 50),]
 
-
-    # trajectory creates usually 83 points per second,
+    # GeoSLAM trajectory contains approx. 83 points per second,
     # we reduce them to 2 points per second for alpha-hulling
     #traj$X.time[2] - traj$X.time[1] original spacing of points is 1/100 of a second
     #traj2$X.time[2] - traj2$X.time[1] # now trajectory is spaced every 0.5 seconds
+
+    traj2 <- traj[seq(from = 1, to = nrow(traj), by = 50),]
     traj <- traj2
     traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
     rm(traj2)
@@ -387,7 +370,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     area.traj <- area.owin(owin.traj)
 
     big_sm <- decimate_points(big, random(1))
-    #big_sm <- readLAS("D:/Ebensee/_in_laz/097_20065_1911_0730_100pct_scan.laz", select = "xyzcit0")
+
     outer <- Polygon(hull.traj$bdry[[1]]) # for clipping LAS point cloud
 
 
@@ -404,11 +387,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       hull.traj$yrange <- hull.traj$yrange + shiftY
     }
 
-#
-# plot(outer)
-#     #big <- big_sm
-# big@data$X <- big@data$X + shiftX
-# big@data$Y <- big@data$Y + shiftY
+
     pointsBefore <- big@header@PHB$`Number of point records`
     big <- clip_roi(big, outer)
     pointsAfter <- big@header@PHB$`Number of point records`
@@ -459,11 +438,16 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
         # read in raster file
         cat("Reading input dtm from",dtm.path,"\n")
         dtm_y <- raster(dtm.path)
+
+        dtSave <- crop(dtm_y, extent(c(big@header$`Min X`-0.5, big@header$`Max X`+0.5,
+                                       big@header$`Min Y`-0.5, big@header$`Max Y`+0.5)))
+        writeRaster(dtSave, paste0(dirPath, groundPath, fileFinder, "_ground_clip.tif"), overwrite = TRUE)
+        writeRaster(dtSave, paste0(dirPath, groundPath, fileFinder, "_ground_clip.grd"), overwrite = TRUE)
+        rm(dtSave)
       }, error = function(error_condition) {
         warning("Error in reading the dtm-model, file", basename(dtm.path), "not found!")
         return()
       })
-    dtCrop <- crop(dtm_y, extent(c(big@header$`Min X`, big@header$`Max X`, big@header$`Min Y`, big@header$`Max Y`)))
 
 
 
@@ -500,58 +484,66 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
 
     # NDOM ####
-    cat(paste0("(*) NDOM in assembly... "))
-    ndom <- canop - dtCrop
-    ndom@extent
-    #ndom@data@values[is.na(ndom@data@values)] <- 0
-    ndom@data@values[!is.na(ndom@data@values) & ndom@data@values < 0] <- 0
-    ndom@data@values[!is.na(ndom@data@values) & ndom@data@values > 44] <- NA
-    ndom@data@values[!is.na(ndom@data@values) & ndom@data@values > 41] <- 41
-    if(clip.radius != 0){
-      #create a 40 m radius clipping
-      cc_20 <- dismo::circles(data.frame(clip.x, clip.y), lonlat = F, clip.radius)
-      ndom <- mask(crop(ndom, polygons(cc_20)),polygons(cc_20))
-    }
-    ndom@data@values[!is.na(ndom@data@values)][1:100] <- 41
-    writeRaster(ndom, paste0(dirPath, groundPath, fileFinder, "_ndom.tif"), overwrite = TRUE)
-    writeRaster(ndom, paste0(dirPath, groundPath, fileFinder, "_ndom.grd"), overwrite = TRUE)
-    cat(" saved!\n")
-    ndom@data@values[is.na(ndom@data@values)] <- 0
+    tryCatch(
+      {
+        #dtCrop <- crop(dtm_y, extent(c(big@header$`Min X`, big@header$`Max X`, big@header$`Min Y`, big@header$`Max Y`)))
+        dtCrop <- dtm_y
+        cat(paste0("(*) NDOM in assembly... "))
+        ndom <- canop - dtCrop
+        ndom@extent
+        #ndom@data@values[is.na(ndom@data@values)] <- 0
+        ndom@data@values[!is.na(ndom@data@values) & ndom@data@values < 0] <- 0
+        ndom@data@values[!is.na(ndom@data@values) & ndom@data@values > 44] <- NA
+        ndom@data@values[!is.na(ndom@data@values) & ndom@data@values > 41] <- 41
+        if(clip.radius != 0){
+          #create a 40 m radius clipping
+          cc_20 <- dismo::circles(data.frame(clip.x, clip.y), lonlat = F, clip.radius)
+          ndom <- mask(crop(ndom, polygons(cc_20)),polygons(cc_20))
+        }
+        ndom@data@values[!is.na(ndom@data@values)][1:100] <- 41
+        writeRaster(ndom, paste0(dirPath, groundPath, fileFinder, "_ndom.tif"), overwrite = TRUE)
+        writeRaster(ndom, paste0(dirPath, groundPath, fileFinder, "_ndom.grd"), overwrite = TRUE)
+        cat(" saved!\n")
+        ndom@data@values[is.na(ndom@data@values)] <- 0
 
-    png(filename = paste0(dirPath, groundPath, imgPath, fileFinder,"_NDOM_raw.png"), width = 800, height = 800)
-    par(xpd = F, mar = c(2,0,5,0), oma = c(0,0,0,0), xaxs='i', yaxs='i')
-    if(clip.radius != 0){
-      plot(0, type = "n",
-           xlim = c(-clip.radius + clip.x, clip.radius + clip.x),
-           ylim = c(-clip.radius + clip.y, clip.radius + clip.y), asp = 1, main = fileFinder, cex.main = 4, axes = F)
-      raster::plot(ndom,  col = c(rainbow(19, start = 0.76, end = 0.60, rev = T), "#56008F", "#000000"), # every color is 1 m step (40 m span, 41 = taller than 40)
-                   box = F, axes = F, legend = F,
-                   asp = 1, add = T)
-    } else {
-      raster::plot(ndom,  col = c(rainbow(19, start = 0.76, end = 0.60, rev = T), "#56008F", "#000000"), # every color is 1 m step (40 m span, 41 = taller than 40)
-                   box = F, axes = F, legend = F, cex.main = 4,
-                   asp = 1, main = fileFinder)
-    }
-    axis(1, cex.axis = 2, lwd = 2)
+        png(filename = paste0(dirPath, groundPath, imgPath, fileFinder,"_NDOM_raw.png"), width = 800, height = 800)
+        par(xpd = F, mar = c(2,0,5,0), oma = c(0,0,0,0), xaxs='i', yaxs='i')
+        if(clip.radius != 0){
+          plot(0, type = "n",
+               xlim = c(-clip.radius + clip.x, clip.radius + clip.x),
+               ylim = c(-clip.radius + clip.y, clip.radius + clip.y), asp = 1, main = fileFinder, cex.main = 4, axes = F)
+          raster::plot(ndom,  col = c(rainbow(19, start = 0.76, end = 0.60, rev = T), "#56008F", "#000000"), # every color is 1 m step (40 m span, 41 = taller than 40)
+                       box = F, axes = F, legend = F,
+                       asp = 1, add = T)
+        } else {
+          raster::plot(ndom,  col = c(rainbow(19, start = 0.76, end = 0.60, rev = T), "#56008F", "#000000"), # every color is 1 m step (40 m span, 41 = taller than 40)
+                       box = F, axes = F, legend = F, cex.main = 4,
+                       asp = 1, main = fileFinder)
+        }
+        axis(1, cex.axis = 2, lwd = 2)
 
-    lgd_ <- c(">",seq(40, 1, by = -2))
-    lgd_[nchar(lgd_) < 2] <- paste0("  ", lgd_[nchar(lgd_) < 2])
-    legend("topright", title = "NDOM [m]",
-           legend = lgd_, pt.cex = 3,
-           fill = c("#000000", "#56008F", rainbow(19, start = 0.76, end = 0.60, rev = F)),
-           border = NA,
-           y.intersp = 0.7, cex = 1, text.font = 1, box.lty = 0)
-    if(clip.radius != 0){
-      clip(x1 = -clip.radius + clip.x + 0.5, x2 = clip.radius + clip.x - 0.5,
-           y1 = -clip.radius + clip.y + 0.5, y2 = clip.radius + clip.y - 0.5)
-    }
-    abline(h = clip.y, v = clip.x, lwd = 1)
-    if(clip.radius > 10){
-      draw.circle(clip.x, clip.y, 10, lwd = 2, lty = 2)
-    } else if(clip.radius > 20){
-      draw.circle(clip.x, clip.y, 20, lwd = 2, lty = 2)
-    }
-    dev.off()
+        lgd_ <- c(">",seq(40, 1, by = -2))
+        lgd_[nchar(lgd_) < 2] <- paste0("  ", lgd_[nchar(lgd_) < 2])
+        legend("topright", title = "NDOM [m]",
+               legend = lgd_, pt.cex = 3,
+               fill = c("#000000", "#56008F", rainbow(19, start = 0.76, end = 0.60, rev = F)),
+               border = NA,
+               y.intersp = 0.7, cex = 1, text.font = 1, box.lty = 0)
+        if(clip.radius != 0){
+          clip(x1 = -clip.radius + clip.x + 0.5, x2 = clip.radius + clip.x - 0.5,
+               y1 = -clip.radius + clip.y + 0.5, y2 = clip.radius + clip.y - 0.5)
+        }
+        abline(h = clip.y, v = clip.x, lwd = 1)
+        if(clip.radius > 10){
+          draw.circle(clip.x, clip.y, 10, lwd = 2, lty = 2)
+        } else if(clip.radius > 20){
+          draw.circle(clip.x, clip.y, 20, lwd = 2, lty = 2)
+        }
+        dev.off()
+
+      }, error = function(error_condition) {
+        warning("NDOM not created... Is that a problem?\n")
+      })
 
 
     gstop <- Sys.time()
@@ -656,28 +648,56 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     }
 
 
-    # create handy slices ####
+
+    # create practical slices for easier reading data ####
     if(exportSlice.upperLimit > 0){
       allStop <- Sys.time()
-      cat("\nGround and vegetation splitting completed in ")
+      cat("\nGround and vegetation splitting completed in a ")
       print.difftime(round(allStop - allStart,1))
-      cat("\nCreating a slice from", exportSlice.lowerLimit*100,"to",exportSlice.upperLimit*100,"cm: \n")
 
-      # NORMALIZATION IS ALREADY DONE!
-      slicePath <- paste0(dirPath,groundPath,fileFinder,"_clusterSlice_",
-                          exportSlice.lowerLimit*100,"to",exportSlice.upperLimit*100,".laz")
-      voxSlicePath <- paste0(dirPath,groundPath,fileFinder,"_clusterSlice_",
-                             exportSlice.lowerLimit*100,"to",exportSlice.upperLimit*100,"_vox.laz")
+      cat("\nCreating additional slices: \n")
 
-      #rm(dtm, dtm_fine, dtm3)
-      slice <- filter_poi(big, Z < exportSlice.upperLimit, Z > exportSlice.lowerLimit)
+
+
+      slicePath <- paste0(dirPath, groundPath, fileFinder,
+                          "_clusterSlice_100to300.laz")
+      #voxSlicePath <- paste0(dirPath, groundPath, fileFinder,
+      #                       "_clusterSlice_100to300_vox.laz")
+      slice <- filter_poi(big, Z < 3,
+                          Z > 1)
       slice_un <- unnormalize_height(slice)
-      cat("Creating global slice file at", slicePath, "... ")
+
+
+      cat("   o) slice for tree detection from 100 to 300 cm... ")
       writeLAS(slice_un, slicePath)
-      cat("done.\n")
+      cat("done!\n")
+
+
+      if(exportSlice.lowerLimit != 1 | exportSlice.upperLimit != 3){
+
+        slicePath <- paste0(dirPath,groundPath,fileFinder,"_clusterSlice_",
+                            exportSlice.lowerLimit*100,"to",exportSlice.upperLimit*100,".laz")
+        #voxSlicePath <- paste0(dirPath,groundPath,fileFinder,"_clusterSlice_",
+        #                       exportSlice.lowerLimit*100,"to",exportSlice.upperLimit*100,"_vox.laz")
+
+
+        #rm(dtm, dtm_fine, dtm3)
+        slice <- filter_poi(big, Z < exportSlice.upperLimit, Z > exportSlice.lowerLimit)
+        slice_un <- unnormalize_height(slice)
+
+        cat("   o) desired special slice ", exportSlice.lowerLimit*100, "-", exportSlice.upperLimit*100, " cm... ", sep = "")
+        writeLAS(slice_un, slicePath)
+        cat("done!\n")
+      }
+
+
+
+
+
+
 
       if(additionalSlices){
-        cat("Creating additional slices... 120-140... ")
+        cat("   o) additional slices... 120-140... ")
         # 0 to 2
         slice <- filter_poi(big, Z < 1.4, Z > 1.2)
         slice_un <- unnormalize_height(slice)
@@ -715,7 +735,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       rm(slice, slice_un)
     }
   }  else {
-    ## old stuff - creating new ground model and so on...
+    ## old stuff - creating new ground model
     # CREATING NEW DTM MODELS ####
     {
 
@@ -896,7 +916,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
       if(1==2){
       #if(denoiseDEM){
-        # would be nice, but is faaaar to slow (takes up to 10 hours for 0.5 ha)
+        # would be nice, but is way to slow (takes up to 10 hours for 0.5 ha)
         big <- classify_noise(big, sor(k = 6, m = 2))
         noiseLAS <- filter_poi(big, Classification == LASNOISE)
         writeLAS(noiseLAS, file = paste0(dirPath, groundPath, fileFinder, "_noise.laz"))
@@ -911,38 +931,39 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       # DEM - 0.1 res and 0.01 disk size ####
       dem.res <- 0.1
       dem.p2r <- 0.01
-      #big <- readLAS("F:/_Jauch_ALL/in_sf/Jauch/0_Bach_Boendl/2023-08-16_15-22-11_Jauch_bei_Bach_regen_100pct_scan.laz", select = "xyzit")
 
       {
-      cat(paste0("(*) CANOPY DEM res",dem.res*100,"cm discblur",dem.p2r*100,"cm... "))
-      co <- capture.output(canop <- grid_canopy(big, res = dem.res, p2r(dem.p2r)))
-      #plot(canop, main = paste0(groundCutHeight," DEM res",dem.res, " p2r",dem.p2r))
+        cat(paste0("(*) CANOPY DEM res",dem.res*100,"cm discblur",dem.p2r*100,"cm... "))
+        co <- capture.output(canop <- grid_canopy(big, res = dem.res, p2r(dem.p2r)))
+        #plot(canop, main = paste0(groundCutHeight," DEM res",dem.res, " p2r",dem.p2r))
 
-      if(rainFilter > 0){
-        rf1 <- Sys.time()
-        for(i in 1:rainFilter){
-          if(i == 1){
-            cat("RAIN FILTER ")
-            normi <- big
+        if(rainFilter > 0){
+          rf1 <- Sys.time()
+          for(i in 1:rainFilter){
+            if(i == 1){
+              cat("RAIN FILTER ")
+              normi <- big
+            }
+            cat(i)
+            cat("x ")
+            normi <- normalize_height(normi, canop)
+            normi <- filter_poi(normi, Z <= -0.01)
+            normi <- unnormalize_height(normi)
+            co <- capture.output(canop <- grid_canopy(normi, res = dem.res, p2r(dem.p2r)))
+            #plot(canop, main = paste0(groundCutHeight," DEM res",dem.res, " p2r",dem.p2r))
           }
-          cat(i)
-          cat("x ")
-          normi <- normalize_height(normi, canop)
-          normi <- filter_poi(normi, Z <= -0.01)
-          normi <- unnormalize_height(normi)
-          co <- capture.output(canop <- grid_canopy(normi, res = dem.res, p2r(dem.p2r)))
-          #plot(canop, main = paste0(groundCutHeight," DEM res",dem.res, " p2r",dem.p2r))
+          rf2 <- Sys.time()
+          timeRainFilter <- as.difftime(rf2 - rf1)
+          cat("DONE IN", round(timeRainFilter,1), units(timeRainFilter),"\n")
         }
-        rf2 <- Sys.time()
-        timeRainFilter <- as.difftime(rf2 - rf1)
-        cat("DONE IN", round(timeRainFilter,1), units(timeRainFilter),"\n")
-      }
-      #writeRaster(canop, paste0("D:/canop_final.tif"), overwrite = TRUE)
       }
       writeRaster(canop, paste0(dirPath, groundPath, fileFinder, "_dem.tif"), overwrite = TRUE)
       writeRaster(canop, paste0(dirPath, groundPath, fileFinder, "_dem.grd"), overwrite = TRUE)
 
       # NDOM ####
+      tryCatch(
+        {
+
       cat(paste0("(*) NDOM in assembly... "))
       ndom <- canop - dtm_y
       ndom@extent
@@ -997,6 +1018,10 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       dev.off()
 
 
+      }, error = function(error_condition) {
+          warning("NDOM not created... Is that a problem?\n")
+        })
+
 
 
       gstop <- Sys.time()
@@ -1021,7 +1046,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       gc()
 
 
-      vegetation <- filter_poi(big, Classification < 2) #0 = never classified, #1 = unclassified (vegetation) #18 = noise
+      vegetation <- filter_poi(big, Classification != 2) #0 = never classified, #1 = unclassified (vegetation) #18 = noise
 
       # "SOR" Noise filtering
       if(doFilter){
@@ -1082,13 +1107,12 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       allStop <- Sys.time()
       cat("\nGround and vegetation splitting completed in ")
       print.difftime(round(allStop - allStart,1))
-      cat("\nCreating a slice from", exportSlice.lowerLimit*100,"to",exportSlice.upperLimit*100,"cm: \n")
 
       # NORMALIZATION
       useCoarseGrid <- FALSE
       tryCatch(
         {
-          cat("Normalizing height... ")
+          cat("\nCreating additional slices - normalizing height... ")
           big <- normalize_height(big, dtm_y, na.rm = TRUE)
           cat("done!\n")
         }, error = function(error_condition) {
@@ -1110,75 +1134,42 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
           })
       }
 
-      # previous: load in old DTMs, deprecated
-      {
-        # if(!noDTMs){
-        #   # all that above
-        # } else {
-        #   # load external DTMs
-        #   cat("Loading previous dtms...\n")
-        #   tryCatch(
-        #     {
-        #       cat("DTM Using input model from", paste0(dirPath,groundPath,fileFinder,"_ground_c1.grd...\n"))
-        #       # read in raster file
-        #       dtm_fine <- raster(paste0(dirPath,groundPath,fileFinder,"_ground_c1.grd"))
-        #     }, error = function(error_condition) {
-        #       cat("Error in reading the dtm-model, try the second one...")
-        #       useCoarseGrid <<- TRUE
-        #     })
-        #   if(!useCoarseGrid){
-        #     tryCatch(
-        #       {
-        #         cat("Normalizing height... ")
-        #         vegetation <- normalize_height(vegetation, dtm_fine, na.rm = TRUE)
-        #         cat("done!\n")
-        #       }, error = function(error_condition) {
-        #         cat("-> problem with the normalisation, the DTM model seems to be faulty...\n")
-        #         useCoarseGrid <<- TRUE
-        #       })
-        #   }
-        #
-        #   if(useCoarseGrid){
-        #     # take raster file 2, because first is not available or produces some NAs at normalization
-        #     cat("DTM Using rough 1 x 1 m input model from", paste0(dirPath,groundPath,fileFinder,"_ground_a2.grd...\n"))
-        #     tryCatch(
-        #       {
-        #         # read in raster file
-        #         dtm_rough <- raster(paste0(dirPath,groundPath,fileFinder,"_ground_a2.grd"))
-        #       }, error = function(error_condition) {
-        #         cat("Error in reading the dtm-model, file not found!")
-        #         cat("\n\n--> There will be warnings and the slices will be mishapped!!!\n\n")
-        #       })
-        #
-        #     tryCatch(
-        #       {
-        #         cat("Normalizing roughly height... ")
-        #         vegetation <- normalize_height(vegetation, dtm_rough, na.rm = TRUE) # need to save it in that intermediate object or it cannot unnormalize anymore
-        #         cat("done!\n")
-        #       }, error = function(error_condition) {
-        #         cat("Error in creating the rough dtm model!\n")
-        #       })
-        #   }
-        # }
+
+      slicePath <- paste0(dirPath, groundPath, fileFinder,
+                          "_clusterSlice_100to300.laz")
+      #voxSlicePath <- paste0(dirPath, groundPath, fileFinder,
+      #                       "_clusterSlice_100to300_vox.laz")
+      slice <- filter_poi(big, Z < 3,
+                          Z > 1)
+      slice_un <- unnormalize_height(slice)
+
+      cat("   o) slice for tree detection from 100 to 300 cm... ")
+      writeLAS(slice_un, slicePath)
+      cat("done!\n")
+
+      if(exportSlice.lowerLimit != 1 | exportSlice.upperLimit != 3){
+
+        slicePath <- paste0(dirPath,groundPath,fileFinder,"_clusterSlice_",
+                            exportSlice.lowerLimit*100,"to",exportSlice.upperLimit*100,".laz")
+        #voxSlicePath <- paste0(dirPath,groundPath,fileFinder,"_clusterSlice_",
+        #                       exportSlice.lowerLimit*100,"to",exportSlice.upperLimit*100,"_vox.laz")
+
+        #rm(dtm, dtm_fine, dtm3)
+        slice <- filter_poi(big, Z < exportSlice.upperLimit, Z > exportSlice.lowerLimit)
+        slice_un <- unnormalize_height(slice)
+
+        cat("   o) desired special slice ", exportSlice.lowerLimit*100, "-", exportSlice.upperLimit*100, " cm... ", sep = "")
+        writeLAS(slice_un, slicePath)
+        cat("done!\n")
       }
 
 
-      slicePath <- paste0(dirPath,groundPath,fileFinder,"_clusterSlice_",
-                          exportSlice.lowerLimit*100,"to",exportSlice.upperLimit*100,".laz")
-      voxSlicePath <- paste0(dirPath,groundPath,fileFinder,"_clusterSlice_",
-                             exportSlice.lowerLimit*100,"to",exportSlice.upperLimit*100,"_vox.laz")
 
 
-      #rm(dtm, dtm_fine, dtm3)
-      slice <- filter_poi(big, Z < exportSlice.upperLimit, Z > exportSlice.lowerLimit)
-      slice_un <- unnormalize_height(slice)
-      cat("Creating global slice file at", slicePath, "... ")
-      writeLAS(slice_un, slicePath)
-      cat("done.\n")
 
       if(additionalSlices){
 
-        cat("Creating additional slices... 120-140... ")
+        cat("   o) additional slices... 120-140... ")
         # 0 to 2
         slice <- filter_poi(big, Z < 1.4, Z > 1.2)
         slice_un <- unnormalize_height(slice)
@@ -1237,4 +1228,670 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   sink()
 
 }
+
+
+
+
+
+
+
+
+
+
+
+#' Takes the vegetation cloud from "extractVegetation" and seperates the stems
+#' according to their intensity values
+#'
+#' @param fileFinder user defined name of the dataset
+#' @param quantileIntensity in percent, how many most intense points are to be kept
+#' @param CC_level a connected components parameter for fineness in cloudcompare (default: 10)
+#' @param CC_numberPoints the minimum size in points of a component to not be dropped (default: 1000)
+#' @param clipHeight in m if you need to set all stem seeds to a uniform height
+#' @param bottomCut only in combination with clipHeight, in m lower border for cutting of relative heights, default to 0
+#' @param bushPreparation if TRUE then there is additional density filtering to remove low branches and bushes
+#' @param numberIntensity if you rather want to specify a number of most intense points to be kept
+#' @param silent fewer outputs if set to TRUE
+#' @param fast if TRUE, no detailled per stem information will be calculated
+#'
+#' @export
+stemSplit <- function(fileFinder, quantileIntensity = 15, CC_level = 10, CC_numberPoints = 1000,
+                      clipHeight = 3, bottomCut = 1, bushPreparation = FALSE, filterSOR = FALSE,
+                      numberIntensity = 0, silent = TRUE, fast = TRUE, groundCutHeight = 0.5, amplitudeLowPass = 25.8,
+                      cutWindow = c(-1000, -1000, 2000), retainPointClouds = FALSE, dirPath = paste0(getwd(),"/")){
+  #### PREPARING SECTION ####
+
+  start <- Sys.time()
+  fileFinder <- removeUmlaut(fileFinder)
+
+  dirPath <- paste0(getwd(),"/")
+  metaInfo <- data.frame("infile" = fileFinder,
+                         "qI" = 0,
+                         "level" = CC_level,
+                         "numP" = CC_numberPoints,
+                         "minZ" = bottomCut,
+                         "maxZ" = clipHeight,
+                         "stems" = NA,
+                         "maxPS" = NA,
+                         "avPS" = NA,
+                         "minPS" = NA,
+                         "points" = NA,
+                         "percSV" = NA,
+                         "percSI" = NA,
+                         "points.int" = NA,
+                         "percIV" = NA,
+                         "points.veg" = NA,
+                         "qPoints" = 0,
+                         "setString" = "",
+                         "time" = 0)
+
+  # Using CloudCompare to do Component Labelling
+  level <-  CC_level
+  numberOfPoints <-  CC_numberPoints
+
+  ## EITHER FIXED NUMBER OF THRESHOLD INTENSITY, OR QUANTILE
+  if(numberIntensity == 0){
+    threshold_percent <- quantileIntensity
+    metaInfo$qI <- quantileIntensity
+
+    setString <- generateSetString(fileFinder, mode = "COMP", threshold_percent = threshold_percent,
+                                   bottomCut = bottomCut, clipHeight = clipHeight,
+                                   bushPreparation = bushPreparation, filterSOR = filterSOR,
+                                   level = level, numberOfPoints = numberOfPoints, cutWindow = cutWindow,
+                                   silent = silent)
+    fileCode <- generateSetString(fileFinder, mode = "COMP", threshold_percent = threshold_percent,
+                                  bottomCut = bottomCut, clipHeight = clipHeight,
+                                  bushPreparation = bushPreparation, filterSOR = filterSOR,
+                                  silent = silent)
+
+  } else {
+    threshold <- numberIntensity # getting all intensity values above 30.000
+    metaInfo$qPoints <- numberIntensity
+
+    setString <- generateSetString(fileFinder, mode = "COMP", threshold = threshold,
+                                   bottomCut = bottomCut, clipHeight = clipHeight,
+                                   bushPreparation = bushPreparation, filterSOR = filterSOR,
+                                   level = level, numberOfPoints = numberOfPoints, cutWindow = cutWindow,
+                                   silent = silent)
+    fileCode <- generateSetString(fileFinder, mode = "COMP", threshold = threshold,
+                                  bottomCut = bottomCut, clipHeight = clipHeight,
+                                  bushPreparation = bushPreparation, filterSOR = filterSOR,
+                                  silent = silent)
+  }
+
+  dbhPath <- paste0(dirPath,setString,"_dbh/")
+  if(!dir.exists(dbhPath)) dir.create(dbhPath)
+
+  sink(paste0(dbhPath,fileFinder,"_stemSplit_",format(Sys.time(), "%Y%m%d_%H%M"),"_Rcons.txt"), append = TRUE, split = TRUE)
+
+  cat("Starting ELLFO Stem Component Detection for",fileFinder,"on",format(Sys.time()),"\n\n")
+  #cat("\nLet's go with ALLGO cluster splitting :D!\n")
+  cat("Working path is ",dbhPath,"\n")
+  if(!exists("LAS_veg")){
+    LAS_veg <<- NA
+    LAS_veg_name <<- "blank"
+  }
+
+
+  {
+    cat("Creating no folder structure yet, maybe later... done!\n")
+    #
+    # path.output.cluster.end <- paste0(dbhPath,"fineCluster/")
+    # path.output.cluster.endgraph <- paste0(dbhPath,"graphSlice/")
+    #
+    # if(!dir.exists(paste0(dbhPath,"residuals/"))) dir.create(paste0(dbhPath,"residuals/"))
+    # if(!dir.exists(path.output.cluster.end)) dir.create(path.output.cluster.end)
+    # if(!dir.exists(path.output.cluster.endgraph)) dir.create(path.output.cluster.endgraph)
+    #
+    # if(referenced){
+    #   plotReferenceFile(fileFinder = fileFinder, ref.file = ref, ref.plot_id = ref.plot_id,
+    #                     cutWindow = cutWindow, writePNG = TRUE, pathPNG = dbhPath)
+    # }
+    # cat("done!\n")
+  }
+
+
+
+
+  options(warn=-1) #no warnings for you, Angela
+  #But note that turning off warning messages globally might not be a good idea.
+  #To turn warnings back on, use: options(warn=0)
+
+  if(!silent){
+    cat("     components are seperated in level",level,"\n")
+    cat("     and we delete all components below",thMk(numberOfPoints),"points.\n")
+    cat("     Floor starts at",groundCutHeight*100,"cm above ground.\n\n")
+    cat("Or in a nutshell:",setString,"\n\n")
+
+    cat("Can we start?\n")
+    for(j in 1:5){
+      Sys.sleep(1)
+      cat("... ")
+    }
+    cat("\n\nLet's go!\n")
+  } else {
+    cat("Starting with:",setString,"\n\n")
+  }
+  metaInfo$setString <- setString
+
+
+
+  if(2 == 1){
+
+
+
+    if(file.exists(paste0(dbhPath,"slice_cluster.laz"))){
+      cat("Skipping creation of cluster, loading old slice_cluster.laz file... ")
+      sliVox <<- readLAS(paste0(dbhPath,"slice_cluster.laz"))
+      cat("done!\n")
+    } else {
+      cat("Gathering diffuse slice file... \n")
+
+      groundPath <- v.env$groundPath
+      slicePath <- paste0(dirPath,groundPath,fileFinder,"_clusterSlice_",bottomCut*100,"to",clipHeight*100,".laz")
+
+
+
+
+
+
+
+
+
+    }
+      # Creating the slice and the component file, see below
+
+      #...
+
+      ### VOXEL SYSTEMATICS #### NOT IMPLEMENTED YET
+      vox.size <- 0.02
+      cat("\nVoxelize points with a raster of",vox.size*100,"cm... ")
+      {
+        #t1 <- Sys.time()
+        #thin4 <- voxelize_points(slice, vox.size)
+        t2 <- Sys.time()
+        #cat("lidR done")
+        #print.difftime(t2-t1)
+        thin5 <- tlsSample(slice, smp.voxelize(vox.size)) #bei TLS 0.015 # bei PLS ist 0.02 anders # auch da ist das mit smp.voxelize neu # iPAd 0.015
+        t3 <- Sys.time()
+        cat("done by treeLS. ")
+        print.difftime(round(t3-t2, 1))
+      }
+      sliVox <<- thin5
+      rm(slice, thin5)
+      gc()
+
+
+
+
+
+
+  }
+
+
+  if(1 == 1){ ### old version
+    groundPath <- v.env$groundPath
+    slicePath <- paste0(dirPath,groundPath,fileFinder,"_clusterSlice_",bottomCut*100,"to",clipHeight*100,".laz")
+    slice <- NA
+
+    #unlink(paste0(dirPath,setString), recursive = TRUE)
+    #dir.create(dbhPath)
+    #cat("new: ", fileFinder,"_intSeg_diffuse.las")
+    #diffuseFile <- paste0(dirPath,substring(setString, 1, which(strsplit(setString, "_")[[2]]=="l")-2),"_intSeg_diffuse.las")
+    diffuseFile <- paste0(dbhPath, fileCode,"_intSeg_diffuse.las")
+    ClassifiedOutFileName <- paste0(setString,"_rawCloud_intensity.las") #only for CloudCompare
+    dbhSidePath <- paste0(dbhPath, "cc_side/")
+    dir.create(dbhSidePath)
+
+    if(!file.exists(diffuseFile)){
+      # NO DIFFUSE FILE, CHECK SLICE FILE FIRST
+
+      ### CREATING SLICE FILE ####
+      if(!file.exists(slicePath)){
+
+
+
+        # CREATE RAW SLICE
+
+        if(is.na(LAS_veg) || fileFinder != LAS_veg_name){
+          cat("Reading in: ",paste0(dirPath,groundPath,fileFinder,"_raw_veg.las"),"...\n",sep = "")
+          vegetation <- readLAS(file = paste0(dirPath,groundPath,fileFinder,"_raw_veg.las"), select = selector)
+
+          if(retainPointClouds){
+            cat("Retaining LAS_veg variable for ")
+            LAS_veg <<- vegetation #retain big LAS file in memory, less performant
+            LAS_veg_name <<- fileFinder
+            cat(LAS_veg_name,"\n")
+          }
+
+        } else {
+          cat("We use the prevailing \"LAS_veg\" variable to extract the",LAS_veg_name,"point cloud...\n")
+          vegetation <- LAS_veg
+        }
+
+
+
+        tryCatch(
+          {
+            # read in raster file
+            dtm1 <- raster(paste0(dirPath,groundPath,fileFinder,"_ground_min.grd"))
+          }, error = function(error_condition) {
+            cat("Error in reading the dtm-model, file not found!")
+            return()
+          })
+
+        useCoarseGrid <- FALSE
+        # NORMALIZATION
+        tryCatch(
+          {
+            cat("Normalizing height... ")
+            vegetation <- normalize_height(vegetation, dtm1, na.rm = TRUE)
+            cat("done!\n")
+          }, error = function(error_condition) {
+            cat("-> problem with the normalisation, the DTM model seems to be faulty...\n")
+            useCoarseGrid <- TRUE
+          })
+
+        if(useCoarseGrid){
+          # read in raster file 2, because first one produces some NAs at normalization
+          cat("\"Roughly\" normalizing height (using the coarse 1 x 1 m dtm)...")
+          tryCatch(
+            {
+              # read in raster file
+              dtm2 <- raster(paste0(dirPath,groundPath,fileFinder,"_ground_rough.grd"))
+            }, error = function(error_condition) {
+              cat("Error in reading the rough dtm-model, file not found!")
+              return()
+            })
+
+          tryCatch(
+            {
+              vegetation <- normalize_height(vegetation, dtm2, na.rm = TRUE) # need to save it in that intermediate object or it cannot unnormalize anymore
+              cat("done!\n")
+            }, error = function(error_condition) {
+              cat("Error in creating the rough dtm model!")
+              return()
+            })
+        }
+
+        #rm(dtm, dtm_fine, dtm3)
+        slice <- filter_poi(vegetation, Z < clipHeight, Z > bottomCut)
+        slice_un <- unnormalize_height(slice)
+        cat("Creating global slice file at",slicePath,"... ")
+        writeLAS(slice_un, slicePath)
+        cat("done.\n")
+
+        numP <- slice@header@PHB$`Number of point records`
+
+        if(sum(cutWindow == c(-1000,-1000,2000)) == 3){
+          cat("No cutting because of no cutWindow setting!\n")
+        } else {
+          cat("Just for output: clipping raw",thMk(numP),"points to dimensions", cutWindow, "leaves")
+          XL <- cutWindow[1]
+          YL <- cutWindow[2]
+          width <- cutWindow[3]
+          slice_un <- filter_poi(slice_un, X > XL, X < XL + width, Y > YL, Y < YL + width)
+          numP <- slice_un@header@PHB$`Number of point records`
+          cat(thMk(numP),"points.\n")
+        }
+
+        cat("Creating local cropped slice file at",slicePath,"... ")
+        writeLAS(slice_un, paste0(dbhPath,"slice_raw.laz"))
+        cat("done, retaining slice to do intensity component analysis.\n")
+
+        slice <- slice_un
+        rm(vegetation, slice_un)
+        gc()
+
+        stop <- Sys.time()
+        print.difftime(round(stop - start, 1))
+
+
+      } else # READING OLD SLICE FILE
+      {
+        cat("-> we use prevailing raw slice file, copying... ")
+        if(sum(cutWindow == c(-1000,-1000,2000)) == 3){
+          file.copy(slicePath, paste0(dbhPath,"slice_raw.laz"))
+          cat("complete file copied.\n")
+        } else {
+          cat("reading in... ")
+          slice <- readLAS(slicePath, select = selector)
+          numP <- slice@header@PHB$`Number of point records`
+          cat("found originally",thMk(numP), "points.\n")
+          cat("Clipping to dimensions", cutWindow, "leaves ")
+
+          XL <- cutWindow[1]
+          YL <- cutWindow[2]
+          width <- cutWindow[3]
+          slice <- filter_poi(slice, X > XL, X < XL + width, Y > YL, Y < YL + width)
+
+          numP <- slice@header@PHB$`Number of point records`
+          cat(thMk(numP),"points, writing out slice_raw.laz... ")
+          writeLAS(slice, paste0(dbhPath,"slice_raw.laz"))
+          cat("done!\n")
+        }
+      }
+
+
+      # CREATING DIFFUSE FILE
+      if(is.na(slice)){
+        cat("Reading in slice file... ")
+        slice <- readLAS(slicePath, select = selector)
+        cat("done, there were", thMk(slice@header@PHB$`Number of point records`), "points found.\n")
+      }
+
+      ### SOR FILTERING ###
+      if(filterSOR){
+        cat("Applying noise filter from inside point cloud (no separate settings specified):")
+        slice <- filter_poi(slice, Classification < 2) #0 = never classified, #1 = unclassified (vegetation)  #18 = noise
+        cat("remaining",thMk(slice@header@PHB$`Number of point records`),"points (approx.",round(slice@header@PHB$`Number of point records`/numP*100,1),"%).\n")
+      }
+
+      ### INTENSITY-FILTER ####
+      cat("There were", thMk(slice@header@PHB$`Number of point records`), "points found.\n")
+      metaInfo$points.veg <- slice@header@PHB$`Number of point records`
+      cat("\nINTENSITY-FILTERING -")
+      if(exists("threshold")){
+        cat(" Absolute: \nIntensity higher than",thMk(threshold),"will be kept...\n")
+      } else {
+        threshold <- quantile(slice@data$Intensity,1 - threshold_percent/100) # all above are 5 %
+        cat(" Relative: \nKeeping",round(threshold_percent,1),"% of all points with an intensity higher than",thMk(threshold),"...\n")
+      }
+      lasInt <- filter_poi(slice, Intensity > threshold)
+      percentRem <- lasInt@header@PHB$`Number of point records`/slice@header@PHB$`Number of point records`
+      metaInfo$points.int <- lasInt@header@PHB$`Number of point records`
+      cat("There are", thMk(lasInt@header@PHB$`Number of point records`), "points remaining (equals only",
+          round(percentRem*100,1),"% of original data).\n")
+
+      if(lasInt@header@PHB$`X offset` < 0) lasInt@header@PHB$`X offset` <- 0 # correcting offsets, else cannot write las with negative offset... stupid rules...
+      if(lasInt@header@PHB$`Y offset` < 0) lasInt@header@PHB$`Y offset` <- 0
+      if(lasInt@header@PHB$`Z offset` < 0) lasInt@header@PHB$`Z offset` <- 0
+      lasInt <- add_lasattribute(lasInt, 1:lasInt@header@PHB$`Number of point records`, "StemID", 'Stem ID Int Clust')
+      #lidR::plot(lasInt)
+
+      if(is.element("Amplitude", unlist(lasInt@header@VLR$Extra_Bytes$`Extra Bytes Description`))){
+        lasInt <- filter_poi(lasInt, Amplitude < amplitudeLowPass)
+        cat("Additional Amplitude filtering done!\n")
+      }
+
+      writeLAS(lasInt, file = diffuseFile)
+      file.copy(diffuseFile, paste0(dbhSidePath,ClassifiedOutFileName))
+      rm(threshold, slice)
+
+
+
+
+
+    } else # READING IN OLD DIFFUSE FILE
+    {
+      cat("The diffuse file already exists (skipping intensity filtering part).\n")
+      lasInt <- readLAS(file = diffuseFile, select = selector)
+      cat("There were", thMk(lasInt@header@PHB$`Number of point records`), "points found.\n")
+      file.copy(diffuseFile, paste0(dbhSidePath,ClassifiedOutFileName))
+      cat("File",diffuseFile,"copied succesfully to the new directory.\n")
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+  #### PROCESSING CONNECTED COMPONENTS ####
+  if(!silent)lidR::plot(lasInt, color = "Intensity")
+  rm(lasInt)
+  cat("\nUsing CloudCompare tool \"Label Connected Components\"...\n")
+  if(fast){
+    cat("Processing type is fast!\n")
+  } else {
+    cat("Processing type is slow but extensive!\n")
+  }
+
+  File.exe <- "Cloudcompare.exe"
+  if(!exists("Path.CloudCompare")) Path.CloudCompare <- '"C:/Program Files/CloudCompare/"'
+  Path.exe <- paste0(Path.CloudCompare,File.exe)
+
+
+
+  #CloudCompare -O myhugecloud.bin -SS SPATIAL 0.1
+  command.exe <- paste0(" ", Path.exe,
+                        " -SILENT -o -GLOBAL_SHIFT AUTO ", dbhSidePath, ClassifiedOutFileName,
+                        " -C_EXPORT_FMT LAS -EXTRACT_CC ",level," ",numberOfPoints
+  )
+  if(silent){
+    system(command.exe, show.output.on.console = FALSE)
+  } else {
+    cat(command.exe,"\n")
+    system(command.exe)
+  }
+
+
+  #### MERGING INTO SINGLE FILE #####
+
+  # opening all files in the dir
+  files <- list.files(path = dbhSidePath, full.names = TRUE)
+
+  if(!file.exists(diffuseFile)){
+    # we already did the filtering before, no need to create file again
+    cat("Generating output file from",files[1],"\n")
+    file.copy(files[1], diffuseFile)
+  } else {
+    #cat("No need to recreate output file\n")
+  }
+  file.remove(files[1]) # exclude input file in same folder
+  files <- list.files(path = dbhSidePath, full.names = TRUE) # list again
+  total <- length(files)
+  metaInfo$stems <- total
+  sizeList <- data.frame("stemID"=c(1:total))
+
+
+
+
+  for(i in 1:total){
+    cat("-",i,"of",total,"-")
+    if(!silent)cat("read file",files[i])
+
+    if(i %% 50 == 0){
+      cat("Emptying mergedLAS...")
+      if(!exists("mergedLASall")){
+        mergedLASall <- mergedLAS
+        rm(mergedLAS)
+        cat(" new done!\n")
+      } else {
+        mergedLASall <- rbind(mergedLASall, mergedLAS)
+        rm(mergedLAS)
+        cat(" appended!\n")
+      }
+    }
+
+    if(!exists("mergedLAS")){
+      # First tree is exclusive, because we need to create new LAS object, change some day
+
+      mergedLAS <- readLAS(file.path(files[i]), select = selector)
+      mergedLAS$StemID <- i
+
+      tempLAS <- mergedLAS
+    } else {
+      tempLAS <- readLAS(file.path(files[i]), select = selector)
+
+      tempLAS@data$StemID <- i
+      mergedLAS <- rbind(mergedLAS, tempLAS)
+    }
+
+
+
+
+
+    if(!fast){
+      ## DISCOVER ALL POSSIBLE VARIABLES FROM SINGLE STEM FILE HERE
+      heightSpan <- round(tempLAS@header@PHB$`Max Z` - tempLAS@header@PHB$`Min Z`,2)
+      proj2d <- data.frame("x" = tempLAS@data$X, "y" = tempLAS@data$Y, "z" = tempLAS@data$Z)
+      medx <- median(proj2d$x)
+      medy <- median(proj2d$y)
+      proj2d$dist <- apply(proj2d, 1, function(x) pointDistance(c(x[1],x[2]),c(medx, medy), lonlat = FALSE))
+      #plot(sort(proj2d$dist, decreasing = TRUE)  )
+
+      border <- quantile(proj2d$dist, 0.9) # removing 10 % of all furthest away points from center
+      proj2d$remove <- proj2d$dist > border
+      borderHeight <- round(tempLAS@header@PHB$`Min Z` + 2, 1) # only up to a height of 2 m
+      medCenter <- proj2d[proj2d$remove == FALSE,] # here are only "valid" points, who are not far away
+      medCenter <- medCenter[medCenter$z < borderHeight,] # and also lower than the border cutoff
+
+      # coordinates of single stem
+      sizeList$x[i] <- median(medCenter$x)
+      sizeList$y[i] <- median(medCenter$y)
+      sizeList$z[i] <- min(medCenter$z)
+
+      #calculate distance for all points again from new absolute tree center
+      medx <- median(medCenter$x)
+      medy <- median(medCenter$y)
+      proj2d$dist <- apply(proj2d, 1, function(x) pointDistance(c(x[1],x[2]),c(medx, medy), lonlat = FALSE))
+      sizeList$minDist[i] <- quantile(proj2d$dist, 0.05) # getting the distance of 10 % closest points
+      sizeList$maxDist[i] <- quantile(proj2d$dist, 0.95) # getting the distance of 10 % furthest points
+      sizeList$heightSpan[i] <- heightSpan
+      sizeList$numberOfPoints[i] <- tempLAS@header@PHB$`Number of point records`
+    } else {
+      #sizeList$x[i] <- NULL
+      #sizeList$y[i] <- NULL
+      #sizeList$z[i] <- NULL
+      # coordinates of single stem
+      sizeList$x[i] <- median(tempLAS@data$X)
+      sizeList$y[i] <- median(tempLAS@data$Y)
+      sizeList$z[i] <- median(tempLAS@data$Z)
+      sizeList$minDist[i] <- NULL
+      sizeList$maxDist[i] <- NULL
+      sizeList$heightSpan[i] <- round(tempLAS@header@PHB$`Max Z` - tempLAS@header@PHB$`Min Z`,2)
+      sizeList$numberOfPoints[i] <- tempLAS@header@PHB$`Number of point records`
+    }
+
+  }
+
+  if(!exists("mergedLASall")){
+    # less than 50 trees,
+    mergedLASall <- mergedLAS
+    rm(mergedLAS)
+  } else {
+    # more than 50, getting last trees into merged set
+    if(exists("mergedLAS")){
+      cat("Putting together last mergedLAS...")
+      mergedLASall <- rbind(mergedLASall, mergedLAS)
+      cat(" done!\n")
+      rm(mergedLAS)
+    }
+  }
+
+
+  #unique(mergedLAS@data$StemID)
+
+  # Random Stem ID Part for viewing
+  tryCatch(
+    {
+      mergedLASall <- add_lasattribute(mergedLASall, 0, "randomCol", "Random Stem ID")
+      idlist <- unique(mergedLASall@data$StemID)
+      rnlist <- sample(0:65535, length(idlist))
+      mergedLASall@data$randomCol <- rnlist[match(mergedLASall@data$StemID, idlist)]
+    }, error=function(e) cat("Something went wrong with random stem numbers...\n"))
+
+
+
+  cat("\nCreated a stemset of",length(unique(mergedLASall@data$StemID)),"levels of trees.\n")
+  tryCatch(writeLAS(mergedLASall, paste0(dbhPath,setString,"_intSeg_Stems.las")),
+           error=function(e) cat("Something went wrong with outputting .las file...\n"))
+  tryCatch(write.table(sizeList, paste0(dbhPath,setString,"_sizeList.txt"), row.names = FALSE, sep = "\t"),
+           error=function(e) cat("Something went wrong with outputting .txt file...\n"))
+  metaInfo$maxPS <- max(sizeList$numberOfPoints)
+  metaInfo$minPS <- min(sizeList$numberOfPoints)
+  metaInfo$avPS <- round(mean(sizeList$numberOfPoints),0)
+  cat("Output file generation over.\n")
+  lidR::plot(mergedLASall, color = "StemID")
+  metaInfo$points <- mergedLASall@header@PHB$`Number of point records`
+  metaInfo$percSV <- round(metaInfo$points / metaInfo$points.veg * 100,1)
+  metaInfo$percSI <- round(metaInfo$points / metaInfo$points.int * 100,1)
+  metaInfo$percIV <- round(metaInfo$points.int / metaInfo$points.veg * 100,1)
+  metaInfo$time <- format(Sys.time(), "%y%m%d_%X")
+  rm(mergedLASall)
+
+
+  #### OUTPUT META-INFO ######
+
+
+  cat("Writing output metaInfo...\n")
+  tryCatch(
+    {
+      metaOld <- read.table(paste0(dirPath,"metaStemTrys.txt"), header = TRUE)
+      #meta <- merge.data.frame(x = meta, y = metaOld, by = c("file","qI","qPoints"), all.x = TRUE)
+
+      if(is.na(metaInfo$points.int)){
+        location <- match(paste0(metaInfo$infile, metaInfo$qI, metaInfo$qPoints),
+                          paste0(metaOld$infile, metaOld$qI, metaOld$qPoints))
+        if(!is.na(location)) metaInfo$points.int <- metaOld$points.int[location]
+      }
+      if(is.na(metaInfo$points.veg)){
+        cat("Missing veg points...\n")
+        location <- match(paste0(metaInfo$infile, metaInfo$qI, metaInfo$qPoints),
+                          paste0(metaOld$infile, metaOld$qI, metaOld$qPoints))
+        if(!is.na(location)) metaInfo$points.veg <- metaOld$points.veg[location]
+      }
+
+      # S... stems (seperated with missing noises < numP)
+      # I... intensity (thinned vegetation to qI)
+      # V... vegetation (whole point cloud in)
+
+      #for example percSV means what share of total vegetation (all points) is in the stem file
+
+      metaInfo$percSV <- round(metaInfo$points / metaInfo$points.veg * 100,1)
+      metaInfo$percSI <- round(metaInfo$points / metaInfo$points.int * 100,1)
+      metaInfo$percIV <- round(metaInfo$points.int / metaInfo$points.veg * 100,1)
+      indexDoubled <- match(metaInfo$setString, metaOld$setString)
+      if(!is.na(indexDoubled)){
+        cat("Already did this set, rewrite old one...\n")
+        metaOld <- metaOld[-indexDoubled,]
+      }
+      meta <- rbind.data.frame(metaOld, metaInfo)
+      meta <- meta[order(meta$numP),]
+      meta <- meta[order(meta$level),]
+      meta <- meta[order(meta$qI),]
+      meta <- meta[order(meta$infile),]
+      write.table(meta, paste0(dirPath,"metaStemTrys.txt"), row.names = FALSE, sep = "\t")
+
+
+    },
+    error=function(e){
+      if(file.exists(paste0(dirPath,"metaStemTrys.txt"))){
+        write.table(metaInfo,paste0(dirPath,"metaStemTrys_ERR.txt"), row.names = FALSE, sep = "\t")
+        cat("Error in metadata writing.")
+      } else {
+        cat("Need to create new metadata-file.\n")
+        write.table(metaInfo,paste0(dirPath,"metaStemTrys.txt"), row.names = FALSE, sep = "\t")
+      }
+    }
+  )
+
+  cat("Done.\n")
+
+
+
+  if(!retainPointClouds){
+    LAS_veg <<- NA #removing old LAS_veg to ensure performance
+    gc()
+  }
+
+  cat("\nEnd of routine.\n")
+  stop <- Sys.time()
+  print.difftime(round(stop - start,1))
+  cat("Deleting conComp folder...", dbhSidePath,"\n")
+  unlink(substr(dbhSidePath,1,nchar(dbhSidePath)-1), recursive = TRUE)
+  rm(start, stop)
+  #print(metaInfo)
+  cat("Case",setString,"is closed.\n\n")
+  options(warn=0)
+
+  sink()
+}
+
+
 

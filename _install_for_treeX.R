@@ -5,12 +5,13 @@ devtools::install_github('tiagodc/TreeLS')
 #remotes::install_github('tiagodc/TreeLS')
 #install.packages("TreeLS", dep = T)
 
-packs_to_install <- c("lidR", "RANN", "conicfit", "alphashape3d", "alphahull", 
-                      "plotrix", "dbscan", "doParallel", "data.table", 
+packs_to_install <- c("lidR", "RANN", "conicfit", "alphashape3d", "alphahull",
+                      "plotrix", "dbscan", "doParallel", "data.table",
                       "ks", "Metrics", "VoxR", "RCSF", "Morpho",
-                      "ADPclust", "densityClust", "dae", "spatstat",  
-                      "flexclust", "matrixStats", "Distance", "lmfor", 
-                      "geosphere", "recexcavAAR", "DescTools", "foreach")
+                      "ADPclust", "densityClust", "dae", "spatstat",
+                      "flexclust", "matrixStats", "Distance", "lmfor",
+                      "geosphere", "recexcavAAR", "DescTools", "foreach",
+                      "benchmarkme", "stringi", "raster")
 
 #install.packages("doMC", repos="http://R-Forge.R-project.org")
 #devtools::install_github("omegahat/RDCOMClient")
@@ -54,4 +55,4 @@ install.packages(packs_to_install, dep = T)
 # library("lidR")
 # library("TreeLS")
 # library("dbscan")
-# 
+#

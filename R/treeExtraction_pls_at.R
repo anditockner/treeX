@@ -1,20 +1,15 @@
 library("lidR")
-library("VoxR")
 library("TreeLS")
-library("spatstat")
-library("sf")
 library("RANN")
 library("conicfit")
 library("alphashape3d")
 library("alphahull")
 library("plotrix")
 library("dbscan")
-library("Metrics")
-library("mgcv")
 library("doParallel")
-library("ks")
-library("dismo")
-library("data.table")
+library("sf")
+library("sp")
+library("spatstat")
 library("Morpho") # for transformation of point clouds
 
 
@@ -390,6 +385,45 @@ deldupMclust <- function (clust, prec = NULL, ncol = NULL, dz = TRUE)
 }
 
 
+
+
+
+
+# prec = 4
+# minsx = min(datax)
+# maxsx = max(datax)
+# minsy = min(datay)
+# maxsy = max(datay)
+# minsr = 0.01 * max(datax, datay)
+# maxsr = (max(datax, datay) - min(datax, datay))
+# nsc = 5
+# nc = NULL
+#
+# minsd = NULL
+# maxsd = NULL
+# brminx = minsx
+# brmaxx = maxsx
+#
+# brminy = minsy
+# brmaxy = maxsy
+# brminr = minsr
+# brmaxr = maxsr
+#
+# brmaxit = 1000
+#
+# datax=coords[,1]
+# datay=coords[,2]
+# method="const"
+# # nx=1, ny=1, nr=1, # nx=10, ny=10, nr=25,
+# nx=10
+# ny=10
+# nr=5 #nx=25, ny=25, nr=5,
+# minsr=0.01
+# maxsr=0.5
+# nc=1 # nc=1,
+# # minsd=0.1, maxsd=0.5,
+# bw=0.01 # bw=0.05
+#
 
 
 #' @export
