@@ -565,8 +565,8 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
 
   i=1
   j=1
-  suppressPackageStartupMessages(library("rgl")
-  suppressPackageStartupMessages(library("conicfit")
+  suppressPackageStartupMessages(library("rgl"))
+  suppressPackageStartupMessages(library("conicfit"))
 
 
   timePar1 <- Sys.time()
@@ -1468,23 +1468,15 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
                           r.start <- dbh.circle/100/2
                         }
 
-                        if( (class(try(
-                          BHD_fit <- LMcircleFit(plot.j[, 1:2], ParIni=c(x.start, y.start, r.start),  IterMAX = 20)
-
-                        ))=="try-error")==FALSE ){
+                        dbh.circle.2 <- r.start*100*2
+                        tryCatch({
                           BHD_fit <- LMcircleFit(plot.j[, 1:2], ParIni=c(x.start, y.start, r.start),  IterMAX = 20)
                           pos.dbh2.x <- BHD_fit[1]
                           pos.dbh2.y <- BHD_fit[2]
                           dbh.circle.2 <- BHD_fit[3]*2*100
-                          # GAU CHANGE ANDI ERROR JUNI 2021
-                          # pos.dbh2.x <- BHD_fit[, 1]
-                          # pos.dbh2.y <- BHD_fit[, 2]
-                          # dbh.circle.2 <- BHD_fit[, 3]*2*100
-
                           if(allFiles) circle(pos.dbh2.x, pos.dbh2.y, r=dbh.circle.2/100/2, border=3, lwd=2) #neuer Kreis-Fit
-                        }else{
-                          dbh.circle.2 <- r.start*100*2
-                        }
+                        }, error = function(error_condition){
+                        })
 
                         # dbh.circle.pratt <- CircleFitByPratt(plot.j[, 1:2])[3]*2*100 #Anderer Circ algo
 
@@ -1814,6 +1806,19 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
                       y.start <- y.circle
                       r.start <- dbh.circle/100/2
                     }
+
+
+                    dbh.circle.2 <- r.start*100*2
+                    tryCatch({
+                      BHD_fit <- LMcircleFit(plot.j[, 1:2], ParIni=c(x.start, y.start, r.start),  IterMAX = 20)
+                      pos.dbh2.x <- BHD_fit[1]
+                      pos.dbh2.y <- BHD_fit[2]
+                      dbh.circle.2 <- BHD_fit[3]*2*100
+                      if(allFiles) circle(pos.dbh2.x, pos.dbh2.y, r=dbh.circle.2/100/2, border=3, lwd=2) #neuer Kreis-Fit
+                    }, error = function(error_condition){
+                    })
+
+
 
                     if( (class(try(
                       BHD_fit <- LMcircleFit(plot.j[, 1:2], ParIni=c(x.start, y.start, r.start),  IterMAX = 20)
