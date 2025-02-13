@@ -565,8 +565,8 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
 
   i=1
   j=1
-  suppressPackageStartupMessages(library("rgl"))
-  suppressPackageStartupMessages(library("conicfit"))
+  suppressPackageStartupMessages(library("rgl", quietly = T))
+  suppressPackageStartupMessages(library("conicfit", quietly = T))
 
 
   timePar1 <- Sys.time()
@@ -609,38 +609,38 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     # ERRORS INDUCED BY LEAVING EMPTY BRACKETS OVER WHOLE PARALLEL ROUTINE! ###
 
 
-    suppressPackageStartupMessages(library("doParallel"))
-    suppressPackageStartupMessages(library("data.table"))
-    suppressPackageStartupMessages(library("ADPclust"))
-    suppressPackageStartupMessages(library("densityClust"))
-    suppressPackageStartupMessages(library("dae"))
-    suppressPackageStartupMessages(library("plyr"))
-    suppressPackageStartupMessages(library("spatstat"))
-    suppressPackageStartupMessages(library("alphahull"))
-    suppressPackageStartupMessages(library("RANN"))
-    suppressPackageStartupMessages(library("flexclust"))
-    suppressPackageStartupMessages(library("sp"))
-    suppressPackageStartupMessages(library("matrixStats"))
-    suppressPackageStartupMessages(library("Distance"))
-    suppressPackageStartupMessages(library("lmfor"))
-    suppressPackageStartupMessages(library("rgl"))
-    suppressPackageStartupMessages(library("conicfit"))
-    suppressPackageStartupMessages(library("MASS"))
-    suppressPackageStartupMessages(library("igraph"))
-    suppressPackageStartupMessages(library("geosphere"))
-    suppressPackageStartupMessages(library("pracma"))
-    suppressPackageStartupMessages(library("DescTools"))
-    suppressPackageStartupMessages(library("mgcv"))
-    suppressPackageStartupMessages(library("recexcavAAR"))
-    suppressPackageStartupMessages(library("raster"))
-    suppressPackageStartupMessages(library("rlas"))
-    suppressPackageStartupMessages(library("lidR"))
-    suppressPackageStartupMessages(library("TreeLS"))
-    suppressPackageStartupMessages(library("dbscan"))
-    #suppressPackageStartupMessages(library("VoxR"))
-    #suppressPackageStartupMessages(library("spatialEco"))
-    #suppressPackageStartupMessages(library("Rdistance"))
-    #suppressPackageStartupMessages(library("edci"))
+    suppressPackageStartupMessages(library("doParallel", quietly = T))
+    suppressPackageStartupMessages(library("data.table", quietly = T))
+    suppressPackageStartupMessages(library("ADPclust", quietly = T))
+    suppressPackageStartupMessages(library("densityClust", quietly = T))
+    suppressPackageStartupMessages(library("dae", quietly = T))
+    suppressPackageStartupMessages(library("plyr", quietly = T))
+    suppressPackageStartupMessages(library("spatstat", quietly = T))
+    suppressPackageStartupMessages(library("alphahull", quietly = T))
+    suppressPackageStartupMessages(library("RANN", quietly = T))
+    suppressPackageStartupMessages(library("flexclust", quietly = T))
+    suppressPackageStartupMessages(library("sp", quietly = T))
+    suppressPackageStartupMessages(library("matrixStats", quietly = T))
+    suppressPackageStartupMessages(library("Distance", quietly = T))
+    suppressPackageStartupMessages(library("lmfor", quietly = T))
+    suppressPackageStartupMessages(library("rgl", quietly = T))
+    suppressPackageStartupMessages(library("conicfit", quietly = T))
+    suppressPackageStartupMessages(library("MASS", quietly = T))
+    suppressPackageStartupMessages(library("igraph", quietly = T))
+    suppressPackageStartupMessages(library("geosphere", quietly = T))
+    suppressPackageStartupMessages(library("pracma", quietly = T))
+    suppressPackageStartupMessages(library("DescTools", quietly = T))
+    suppressPackageStartupMessages(library("mgcv", quietly = T))
+    suppressPackageStartupMessages(library("recexcavAAR", quietly = T))
+    suppressPackageStartupMessages(library("raster", quietly = T))
+    suppressPackageStartupMessages(library("rlas", quietly = T))
+    suppressPackageStartupMessages(library("lidR", quietly = T))
+    suppressPackageStartupMessages(library("TreeLS", quietly = T))
+    suppressPackageStartupMessages(library("dbscan", quietly = T))
+    #suppressPackageStartupMessages(library("VoxR", quietly = T))
+    #suppressPackageStartupMessages(library("spatialEco", quietly = T))
+    #suppressPackageStartupMessages(library("Rdistance", quietly = T))
+    #suppressPackageStartupMessages(library("edci", quietly = T))
 
     angle_points <- function(xp, yp, xz, yz) {
       if(xp>xz&yp>yz|xp==xz&yp>yz|xp>xz&yp==yz){#1.Quadrant
@@ -1817,27 +1817,6 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
                       if(allFiles) circle(pos.dbh2.x, pos.dbh2.y, r=dbh.circle.2/100/2, border=3, lwd=2) #neuer Kreis-Fit
                     }, error = function(error_condition){
                     })
-
-
-
-                    if( (class(try(
-                      BHD_fit <- LMcircleFit(plot.j[, 1:2], ParIni=c(x.start, y.start, r.start),  IterMAX = 20)
-
-                    ))=="try-error")==FALSE ){
-                      BHD_fit <- LMcircleFit(plot.j[, 1:2], ParIni=c(x.start, y.start, r.start),  IterMAX = 20)
-                      pos.dbh2.x <- BHD_fit[1]
-                      pos.dbh2.y <- BHD_fit[2]
-                      dbh.circle.2 <- BHD_fit[3]*2*100
-                      # GAU CHANGE ANDI ERROR JUNI 2021
-                      # pos.dbh2.x <- BHD_fit[, 1]
-                      # pos.dbh2.y <- BHD_fit[, 2]
-                      # dbh.circle.2 <- BHD_fit[, 3]*2*100
-
-
-                      if(allFiles) circle(pos.dbh2.x, pos.dbh2.y, r=dbh.circle.2/100/2, border=3, lwd=2) #neuer Kreis-Fit
-                    }else{
-                      dbh.circle.2 <- r.start*100*2
-                    }
 
                     #dbh.circle.pratt <- CircleFitByPratt(plot.j[, 1:2])[3]*2*100 #Anderer Circ algo
                     if(allFiles) {
