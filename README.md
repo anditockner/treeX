@@ -10,16 +10,30 @@ All files will be renamed according to a file identifier specified in fileFinder
 The input file is specified in LASfile. 
 
 
-Main functions: 
+# Main Functions
 
-# preparing folder structure with pre-processing of point cloud and creating ground model
-extractVegetation(LASfile, fileFinder)
+* preparing folder structure with pre-processing of point cloud and creating ground model
 
-# detecting tree positions and measuring diameter at 1.30 m (DBH)
-clustSplit(fileFinder = fileFinder)
+       extractVegetation(LASfile, fileFinder)
 
-# instance segmentation starting from list defining tree DBH positions
-crownFeel(fileFinder)
+* detecting tree positions and measuring diameter at 1.30 m (DBH)
 
-# calculating individual tree metrics (height, crown projection area, crown hull volume)
-computeTreeParams(fileFinder)
+       clustSplit(fileFinder = fileFinder)
+
+* instance segmentation starting from list defining tree DBH positions
+
+       crownFeel(fileFinder)
+
+* calculating individual tree metrics (height, crown projection area, crown hull volume)
+
+       computeTreeParams(fileFinder)
+
+
+
+# Citation
+
+For citing this methodology and more detailed overwiev, please refer to following paper
+
+Tockner et al. 2022: Automatic tree crown segmentation using dense forest point clouds from Personal Laser Scanning (PLS)
+
+https://doi.org/10.1016/j.jag.2022.103025
