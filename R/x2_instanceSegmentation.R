@@ -1,4 +1,4 @@
-globalTimeDiff <<- "no time"
+globalTimeDiff <<- "no timez"
 
 
 
