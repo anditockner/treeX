@@ -2,8 +2,16 @@ R-package for tree detection and instance segmentation from ground-based point c
 
 A sample workflow can be found in the script "WORKFLOW_sample.R". 
 
-Installing the package from GitHub: 
-devtools::install_github("https://github.com/anditockner/treeX")
+# Installation
+
+Install the package from GitHub via
+
+       devtools::install_github("https://github.com/anditockner/treeX")
+
+Before first use, make sure to also run the script "_install_for_treeX.R" once for installing the required libraries. 
+
+       source("https://raw.githubusercontent.com/anditockner/treeX/refs/heads/main/_install_for_treeX.R")
+
 
 The software generates a folder structure given in the path specified in dirPath. 
 All files will be renamed according to a file identifier specified in fileFinder. 
@@ -32,7 +40,7 @@ The input file is specified in LASfile.
 
 # Citation
 
-For citing this methodology and more detailed overwiev, please refer to following paper
+For citing this methodology and for more details on the implementation, please refer to following paper
 
 Tockner et al. 2022: Automatic tree crown segmentation using dense forest point clouds from Personal Laser Scanning (PLS)
 
