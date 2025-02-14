@@ -18,7 +18,7 @@ The input file is specified in LASfile.
 
 * detecting tree positions and measuring diameter at 1.30 m (DBH)
 
-       clustSplit(fileFinder = fileFinder)
+       clustSplit(fileFinder)
 
 * instance segmentation starting from list defining tree DBH positions
 
