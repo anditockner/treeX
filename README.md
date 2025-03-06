@@ -1,3 +1,5 @@
+![treeX logo](https://github.com/user-attachments/assets/b8431b3a-b4d8-485d-a8d8-5ecd2548a17f)
+
 R-package for tree detection and instance segmentation from ground-based point clouds. 
 
 A sample workflow can be found in the script "WORKFLOW_sample.R". 
@@ -11,6 +13,7 @@ Install the package from GitHub via
 Before first use, make sure to also run the script "_install_for_treeX.R" once for installing the required libraries. 
 
        source("https://raw.githubusercontent.com/anditockner/treeX/refs/heads/main/_install_for_treeX.R")
+
 
 
 The software generates a folder structure given in the path specified in dirPath. 
