@@ -641,8 +641,8 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     #suppressPackageStartupMessages(library("spatialEco", character.only = T))
     #suppressPackageStartupMessages(library("Rdistance", character.only = T))
     #suppressPackageStartupMessages(library("edci", character.only = T))
-    tryCatch(suppressPackageStartupMessages(library("edci")), 
-             error = function(e){})
+    #tryCatch(suppressPackageStartupMessages(library("edci")), 
+    #         error = function(e){})
       
     
     
