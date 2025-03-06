@@ -641,7 +641,11 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     #suppressPackageStartupMessages(library("spatialEco", character.only = T))
     #suppressPackageStartupMessages(library("Rdistance", character.only = T))
     #suppressPackageStartupMessages(library("edci", character.only = T))
-
+    tryCatch(suppressPackageStartupMessages(library("edci")), 
+             error = function(e){})
+      
+    
+    
     angle_points <- function(xp, yp, xz, yz) {
       if(xp>xz&yp>yz|xp==xz&yp>yz|xp>xz&yp==yz){#1.Quadrant
         wink <- atan((xp-xz)/(yp-yz)) * 360/(2*pi)
