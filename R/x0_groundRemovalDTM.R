@@ -76,8 +76,8 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
   groundPath <- v.env$groundPath
   if(!dir.exists(paste0(dirPath, groundPath))) dir.create(paste0(dirPath, groundPath))
-  imgPath <- "png/"
-  if(!dir.exists(paste0(dirPath, groundPath, imgPath))) dir.create(paste0(dirPath, groundPath, imgPath))
+  imgPath <- "_images/"
+  if(!dir.exists(paste0(dirPath, imgPath))) dir.create(paste0(dirPath, imgPath))
 
 
   if(clip.trajectory.distance > 0 && exportClippedLAS){
@@ -397,7 +397,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     cat("Remain", thMk(pointsAfter), "pts after clipping to shape.\n")
     cat("We lost", thMk(pointsLost), "pts (or", round(pointsLost/pointsBefore*100,1), "% of original pts)\n")
 
-    png(paste0(dirPath, groundPath, imgPath, fileFinder, "_traj_clipping.png"),
+    png(paste0(dirPath, imgPath, fileFinder, "_traj_clipping.png"),
         height = diff(hull.traj$yrange)*5, width = diff(hull.traj$xrange)*5)
     plot(big_sm$Y ~ big_sm$X, cex = 0.0001, asp = 1,
          xlab = "x [m]", ylab = "y [m]", xlim = hull.traj$xrange, ylim = hull.traj$yrange,
@@ -506,7 +506,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
         cat(" saved!\n")
         ndom@data@values[is.na(ndom@data@values)] <- 0
 
-        png(filename = paste0(dirPath, groundPath, imgPath, fileFinder,"_NDOM_raw.png"), width = 800, height = 800)
+        png(filename = paste0(dirPath, imgPath, fileFinder,"_NDOM_raw.png"), width = 800, height = 800)
         par(xpd = F, mar = c(2,0,5,0), oma = c(0,0,0,0), xaxs='i', yaxs='i')
         if(clip.radius != 0){
           plot(0, type = "n",
@@ -982,7 +982,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       ndom@data@values[is.na(ndom@data@values)] <- 0
 
 
-      png(filename = paste0(groundPath, imgPath, fileFinder,"_NDOM_raw.png"), width = 800, height = 800)
+      png(filename = paste0(dirPath, imgPath, fileFinder,"_NDOM_raw.png"), width = 800, height = 800)
       par(xpd = F, mar = c(2,0,5,0), oma = c(0,0,0,0), xaxs='i', yaxs='i')
       if(clip.radius != 0){
         plot(0, type = "n",
