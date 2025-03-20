@@ -152,8 +152,12 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   }
   cat("Checking if intensity values are present...\n")
   if(max(big@data$Intensity) == 0){
-    big@data$Intensity <- 5L
+    big@data$Intensity <- 65535L
 #    writeLAS(big, "D:/nowlas.laz")
+  }
+  if(max(big@data$Intensity) <= 256){
+    big@data$Intensity <- as.integer((big@data$Intensity / 255L) * 65535)
+    #    writeLAS(big, "D:/nowlas.laz")
   }
 
 
