@@ -574,6 +574,8 @@ computeTree_i <- function(treeLAS.path,
                           detail.level = 0,
                           decimateTreeForFasterCrowns = FALSE,
 
+                          extendedTaper = 0, 
+                          
                           #writeLAZ = TRUE, writePicture = TRUE,
                           #density.CrownLAS = 800, # how many points in random() filter for LAS to be kept for crown hulling
 
@@ -1272,17 +1274,17 @@ computeTree_i <- function(treeLAS.path,
         centerPoint160cm <- stems[trunc(1.6/slice.height),]
 
 
-        centers <- centers[!is.na(centers$d),]
-        stems <- stems[!is.na(stems$d),]
+        #centers <- centers[!is.na(centers$d),]
+        #stems <- stems[!is.na(stems$d),]
 
         if(is.na(centerPoint1m$x)){
-          centerPoint1m <- stems[trunc(1/slice.height),] # if first measurement was invalid
+          centerPoint1m <- stems[1+trunc(1/slice.height),] # if first measurement was invalid
         }
         if(is.na(centerPoint2m$x)){
-          centerPoint2m <- stems[trunc(2/slice.height),]
+          centerPoint2m <- stems[1+trunc(2/slice.height),]
         }
         if(is.na(centerPoint160cm$x)){
-          centerPoint160cm <- stems[trunc(2/slice.height),]
+          centerPoint160cm <- stems[1+trunc(2/slice.height),]
         }
 
 
@@ -1308,6 +1310,27 @@ computeTree_i <- function(treeLAS.path,
         metaVars$taper1to2 <- centerPoint1m$d - centerPoint2m$d
         metaVars$taper1to160 <- centerPoint1m$d - centerPoint160cm$d
 
+        if(extendedTaper > 0){
+          # extendedTaper measures 10 taper values in the distance of the given cm
+          #      compared measurement is DBH from the ground
+          # extendedTaper = 100 means from  1,30 to 2,30 and to 3,30 etc until 11,30 m
+          # extendedTaper = 50 means from  1,30 to 1,80 and to 2,30 etc until 6,30 m
+          centerPointDBH <- stems[trunc(1.3/slice.height),]
+          
+          metaVars$dbhTaper <- centerPointDBH$d
+          
+          for(i in 1:10){
+            # if(is.na(centerPoint2m$x)){
+            #   centerPointNow <- stems[trunc(2/slice.height),]
+            # }
+            metaVars$taperNow <- i
+            colnames(metaVars)[length(metaVars)] <- paste0("taper", trunc(extendedTaper*i)+130)
+          }
+        }
+        
+        
+        
+        
         write.table(centers, file = paste0(stemAnalysisPath,treeName,"_crown_centers.txt"), row.names = FALSE, sep = "\t", dec = ".")
         write.table(stems, file = paste0(stemAnalysisPath,treeName,"_stem_centers.txt"), row.names = FALSE, sep = "\t", dec = ".")
 
@@ -1661,6 +1684,8 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                                drawImages = T,
                                remeasureDBH = F,
                                decimateTreeForFasterCrowns = FALSE,
+                               
+                               extendedTaper = 0, 
 
                                mode = "ALLGO", maxRadius = 0, ipad = FALSE,
 
@@ -1904,7 +1929,8 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                                   detail.level = detail.level,
                                   nowMeta = nowMeta,
                                   remeasureDBH = remeasureDBH,
-                                  measurePath = crownPath)
+                                  measurePath = crownPath,
+                                  extendedTaper = extendedTaper)
         })
 
         metaFrame <<- rbind(metaFrame, outPut)
@@ -1979,7 +2005,8 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                                                   detail.level = detail.level,
                                                   remeasureDBH = remeasureDBH,
                                                   nowMeta = nowMeta,
-                                                  measurePath = crownPath)
+                                                  measurePath = crownPath,
+                                                  extendedTaper = extendedTaper)
 
                         })
 
@@ -2148,6 +2175,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                               detail.level = 0,
 
                               drawNumberPoints = TRUE,
+                              extendedTaper = 0, 
 
                               writeLAZ = TRUE, writePicture = TRUE, crownParameters = TRUE,
 
@@ -2972,7 +3000,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                        voxelSize = voxelSize, vol.alpha = vol.alpha,
                        alternativeCrownBase.Ratio = alternativeCrownBase.Ratio,
                        fogFilter.estHeight = fogFilter.estHeight, selector = selector,
-                       limitSpanSide = limitSpanSide,
+                       limitSpanSide = limitSpanSide, extendedTaper = extendedTaper, 
                        limitSpanArea = limitSpanArea, referenceDiameterLimit = referenceDiameterLimit,
                        quantileIntensity = quantileIntensity, numberIntensity = numberIntensity,
                        CC_level = CC_level, CC_numberPoints = CC_numberPoints,
