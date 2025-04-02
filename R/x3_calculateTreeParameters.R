@@ -1958,7 +1958,8 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
     timePar1 <- Sys.time()
 
     fdc <<- foreach(i = loopStart:loopEnd, .errorhandling = 'remove',
-                    .packages = c("treeX", "mgcv"), .verbose = FALSE) %dopar% {
+                    .packages = c("treeX", "mgcv"), .verbose = FALSE, 
+                    .export = c("computeTree_i")) %dopar% {
 
                       # cat("Serial measuring of", (loopEnd-loopStart+1), "trees:\n\n")
 
