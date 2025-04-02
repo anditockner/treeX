@@ -985,7 +985,22 @@ computeTree_i <- function(treeLAS.path,
 
         png(paste0(stemAnalysisPath,"",treeName,"_stem_diameters.png"), height = 6000, width = 6000, type = "cairo")
         par(mfrow=c(ceiling(length(heightGrip)/20),20),oma = c(0, 0, 3, 0))
-
+        plot(1, type = "n", bty = "n", xlab = "", ylab = "", xaxt = "n", yaxt = "n")
+        panelToRow <- function(panel){
+          if(panel == 28){
+            return(c(2, 8))
+          }
+          # we have 27 panels starting from 1 at DBH to 27 at 0m z level
+          firstVal <- 1
+          secondVal <- 28 - panel # panel 8 is c(1,20)
+          # first 7 panels are in second row
+          if(panel <= 7){
+            firstVal <- 2
+            secondVal <- 8 - panel
+          }
+          return(c(firstVal, secondVal))
+        }
+        
         ### CROWN BASE DETECTION LOOP ####
         previousCenter <- firstCenter
 
@@ -1002,6 +1017,11 @@ computeTree_i <- function(treeLAS.path,
         # contain the crown, this value holds
         # how many slices we have to consider
         for(k in 1:length(measureOrder)){ #for every slice of stem diameter
+          # downwards dbh
+          if(k <= 28) {
+            par(mfg = panelToRow(k)) # jump to DBH position and draw backwards
+          }
+          
           j <- measureOrder[k]
           # SLICING
           sliceLAS <- filter_poi(treeLAS, Z >= (minZ + heightGrip[j]), Z < (minZ + heightGrip[j] + slice.height))
