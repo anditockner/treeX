@@ -36,6 +36,33 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
 
 
 
+  
+  # only for debugging
+  if(FALSE){
+    allDBHs = FALSE
+    allFiles = FALSE
+    
+    clipHeight = 3
+    bottomCut = 1
+    ipad = FALSE
+    nr_cores = 0
+    
+    bushPreparation = FALSE
+    filterSOR = FALSE
+    filterINT = 0
+    ref = NA
+    ref.plot_id = NA
+    
+    cutWindow = c(-1000, -1000, 2000)
+    numberOfPoints = 300
+    heightExtent = 1.3
+    TLS = FALSE
+    
+    silent = TRUE
+    fast = TRUE
+    retainPointClouds = TRUE
+    dirPath = paste0(getwd(), "/")
+  }
 
   if(ipad){
     clipHeight <- 2.2

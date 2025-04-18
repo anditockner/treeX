@@ -5,7 +5,7 @@ if(!dir.exists(dirPath)) dir.create(dirPath)
 setwd(dirPath)
 
 #specify the input file
-LASfile <- list.files("D:/PointCloud_Processing/", pattern = "laz", full.name = T)[2]
+LASfile <- list.files("D:/try/", pattern = "laz", full.name = T)
 
 # a characteristic name to save all output files
 fileFinder <- "spzaiil"
