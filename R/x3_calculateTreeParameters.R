@@ -2434,6 +2434,8 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                          "est.DiamCrownMin"=0, "est.DiamCrownMin.Angle"=0,
                          "est.x.DBH"=0, "est.y.DBH"=0, "est.z.DBH"=0,
                          "est.x.crownDiameter"=0, "est.y.crownDiameter"=0,
+                         "meanCrownX"=NA, "meanCrownY"=NA, "meanCrownZ"=NA, 
+                         "meanweightedCrownX"=NA, "meanweightedCrownY"=NA, "meanweightedCrownZ"=NA, 
                          stringsAsFactors=FALSE) #not implemented yet, was interesting!
 
 
