@@ -1342,11 +1342,15 @@ computeTree_i <- function(treeLAS.path,
           for(i in 1:10){
             nowLowerLimit <- (trunc(extendedTaper*i)+130)/100.0
             centerPointNow <- stems[round(nowLowerLimit/slice.height),]
-            if(is.na(centerPoint2m$x)){
+            if(length(centerPointNow)==1){
               centerPointNow <- stems[c(-1, 0, 1) + round(nowLowerLimit/slice.height),]
               centerPointNow <- colMeans(centerPointNow, na.rm = T)
             }
-            metaVars$taperNow <- round((centerPointDBH$d - centerPointNow$d)*100, 1)
+            if(is.na(centerPointNow[1])){
+              metaVars$taperNow <- NA
+            } else {
+              metaVars$taperNow <- round((centerPointDBH$d - centerPointNow$d)*100, 1) 
+            }
             colnames(metaVars)[length(metaVars)] <- paste0("taper", trunc(extendedTaper*i)+130)
           }
         }
