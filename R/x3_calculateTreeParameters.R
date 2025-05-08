@@ -633,6 +633,8 @@ computeTree_i <- function(treeLAS.path,
                            #"est.crownDiameter"=0, "est.DiamCrownMax"=0, "est.DiamCrownMax.Angle"=0,
                            #"est.DiamCrownMin"=0, "est.DiamCrownMin.Angle"=0,
                            "est.x.DBH"=0, "est.y.DBH"=0, "est.z.DBH"=0,
+                           "meanCrownX"=NA, "meanCrownY"=NA, "meanCrownZ"=NA, 
+                           "meanweightedCrownX"=NA, "meanweightedCrownY"=NA, "meanweightedCrownZ"=NA, 
                            #"est.x.crownDiameter"=0, "est.y.crownDiameter"=0,
                            stringsAsFactors=FALSE) #not implemented yet, was interesting!
 
