@@ -143,7 +143,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
   }
 
   gloStop <- Sys.time()
-  cat("All clustering done in a")
+  cat("\nTree detection completed in a ")
   print.difftime(round(gloStop - gloStart, 1))
 
   if(referenced){
@@ -2119,9 +2119,9 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
 fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
                         referenced = FALSE, bushPreparation = FALSE, filterSOR = FALSE,
                         cutWindow = c(-1000, -1000, 2000), silent = FALSE, dirPath = paste0(getwd(), "/")){
-  start <- Sys.time()
   cat("\nStarting fineCluster(), ")
-  cat("Current time is", format(Sys.time(), "%H:%M:%S"), "\n")
+  fineTime1 <- Sys.time()
+  cat("Current time is", format(fineTime1, "%H:%M:%S"), "\n")
   groundPath <- v.env$groundPath
 
   #cat("Handling set", file, "-", file.name.i, "\n")
@@ -2673,7 +2673,7 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
 
 
   cat("done!\n")
-  cat("\nCreating output tree cluster list...\n")
+  cat("\nCreating output tree cluster list:\n")
   ### want to create output file with especially z coordinates, then want to leave referencing for later (when all is done)
 
   #  setStr <- generateSetString(fileFinder = fileFinder, mode = mode,
@@ -2701,7 +2701,7 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
     if(sum(colnames(trees)=="id")==0){
       # there is no column of id
       trees$id <- c(1:length(trees[, 1]))
-      cat("Assigning a new unique id to prevent issues, from 1 to", length(trees[, 1]), "\n")
+      cat(" * assigning new unique id from 1 to", length(trees[, 1]), "\n")
       #colnames(trees)[colnames(trees)=="cluster"] <- "id"
     }
   }
@@ -2712,14 +2712,14 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
     return()
   }
 
-  cat("Attaching z-values by reading ground points...\n")
+  cat(" * attaching z-values from reading _ground_min.grd model\n")
   tryCatch(
     {
       # read in raster file
       dtm_z <- raster(paste0(dirPath, groundPath, fileFinder, "_ground_min.grd"))
     }, error = function(error_condition) {
-      cat("Error in reading the min dtm-model, next loop!")
-      next
+      cat("Error in reading the min dtm-model!")
+      return()
     })
   trees$z <- round(extract(dtm_z, SpatialPoints(data.frame(x = trees$x, y = trees$y))) + 1.3, 3)
   #extracting the z-value from a dtm, was hard work to find that out... so easy
@@ -2727,7 +2727,7 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
 
 
 
-  cat("Writing outfiles with random stem ids:\n")
+  cat(" * drawing new random stem ids\n")
   rnlist <- sample(1:65535, length(trees[, 1]))
 
 
@@ -2748,12 +2748,14 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
 
   write.table(mergedSet, file = paste0(dbhPath, "trees_dbh.txt"),
               row.names = FALSE, sep = "\t")
-  stop <- Sys.time()
-  cat(paste0(dbhPath, "trees_dbh.txt"), "created.\n")
+  
+  cat(paste0("\n", dbhPath, "trees_dbh.txt"), "created.\n")
 
-  stop <- Sys.time()
-  cat("Fine clustering is done.\n")
-  print.difftime(round(stop - start, 1))
+  
+  fineTime2 <- Sys.time()
+  cat("Fine clustering done in a ")
+  print.difftime(round(fineTime2 - fineTime1, 1))
+  cat("\n")
 
 }
 
