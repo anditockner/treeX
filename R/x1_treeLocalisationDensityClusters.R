@@ -628,7 +628,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath,
     return(wink)
   }
   cat("~retr~")
-  sliVox <<- sliVox
+  sliVox <- sliVox
   cat("~works~")
   cat(ifelse(exists("sliVox"), "existuje", "neex"))
   cat(ifelse(exists("sliVox"), 
@@ -2090,7 +2090,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
       })
     cat("Successfully retrieved normalized slice cluster file!\n\n")
   }
-  
+  sliVox <- sliVox
   
   # if you had lost sliVox, read in from paste0(dbhPath, "slice_cluster.laz")
   #sliVoxSafe <- sliVox
