@@ -2162,7 +2162,12 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=1:length(cluster.vec),  .errorhandling = 'remove', 
                     .export=c('diameterBeast_i', 'sliVox', 'v.env'), 
-                    .packages = c("treeX"))%dopar% {
+                    .packages = c("treeX", "doParallel", "data.table", "ADPclust", "densityClust", 
+                                  "plyr", "spatstat", "alphahull", "RANN", 
+                                  "flexclust", "sp", "matrixStats", "lmfor", 
+                                  "rgl", "conicfit", "MASS", "igraph", "geosphere", "pracma", 
+                                  "DescTools", "mgcv", "recexcavAAR", "raster", 
+                                  "lidR", "TreeLS", "dbscan", "rgl", "conicfit"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       numi <- cluster.vec[i]
