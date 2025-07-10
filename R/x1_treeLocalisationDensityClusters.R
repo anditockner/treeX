@@ -2174,7 +2174,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
                       t2 <- Sys.time()
                       dt <- difftime(t2,t1)
                       dt <- paste(round(dt, 1), units(dt))
-                      cat(paste0("+", numi, " in ", dt, "\n"))
+                      cat(paste0("---| ", numi, " in ", dt, "\n"))
                       sink()
                       
                     } 
@@ -2818,7 +2818,7 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0,
     
     stopImplicitCluster()
     
-    unlink(file_parallelProtocol)
+    #unlink(file_parallelProtocol)
     
     skippedTrees <- sum(lengths(fdc) == 0)
     if(skippedTrees > 0){
