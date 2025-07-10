@@ -589,7 +589,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
   #suppressPackageStartupMessages(library("edci", character.only = T))
   #tryCatch(suppressPackageStartupMessages(library("edci")), 
   #         error = function(e){})
-  cat("~41~")
+  
   #tab.neu <- tab.neu[tab.neu$cluster!=0, ] #alle weg die Noise sind
   u.grenzen.vec <- c(seq(1.0, 2.625, 0.125)) #Grenzen fuer BHD - Findung
   if(ipad){
@@ -601,7 +601,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
   path.output.cluster.end <- paste0(dbhPath, "fineCluster/")
   path.output.cluster.endgraph <- paste0(dbhPath, "graphSlice/")
   path.output.cluster.residuals <- paste0(dbhPath, "residuals/")
-  cat("~53~")
+  
   if(allFiles){
     if(!dir.exists(path.output.cluster.endgraph)) dir.create(path.output.cluster.endgraph)
     if(!dir.exists(path.output.cluster.residuals)) dir.create(path.output.cluster.residuals)
@@ -626,7 +626,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
     return(wink)
   }
   
-  cat("~77~")
+  cat("~works~")
   plot.clust2 <- filter_poi(sliVox, cluster == clusterIndex)
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
   if(fast & nrow(plot.clust2) > 9000){
@@ -634,6 +634,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
     plot.clust2 <- plot.clust2[sample(nrow(plot.clust2), 9000, replace = F),]
   }
   
+  cat("~tA~")
   #Herausgeben des richtigen Clusters in der jeweiligen Schicht
   #plot(plot.clust2)
   # plot3d(plot.clust2$X, plot.clust2$Y, plot.clust2$Z, col=plot.clust2$cluster, aspect=F)
@@ -645,8 +646,10 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
   groesse <- (max(plot.clust2$X)-min(plot.clust2$X)) * (max(plot.clust2$Y)-min(plot.clust2$Y))
   groesse #m2
   
+  cat("~tB~")
   if(groesse>=0.22){#0.22
     
+    cat("~tC1~")
     hoehen <- seq(1.1, 2.5, 0.3)
     breite.hoehen <- 0.15
     test=4
@@ -658,6 +661,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
         par.ellipse <- EllipseDirectFit(cbind(plot.test$X, plot.test$Y))
         geom.ellipse <- as.vector(AtoG(par.ellipse)$ParG)
         
+        cat("~tCloop~")
         n.vertices <- 400
         
         ellipse.vert <- calculateEllipse(x=geom.ellipse[1], y=geom.ellipse[2], a=geom.ellipse[3], b=geom.ellipse[4],
@@ -718,7 +722,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
       
     }
     
-    cat("~169~")
+    cat("~NEVER~")
     schoener.kreis.out
     mean(schoener.kreis.out$q)
     sd(schoener.kreis.out$BHD)
@@ -827,7 +831,6 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
       }
     }
     
-    cat("~278~")
     plot.clust2 <- plot.clu
     #table(plot.clust2$cluster)
     
@@ -994,7 +997,6 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
   }
   
   
-  cat("~446~")
   plot.clust2 <- plot.clust_final
   (cluster2 <- as.numeric(unique(plot.clust2$cluster)))
   #(cluster3 <- unique(plot.clust2$cluster2))
