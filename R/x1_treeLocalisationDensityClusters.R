@@ -781,8 +781,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
       }
     }
     
-  }
-  else{
+  }  else{
     zalt <- c(1, 3)
     zneu <- c(1.8, 2.2)
     model <- lm(zneu~zalt)
@@ -889,7 +888,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
           ###
           # new 500 says CG 2022-08-22
           #zahl_cluster <- hilf.tab[which(hilf.tab$anz>=100), ]$cluster
-          zahl_cluster <- hilf.tab[which(hilf.tab$anz>=500), ]$cluster
+          zahl_cluster <- (hilf.tab[which(hilf.tab$anz>=500), ]$cluster)
           plot.i <- plot.i[plot.i$cluster2%in%zahl_cluster, ]
           #plot(plot.i$X, plot.i$Y, asp=1, col=plot.i$cluster2)
           
@@ -904,16 +903,19 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
           plot.i$cluster2 <- NA
         }
         
-        plot.zwei <- plot.i
-        plot.zwei$ho <- u.grenzen.vec[j]
-        plot.zwei$zwei <- zwei
         
-        if(j==1){
-          plot.zwei.out <- plot.zwei
-          zwei.out <- zwei
-        }else{
-          plot.zwei.out <- rbind(plot.zwei.out, plot.zwei)
-          zwei.out <- c(zwei.out, zwei)
+        plot.zwei <- plot.i
+        if(nrow(plot.zwei)!=0){
+          plot.zwei$ho <- u.grenzen.vec[j]
+          plot.zwei$zwei <- zwei
+          
+          if(!exists("plot.zwei.out")){
+            plot.zwei.out <- plot.zwei
+            zwei.out <- zwei
+          }else{
+            plot.zwei.out <- rbind(plot.zwei.out, plot.zwei)
+            zwei.out <- c(zwei.out, zwei)
+          }
         }
       }
       if(sum(zwei.out)>=6){
