@@ -1,5 +1,10 @@
 
 
+retrieveSliVox <- function(){
+  return(sliVox)
+}
+
+
 if(!exists("sliVox")){
   sliVox <<- NA # holds the voxelized slice, to extract per cluster points for dbh measuring faster
 }
@@ -626,7 +631,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath,
     }
     return(wink)
   }
-  
+  sliVox <- retrieveSliVox()
   cat("~works~")
   cat(ifelse(exists("sliVox"), "existuje", "neex"))
   plot.clust2 <- filter_poi(sliVox, 'cluster' == clusterIndex)
