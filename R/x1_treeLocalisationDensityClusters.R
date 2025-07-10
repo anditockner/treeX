@@ -133,7 +133,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
                 bushPreparation = bushPreparation, filterSOR = filterSOR, nr_cores = nr_cores,
                 cutWindow = cutWindow, silent = silent, fast = fast, dirPath = dirPath)
 
-  fineCluster(fileFinder, dbhPath = dbhPath, allDBHs = allDBHs, referenced = referenced, allFiles = allFiles,
+  fineCluster(fileFinder, dbhPath = dbhPath, allDBHs = allDBHs, referenced = referenced, 
               bushPreparation = bushPreparation, filterSOR = filterSOR,
               cutWindow = cutWindow, silent = silent, dirPath = dirPath)
 
