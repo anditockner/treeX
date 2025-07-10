@@ -723,9 +723,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
     mean(schoener.kreis.out$q)
     sd(schoener.kreis.out$BHD)
     if(sum(schoener.kreis.out$sK)<3&sd(schoener.kreis.out$BHD)>1.5&mean(schoener.kreis.out$q)<0.9|groesse>1.1|groesse>0.4&sum(schoener.kreis.out$sK)<3){
-      cat("~readAgain?~")
-      plot.clust2 <- filter_poi(sliVox, cluster == clusterIndex) #Herausgeben des richtigen Clusters in der jeweiligen Schicht
-      plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
+      #cat("~readAgain?~")
       
       zalt <- c(1, 3)
       zneu <- c(1.8, 2.2)
@@ -2153,14 +2151,14 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     cat(fileFinder, " - Going parallel on", nr_cores, "cores.\n\n")
     
     library(doParallel)
-    cl <- makeCluster(nr_cores)#, outfile="")
-    registerDoParallel(cl)
+    
+    registerDoParallel(nr_cores)
     
     file_parallelProtocol <- paste0(dbhPath, "temp_par_diameterBeast.txt")
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=1:length(cluster.vec),  .errorhandling = 'remove', 
                     .export=c('diameterBeast_i', 'v.env', 'sliVox'), 
-                    .packages = c())%dopar% {
+                    .packages = c("treeX"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       numi <- cluster.vec[i]
@@ -2179,8 +2177,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
                     } 
     
     
-    stopCluster(cl)
-    getDoParWorkers()
+    stopImplicitCluster()
     
     #unlink(file_parallelProtocol)
     
