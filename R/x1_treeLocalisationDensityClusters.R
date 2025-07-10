@@ -900,7 +900,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
           
         }else{
           zwei <- 0
-          plot.i$cluster2 <- NA
+          #plot.i$cluster2 <- NA
         }
         
         
