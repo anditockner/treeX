@@ -631,6 +631,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath,
     }
     return(wink)
   }
+  cat("~retr~")
   sliVox <- retrieveSliVox()
   cat("~works~")
   cat(ifelse(exists("sliVox"), "existuje", "neex"))
@@ -2170,7 +2171,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     file_parallelProtocol <- paste0(dbhPath, "temp_par_diameterBeast.txt")
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=1:length(cluster.vec),  .errorhandling = 'remove', 
-                    .export=c('diameterBeast_i', "sliVox", 'v.env'), 
+                    .export=c('diameterBeast_i', "sliVox", 'v.env', 'retrieveSliVox'), 
                     .packages = c("treeX"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
