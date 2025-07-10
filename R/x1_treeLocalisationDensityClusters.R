@@ -2123,7 +2123,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
 fineCluster_i <- function(circleFile){
   
   out <- read.csv2(circleFile)
-  out <- out[, -1]
+  out <- out[, -1] #remove row number
   out[out$n.punkt<=90&!is.na(out$n.punkt), c("flaeche", "x.ell", "y.ell", "d.ell", "q.ell", "sk",
                                              "x.circ", "y.circ", "d.circ", "n.circ", "n.punkt", "prozFuell", "d.gam", "d.ob", "d.ob2",
                                              "d.min", "d.max", "d.stip", "tegam.d_ob", "tegam.d_ob2", "tegam.d_min", "tegam.d_max", "tegam.d_stip", "tegam.d_gam")] <- NA #out$n.punkt<=150
@@ -2138,42 +2138,50 @@ fineCluster_i <- function(circleFile){
   # out
   # plot(out$z.unten, out$d.circ)
   
-  head(out)
+  #head(out)
   out.vec <- 1:nrow(out)
   m.vec <- 6 #mit 6 fixiert -> es muessen mind. 6 durch die Schwellenwerte kommen
-  k=1
-  l=1
-  for(k in 1:length(m.vec)){
-    liste <- combn(out.vec, m.vec[k], simplify = FALSE) #alles moeglichen Kombis
-    for(l in 1:length(liste)){
-      #sd fuer pos und durchmesser der ellipse
-      sdx.ell <- sd(out[liste[[l]], ]$x.ell)
-      sdy.ell <- sd(out[liste[[l]], ]$y.ell)
-      sdbhd.ell <- sd(out[liste[[l]], ]$d.ell)
-      sdx.circ <- sd(out[liste[[l]], ]$x.circ)
-      sdy.circ <- sd(out[liste[[l]], ]$y.circ)
-      sdbhd.circ <- sd(out[liste[[l]], ]$d.circ)
-      #mittlere rel. anzahl an punkten aus den 6
-      mean.n.circ <- mean(out[liste[[l]], ]$n.circ)
-      # mean.n.ell <- mean(out[liste[[l]], ]$nEll)
-      comb <- l
-      fertig <- data.frame("sdx.ell" = sdx.ell, "sdy.ell"=sdy.ell, "sdbhd.ell"=sdbhd.ell,
-                           "sdx.circ" = sdx.circ, "sdy.circ"=sdy.circ, "sdbhd.circ"=sdbhd.circ,
-                           "mean.n.circ" = mean.n.circ, "comb.circ"=comb, "anzahl.pro"=m.vec[k])
-      
-      if(l==1){
-        output <- fertig
-      }else{
-        output <- rbind(output, fertig)
-      }
-    }
-    if(k==1){
-      output2 <- output
-    }else{
-      output2 <- rbind(output2, output)
-    }
+  
+  # Preallocate a list to store results
+  output_list <- list()
+  index <- 1
+  
+  for (k in seq_along(m.vec)) {
+    #cat("\n", k, "- ")
     
+    # Generate all combinations for the current m.vec[k]
+    liste <- combn(out.vec, m.vec[k], simplify = FALSE)
+    
+    # Loop through each combination
+    for (l in seq_along(liste)) {
+      #cat(l, "-")
+      
+      # Extract the subset of rows corresponding to the current combination
+      subset_data <- out[liste[[l]], ]
+      
+      # Compute the required statistics
+      #sd fuer pos und durchmesser der ellipse
+      fertig <- data.frame(
+        sdx.ell = sd(subset_data$x.ell),
+        sdy.ell = sd(subset_data$y.ell),
+        sdbhd.ell = sd(subset_data$d.ell),
+        sdx.circ = sd(subset_data$x.circ),
+        sdy.circ = sd(subset_data$y.circ),
+        sdbhd.circ = sd(subset_data$d.circ),
+        #mittlere rel. anzahl an punkten aus den 6
+        mean.n.circ = mean(subset_data$n.circ),
+        comb.circ = l,
+        anzahl.pro = m.vec[k]
+      )
+      
+      # Store the result in the preallocated list
+      output_list[[index]] <- fertig
+      index <- index + 1
+    }
   }
+  
+  # Combine all results into a single data frame
+  output2 <- do.call(rbind, output_list)
   
   grenze.xy <- 0.2 #0.2 passt fuer 44, fuer 68 schon zu gross; ist relativ gross gewaehlt
   grenze.BHD <- 1.85 ##muesste fuer 152 2.2 sein
@@ -2596,8 +2604,8 @@ fineCluster_i <- function(circleFile){
       #  model <- lm(wahl_circ6[, column]~hoehe)
       #  wahl_all_ende[, colnames(wahl_circ6[column])] <- predict(model, data.frame("hoehe"=1.3))
       # }
-      
     }
+    
     if(is.na(wahl_circ$d.circ)==F&is.na(wahl_ell$d.ell)){
       wahl_all_ende <- wahl_circ6[1, c("cluster", "cluster2", "cluster3")]
       hoehe <- wahl_circ6$z.unten+0.15/2 # weil Schichtbreite 0.15 ist
@@ -2656,7 +2664,7 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0,
   end_path <- paste0(dbhPath, "fineCluster/")
   file.list <- list.files(end_path)
   
-  cat(" -> handling", length(file.list), "clusters...\n")
+  cat(" -> analyzing", length(file.list), "clusters...\n")
   
   
   if(nr_cores == 0){
@@ -2678,10 +2686,10 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0,
   
   if(nr_cores == 1){
     
-    cat(" -> starting serial cluster analysis:")
+    cat("Going for serial cluster analysis:")
     for(datei in 1:length(file.list)){
       if(datei%%20 == 1) cat("\n    ")
-      cat(paste0(datei, "-"))
+      cat(paste0("", datei, "-"))
       nowCircles <- fineCluster_i(circleFile = paste0(end_path, file.list[datei]))
       
       if(datei==1){
@@ -2850,8 +2858,6 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0,
   cat("\n")
   
 }
-
-
 
 
 
