@@ -134,7 +134,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
                 cutWindow = cutWindow, silent = silent, fast = fast, dirPath = dirPath)
 
   fineCluster(fileFinder, dbhPath = dbhPath, allDBHs = allDBHs, referenced = referenced, 
-              bushPreparation = bushPreparation, filterSOR = filterSOR,
+              bushPreparation = bushPreparation, filterSOR = filterSOR, nr_cores = nr_cores, 
               cutWindow = cutWindow, silent = silent, dirPath = dirPath)
 
   if(!retainPointClouds){
@@ -2116,566 +2116,658 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
 # 3 FINE CLUSTER CLEARING ##########################################################################
 ####################################################################################################
 
-fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
+#' analyzes, if the measured cluster can be a tree
+#'
+#' @param circleFile name of the file to be analyzed
+#' @export
+fineCluster_i <- function(circleFile){
+  
+  out <- read.csv2(circleFile)
+  out <- out[, -1]
+  out[out$n.punkt<=90&!is.na(out$n.punkt), c("flaeche", "x.ell", "y.ell", "d.ell", "q.ell", "sk",
+                                             "x.circ", "y.circ", "d.circ", "n.circ", "n.punkt", "prozFuell", "d.gam", "d.ob", "d.ob2",
+                                             "d.min", "d.max", "d.stip", "tegam.d_ob", "tegam.d_ob2", "tegam.d_min", "tegam.d_max", "tegam.d_stip", "tegam.d_gam")] <- NA #out$n.punkt<=150
+  #min punkte auf 90 von 100 heruntergestellt
+  out[out$q.ell<=0.60&!is.na(out$x.ell), c("flaeche", "x.ell", "y.ell", "d.ell", "q.ell", "sk")] <- NA #out$q.ell<=0.65
+  #Grenze fuer abfalchung Ellipse muss groesser sein wie #0.60 sonst NA
+  out[out$prozFuell<25&!is.na(out$x.circ), c("flaeche", "x.ell", "y.ell", "d.ell", "q.ell", "sk",
+                                             "x.circ", "y.circ", "d.circ", "n.circ", "n.punkt", "prozFuell", "d.gam", "d.ob", "d.ob2",
+                                             "d.min", "d.max", "d.stip", "tegam.d_ob", "tegam.d_ob2", "tegam.d_min", "tegam.d_max", "tegam.d_stip", "tegam.d_gam")] <- NA
+  #wir brauchen mind. 25% Fuellung
+  
+  # out
+  # plot(out$z.unten, out$d.circ)
+  
+  head(out)
+  out.vec <- 1:nrow(out)
+  m.vec <- 6 #mit 6 fixiert -> es muessen mind. 6 durch die Schwellenwerte kommen
+  k=1
+  l=1
+  for(k in 1:length(m.vec)){
+    liste <- combn(out.vec, m.vec[k], simplify = FALSE) #alles moeglichen Kombis
+    for(l in 1:length(liste)){
+      #sd fuer pos und durchmesser der ellipse
+      sdx.ell <- sd(out[liste[[l]], ]$x.ell)
+      sdy.ell <- sd(out[liste[[l]], ]$y.ell)
+      sdbhd.ell <- sd(out[liste[[l]], ]$d.ell)
+      sdx.circ <- sd(out[liste[[l]], ]$x.circ)
+      sdy.circ <- sd(out[liste[[l]], ]$y.circ)
+      sdbhd.circ <- sd(out[liste[[l]], ]$d.circ)
+      #mittlere rel. anzahl an punkten aus den 6
+      mean.n.circ <- mean(out[liste[[l]], ]$n.circ)
+      # mean.n.ell <- mean(out[liste[[l]], ]$nEll)
+      comb <- l
+      fertig <- data.frame("sdx.ell" = sdx.ell, "sdy.ell"=sdy.ell, "sdbhd.ell"=sdbhd.ell,
+                           "sdx.circ" = sdx.circ, "sdy.circ"=sdy.circ, "sdbhd.circ"=sdbhd.circ,
+                           "mean.n.circ" = mean.n.circ, "comb.circ"=comb, "anzahl.pro"=m.vec[k])
+      
+      if(l==1){
+        output <- fertig
+      }else{
+        output <- rbind(output, fertig)
+      }
+    }
+    if(k==1){
+      output2 <- output
+    }else{
+      output2 <- rbind(output2, output)
+    }
+    
+  }
+  
+  grenze.xy <- 0.2 #0.2 passt fuer 44, fuer 68 schon zu gross; ist relativ gross gewaehlt
+  grenze.BHD <- 1.85 ##muesste fuer 152 2.2 sein
+  #wenn keiner uebrig bleibt, dann gibt es keinen
+  
+  if(length(unique(output2$mean.n.circ))!=1){
+    if(min(output2$mean.n.circ, na.rm = T)<0.35&
+       min(output2$sdx.circ, na.rm = T)<0.07&min(output2$sdy.circ, na.rm = T)<0.07){grenze.BHD <- 2.0}
+    
+    if(min(output2$mean.n.circ, na.rm = T)<0.4&
+       min(output2$sdx.circ, na.rm = T)<0.02&min(output2$sdy.circ, na.rm = T)<0.02){grenze.BHD <- 4.7}
+    
+    if(median(output2$sdbhd.circ, na.rm =T) > 2.7){grenze.BHD <- 0.8}
+  }
+  
+  summary(output2)
+  # hist(output2$sdbhd.circ)
+  # mean(output2$sdbhd.circ, na.rm =T)
+  # median(output2$sdbhd.circ, na.rm =T)
+  # skewness(output2$sdbhd.circ, na.rm =T)
+  
+  #auf Grenzen subsetten
+  optim2.circ <- output2[output2$sdx.circ<=grenze.xy&output2$sdy.circ<=grenze.xy&output2$sdbhd.circ<=grenze.BHD&!is.na(output2$sdbhd.circ), ]
+  optim2.ell <- output2[output2$sdx.ell<=grenze.xy&output2$sdy.ell<=grenze.xy&output2$sdbhd.ell<=grenze.BHD&!is.na(output2$sdbhd.ell), ]
+  
+  if(nrow(optim2.circ)!=0){ #wenn im Kreis was drinnen ist
+    optim3.circ <- optim2.circ #
+    
+    ende.circ <- optim3.circ[optim3.circ$sdbhd.circ<=quantile(optim3.circ$sdbhd.circ, 0.05), ] #nimm die 5% der genauesten hinsichtlich des bhd
+    
+    liste6 <- combn(out.vec, 6, simplify = FALSE)
+    liste6 <- lapply(liste6, as.character)
+    vec.6 <- which(sapply(liste6, FUN=function(X) "3" %in% X)) #weil 3 der auf 1.250 BHD-Hoehe ist #Schauen ob die in den Kombis vorhanden ist
+    
+    ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ] #
+    
+    if(nrow(ende2.circ)!=0){#wenn ein Circle vorhanden ist, nehme den besten, hinsichtlich des sdBHD
+      ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
+      
+      liste6 <- combn(out.vec, 6, simplify = FALSE)
+      #schauen was gebraucht wird - rest NA machen
+      wahl_circ <- out[3, ]
+      wahl_circ[, c(6:9)] <- NA
+      wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
+      wahl_circ6[, c(6:9)] <- NA
+    }else{ende3.circ <- ende2.circ}
+    
+    if(nrow(ende3.circ)==0){ #wenn es fuer diesen Druchmesser keine Variante gibt, dann anderen suchen
+      
+      vec.6 <- which(sapply(liste6, FUN=function(X) "2" %in% X)) #2 ist der unter dem BHD auf 1.125
+      
+      ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
+      
+      if(nrow(ende2.circ)!=0){
+        ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
+        
+        liste6 <- combn(out.vec, 6, simplify = FALSE)
+        #schauen was gebraucht wird - rest NA machen
+        wahl_circ <- out[2, ]
+        wahl_circ[, c(6:9)] <- NA
+        wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
+        wahl_circ6[, c(6:9)] <- NA
+      }else{ende3.circ <- ende2.circ}
+      
+      if(nrow(ende3.circ)==0){
+        
+        vec.6 <- which(sapply(liste6, FUN=function(X) "1" %in% X)) #
+        
+        ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
+        
+        if(nrow(ende2.circ)!=0){
+          ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
+          
+          liste6 <- combn(out.vec, 6, simplify = FALSE)
+          #schauen was gebraucht wird - rest NA machen
+          wahl_circ <- out[1, ]
+          wahl_circ[, c(6:9)] <- NA
+          wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
+          wahl_circ6[, c(6:9)] <- NA
+        }else{ende3.circ <- ende2.circ}
+        
+        if(nrow(ende3.circ)==0){
+          
+          vec.6 <- which(sapply(liste6, FUN=function(X) "4" %in% X)) #
+          
+          ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
+          
+          if(nrow(ende2.circ)!=0){
+            ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
+            
+            liste6 <- combn(out.vec, 6, simplify = FALSE)
+            #schauen was gebraucht wird - rest NA machen
+            wahl_circ <- out[4, ]
+            wahl_circ[, c(6:9)] <- NA
+            wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
+            wahl_circ6[, c(6:9)] <- NA
+          }else{ende3.circ <- ende2.circ}
+          
+          if(nrow(ende3.circ)==0){
+            
+            vec.6 <- which(sapply(liste6, FUN=function(X) "5" %in% X)) #
+            
+            ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
+            
+            if(nrow(ende2.circ)!=0){
+              ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
+              
+              liste6 <- combn(out.vec, 6, simplify = FALSE)
+              #schauen was gebraucht wird - rest NA machen
+              wahl_circ <- out[5, ]
+              wahl_circ[, c(6:9)] <- NA
+              wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
+              wahl_circ6[, c(6:9)] <- NA
+            }else{ende3.circ <- ende2.circ}
+            
+            if(nrow(ende3.circ)==0){
+              
+              vec.6 <- which(sapply(liste6, FUN=function(X) "6" %in% X)) #
+              
+              ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
+              
+              if(nrow(ende2.circ)!=0){
+                ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
+                
+                liste6 <- combn(out.vec, 6, simplify = FALSE)
+                #schauen was gebraucht wird - rest NA machen
+                wahl_circ <- out[6, ]
+                wahl_circ[, c(6:9)] <- NA
+                wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
+                wahl_circ6[, c(6:9)] <- NA
+              }else{ende3.circ <- ende2.circ}
+              
+              if(nrow(ende3.circ)==0){
+                
+                vec.6 <- which(sapply(liste6, FUN=function(X) "7" %in% X)) #
+                
+                ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
+                
+                if(nrow(ende2.circ)!=0){
+                  ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
+                  
+                  liste6 <- combn(out.vec, 6, simplify = FALSE)
+                  #schauen was gebraucht wird - rest NA machen
+                  wahl_circ <- out[7, ]
+                  wahl_circ[, c(6:9)] <- NA
+                  wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
+                  wahl_circ6[, c(6:9)] <- NA
+                }else{ende3.circ <- ende2.circ}
+                
+                if(nrow(ende3.circ)==0){
+                  
+                  vec.6 <- which(sapply(liste6, FUN=function(X) "8" %in% X)) #
+                  
+                  ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
+                  
+                  if(nrow(ende2.circ)!=0){
+                    ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
+                    
+                    liste6 <- combn(out.vec, 6, simplify = FALSE)
+                    #schauen was gebraucht wird - rest NA machen
+                    wahl_circ <- out[8, ]
+                    wahl_circ[, c(6:9)] <- NA
+                    wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
+                    wahl_circ6[, c(6:9)] <- NA
+                  }else{ende3.circ <- ende2.circ}
+                  
+                  if(nrow(ende3.circ)==0){
+                    
+                    vec.6 <- which(sapply(liste6, FUN=function(X) "9" %in% X)) #
+                    
+                    ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
+                    
+                    if(nrow(ende2.circ)!=0){
+                      ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
+                      
+                      liste6 <- combn(out.vec, 6, simplify = FALSE)
+                      #schauen was gebraucht wird - rest NA machen
+                      wahl_circ <- out[9, ]
+                      wahl_circ[, c(6:9)] <- NA
+                      wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
+                      wahl_circ6[, c(6:9)] <- NA
+                    }else{ende3.circ <- ende2.circ}
+                  }
+                  
+                }
+                
+              }
+              
+            }
+            
+          }
+        }
+        
+      }
+      
+    }
+  }else{
+    wahl_circ <- out[1, ]
+    wahl_circ[1, 4:ncol(wahl_circ)] <- NA
+    wahl_circ6 <- out[1:6, ]
+    wahl_circ6[, 4:ncol(wahl_circ6)] <- NA
+  }
+  
+  if(nrow(optim2.ell)!=0){ #wenn in einem was drinnen ist
+    optim3.ell <- optim2.ell
+    
+    if(nrow(optim3.ell)!=0){ #wenn es dann noch was gibt
+      
+      ende.ell <- optim3.ell[optim3.ell$sdbhd.ell<=quantile(optim3.ell$sdbhd.ell, 0.05), ] #nimm die 5% der genauesten hinsichtlich des bhd
+      
+      liste6 <- combn(out.vec, 6, simplify = FALSE)
+      liste6 <- lapply(liste6, as.character)
+      vec.6 <- which(sapply(liste6, FUN=function(X) "3" %in% X)) #weil 3 der auf 1.250 BHD-Hoehe ist #Schauen ob die in den Kombis vorhanden ist
+      
+      ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
+      
+      if(nrow(ende2.ell)!=0){#wenn eine Ellipse vorhanden ist, dasselbe
+        ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
+        
+        liste6 <- combn(out.vec, 6, simplify = FALSE)
+        #schauen was gebraucht wird - rest NA machen
+        wahl_ell <- out[3, ]
+        wahl_ell[, c(11:14)] <- NA
+        wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
+        wahl_ell6[, c(11:14)] <- NA
+      }else{ende3.ell <- ende2.ell}
+      
+      if(nrow(ende3.ell)==0){ #wenn es fuer diesen Druchmesser keine Variante gibt, dann anderen suchen
+        
+        vec.6 <- which(sapply(liste6, FUN=function(X) "2" %in% X)) #2 ist der unter dem BHD auf 1.125
+        
+        ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
+        
+        if(nrow(ende2.ell)!=0){
+          ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
+          
+          liste6 <- combn(out.vec, 6, simplify = FALSE)
+          #schauen was gebraucht wird - rest NA machen
+          wahl_ell <- out[2, ]
+          wahl_ell[, c(11:14)] <- NA
+          wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
+          wahl_ell6[, c(11:14)] <- NA
+        }else{ende3.ell <- ende2.ell}
+        
+        if(nrow(ende3.ell)==0){
+          
+          vec.6 <- which(sapply(liste6, FUN=function(X) "1" %in% X)) #
+          
+          ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
+          
+          if(nrow(ende2.ell)!=0){
+            ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
+            
+            liste6 <- combn(out.vec, 6, simplify = FALSE)
+            #schauen was gebraucht wird - rest NA machen
+            wahl_ell <- out[1, ]
+            wahl_ell[, c(11:14)] <- NA
+            wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
+            wahl_ell6[, c(11:14)] <- NA
+          }else{ende3.ell <- ende2.ell}
+          
+          if(nrow(ende3.ell)==0){
+            
+            vec.6 <- which(sapply(liste6, FUN=function(X) "4" %in% X)) #
+            
+            ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
+            
+            if(nrow(ende2.ell)!=0){
+              ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
+              
+              liste6 <- combn(out.vec, 6, simplify = FALSE)
+              #schauen was gebraucht wird - rest NA machen
+              wahl_ell <- out[4, ]
+              wahl_ell[, c(11:14)] <- NA
+              wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
+              wahl_ell6[, c(11:14)] <- NA
+            }else{ende3.ell <- ende2.ell}
+            
+            if(nrow(ende3.ell)==0){
+              
+              vec.6 <- which(sapply(liste6, FUN=function(X) "5" %in% X)) #
+              
+              ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
+              
+              if(nrow(ende2.ell)!=0){
+                ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
+                
+                liste6 <- combn(out.vec, 6, simplify = FALSE)
+                #schauen was gebraucht wird - rest NA machen
+                wahl_ell <- out[5, ]
+                wahl_ell[, c(11:14)] <- NA
+                wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
+                wahl_ell6[, c(11:14)] <- NA
+              }else{ende3.ell <- ende2.ell}
+              
+              if(nrow(ende3.ell)==0){
+                
+                vec.6 <- which(sapply(liste6, FUN=function(X) "6" %in% X)) #
+                
+                ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
+                
+                if(nrow(ende2.ell)!=0){
+                  ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
+                  
+                  liste6 <- combn(out.vec, 6, simplify = FALSE)
+                  #schauen was gebraucht wird - rest NA machen
+                  wahl_ell <- out[6, ]
+                  wahl_ell[, c(11:14)] <- NA
+                  wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
+                  wahl_ell6[, c(11:14)] <- NA
+                }else{ende3.ell <- ende2.ell}
+                
+                if(nrow(ende3.ell)==0){
+                  
+                  vec.6 <- which(sapply(liste6, FUN=function(X) "7" %in% X)) #
+                  
+                  ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
+                  
+                  if(nrow(ende2.ell)!=0){
+                    ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
+                    
+                    liste6 <- combn(out.vec, 6, simplify = FALSE)
+                    #schauen was gebraucht wird - rest NA machen
+                    wahl_ell <- out[7, ]
+                    wahl_ell[, c(11:14)] <- NA
+                    wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
+                    wahl_ell6[, c(11:14)] <- NA
+                  }else{ende3.ell <- ende2.ell}
+                  
+                  if(nrow(ende3.ell)==0){
+                    
+                    vec.6 <- which(sapply(liste6, FUN=function(X) "8" %in% X)) #
+                    
+                    ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
+                    
+                    if(nrow(ende2.ell)!=0){
+                      ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
+                      
+                      liste6 <- combn(out.vec, 6, simplify = FALSE)
+                      #schauen was gebraucht wird - rest NA machen
+                      wahl_ell <- out[8, ]
+                      wahl_ell[, c(11:14)] <- NA
+                      wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
+                      wahl_ell6[, c(11:14)] <- NA
+                    }else{ende3.ell <- ende2.ell}
+                    
+                    if(nrow(ende3.ell)==0){
+                      
+                      vec.6 <- which(sapply(liste6, FUN=function(X) "9" %in% X)) #
+                      
+                      ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
+                      
+                      if(nrow(ende2.ell)!=0){
+                        ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
+                        
+                        liste6 <- combn(out.vec, 6, simplify = FALSE)
+                        #schauen was gebraucht wird - rest NA machen
+                        wahl_ell <- out[9, ]
+                        wahl_ell[, c(11:14)] <- NA
+                        wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
+                        wahl_ell6[, c(11:14)] <- NA
+                      }else{ende3.ell <- ende2.ell}
+                    }
+                    
+                  }
+                  
+                }
+                
+              }
+              
+            }
+          }
+          
+        }
+        
+      }
+    }
+  }else{
+    wahl_ell <- out[1, ]
+    wahl_ell[1, 4:ncol(wahl_ell)] <- NA
+    wahl_ell6 <- out[1:6, ]
+    wahl_ell6[, 4:ncol(wahl_ell6)] <- NA
+  }
+  
+  # wahl_circ
+  # wahl_circ6
+  # wahl_ell
+  # wahl_ell6
+  
+  
+  if(is.na(wahl_circ$d.circ)&is.na(wahl_ell$d.ell)){
+    wahl_all_ende <- wahl_circ6[1, c("cluster", "cluster2", "cluster3")]
+    wahl_all_ende$x.choosen <- NA
+    wahl_all_ende$y.choosen <- NA
+    wahl_all_ende$d.circ <- NA
+    wahl_all_ende$d.circ2 <- NA
+    wahl_all_ende$d.ell <- NA
+    wahl_all_ende$d.gam <- NA
+    wahl_all_ende$tegam.d_gam <- NA
+    # wahl_all_ende[, colnames(wahl_circ6[19:32])] <- NA #weil die Spalten 19:32 die qgams sind
+    
+  }else{
+    if(is.na(wahl_circ$d.circ)==F&is.na(wahl_ell$d.ell)==F){
+      wahl_all_ende <- wahl_circ6[1, c("cluster", "cluster2", "cluster3")]
+      hoehe <- wahl_circ6$z.unten+0.15/2 # weil Schichtbreite 0.15 ist
+      model <- lm(wahl_circ6$x.circ~hoehe)
+      wahl_all_ende$x.choosen <- predict(model, data.frame("hoehe"=1.3))
+      model <- lm(wahl_circ6$y.circ~hoehe)
+      wahl_all_ende$y.choosen <- predict(model, data.frame("hoehe"=1.3))
+      model <- lm(wahl_circ6$d.circ~hoehe)
+      wahl_all_ende$d.circ <- predict(model, data.frame("hoehe"=1.3))
+      model <- lm(wahl_circ6$d.circ2~hoehe)
+      wahl_all_ende$d.circ2 <- predict(model, data.frame("hoehe"=1.3))
+      model <- lm(wahl_ell6$d.ell~hoehe)
+      wahl_all_ende$d.ell <- predict(model, data.frame("hoehe"=1.3))
+      model <- lm(wahl_circ6$d.gam~hoehe)
+      wahl_all_ende$d.gam <- predict(model, data.frame("hoehe"=1.3))
+      wahl_all_ende$tegam.d_gam <- unique(wahl_circ6$tegam.d_gam)
+      # for(column in 19:32){
+      #  model <- lm(wahl_circ6[, column]~hoehe)
+      #  wahl_all_ende[, colnames(wahl_circ6[column])] <- predict(model, data.frame("hoehe"=1.3))
+      # }
+      
+    }
+    if(is.na(wahl_circ$d.circ)==F&is.na(wahl_ell$d.ell)){
+      wahl_all_ende <- wahl_circ6[1, c("cluster", "cluster2", "cluster3")]
+      hoehe <- wahl_circ6$z.unten+0.15/2 # weil Schichtbreite 0.15 ist
+      model <- lm(wahl_circ6$x.circ~hoehe)
+      wahl_all_ende$x.choosen <- predict(model, data.frame("hoehe"=1.3))
+      model <- lm(wahl_circ6$y.circ~hoehe)
+      wahl_all_ende$y.choosen <- predict(model, data.frame("hoehe"=1.3))
+      model <- lm(wahl_circ6$d.circ~hoehe)
+      wahl_all_ende$d.circ <- predict(model, data.frame("hoehe"=1.3))
+      model <- lm(wahl_circ6$d.circ2~hoehe)
+      wahl_all_ende$d.circ2 <- predict(model, data.frame("hoehe"=1.3))
+      wahl_all_ende$d.ell <- NA
+      model <- lm(wahl_circ6$d.gam~hoehe)
+      wahl_all_ende$d.gam <- predict(model, data.frame("hoehe"=1.3))
+      wahl_all_ende$tegam.d_gam <- unique(wahl_circ6$tegam.d_gam)
+      # for(column in 19:32){
+      #  model <- lm(wahl_circ6[, column]~hoehe)
+      #  wahl_all_ende[, colnames(wahl_circ6[column])] <- predict(model, data.frame("hoehe"=1.3))
+      # }
+      
+    }
+    if(is.na(wahl_circ$d.circ)&is.na(wahl_ell$d.ell)==F){
+      wahl_all_ende <- wahl_circ6[1, c("cluster", "cluster2", "cluster3")]
+      hoehe <- wahl_ell6$z.unten+0.15/2 # weil Schichtbreite 0.15 ist
+      model <- lm(wahl_ell6$x.ell~hoehe)
+      wahl_all_ende$x.choosen <- predict(model, data.frame("hoehe"=1.3))
+      model <- lm(wahl_ell6$y.ell~hoehe)
+      wahl_all_ende$y.choosen <- predict(model, data.frame("hoehe"=1.3))
+      wahl_all_ende$d.circ <- NA
+      wahl_all_ende$d.circ2 <- NA #kann man ueberlegen, ob man den circ nicht hier hineintut - denn es gibt ihn ja auch wenn es den circ nicht gibt
+      model <- lm(wahl_ell6$d.ell~hoehe)
+      wahl_all_ende$d.ell <- predict(model, data.frame("hoehe"=1.3))
+      model <- lm(wahl_ell6$d.gam~hoehe)
+      wahl_all_ende$d.gam <- predict(model, data.frame("hoehe"=1.3))
+      wahl_all_ende$tegam.d_gam <- unique(wahl_ell6$tegam.d_gam)
+      # for(column in 19:32){
+      #  model <- lm(wahl_ell6[, column]~hoehe)
+      #  wahl_all_ende[, colnames(wahl_ell6[column])] <- predict(model, data.frame("hoehe"=1.3))
+      # }
+    }
+  }
+  
+  
+  return(wahl_all_ende)
+}
+
+fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0, 
                         referenced = FALSE, bushPreparation = FALSE, filterSOR = FALSE,
                         cutWindow = c(-1000, -1000, 2000), silent = FALSE, dirPath = paste0(getwd(), "/")){
   cat("\nStarting fineCluster(), ")
   fineTime1 <- Sys.time()
   cat("Current time is", format(fineTime1, "%H:%M:%S"), "\n")
   groundPath <- v.env$groundPath
-
+  
   #cat("Handling set", file, "-", file.name.i, "\n")
   end_path <- paste0(dbhPath, "fineCluster/")
   file.list <- list.files(end_path)
-
-  cat("handling", length(file.list), "clusters...\n")
-
-  for(datei in 1:length(file.list)){
-    cat(datei, "-")
-    out <- read.csv2(paste0(end_path, file.list[datei]))
-    out <- out[, -1]
-    out[out$n.punkt<=90&!is.na(out$n.punkt), c("flaeche", "x.ell", "y.ell", "d.ell", "q.ell", "sk",
-                                               "x.circ", "y.circ", "d.circ", "n.circ", "n.punkt", "prozFuell", "d.gam", "d.ob", "d.ob2",
-                                               "d.min", "d.max", "d.stip", "tegam.d_ob", "tegam.d_ob2", "tegam.d_min", "tegam.d_max", "tegam.d_stip", "tegam.d_gam")] <- NA #out$n.punkt<=150
-    #min punkte auf 90 von 100 heruntergestellt
-    out[out$q.ell<=0.60&!is.na(out$x.ell), c("flaeche", "x.ell", "y.ell", "d.ell", "q.ell", "sk")] <- NA #out$q.ell<=0.65
-    #Grenze fuer abfalchung Ellipse muss groesser sein wie #0.60 sonst NA
-    out[out$prozFuell<25&!is.na(out$x.circ), c("flaeche", "x.ell", "y.ell", "d.ell", "q.ell", "sk",
-                                               "x.circ", "y.circ", "d.circ", "n.circ", "n.punkt", "prozFuell", "d.gam", "d.ob", "d.ob2",
-                                               "d.min", "d.max", "d.stip", "tegam.d_ob", "tegam.d_ob2", "tegam.d_min", "tegam.d_max", "tegam.d_stip", "tegam.d_gam")] <- NA
-    #wir brauchen mind. 25% Fuellung
-
-    # out
-    # plot(out$z.unten, out$d.circ)
-
-    head(out)
-    out.vec <- 1:nrow(out)
-    m.vec <- 6 #mit 6 fixiert -> es muessen mind. 6 durch die Schwellenwerte kommen
-    k=1
-    l=1
-    for(k in 1:length(m.vec)){
-      liste <- combn(out.vec, m.vec[k], simplify = FALSE) #alles moeglichen Kombis
-      for(l in 1:length(liste)){
-        #sd fuer pos und durchmesser der ellipse
-        sdx.ell <- sd(out[liste[[l]], ]$x.ell)
-        sdy.ell <- sd(out[liste[[l]], ]$y.ell)
-        sdbhd.ell <- sd(out[liste[[l]], ]$d.ell)
-        sdx.circ <- sd(out[liste[[l]], ]$x.circ)
-        sdy.circ <- sd(out[liste[[l]], ]$y.circ)
-        sdbhd.circ <- sd(out[liste[[l]], ]$d.circ)
-        #mittlere rel. anzahl an punkten aus den 6
-        mean.n.circ <- mean(out[liste[[l]], ]$n.circ)
-        # mean.n.ell <- mean(out[liste[[l]], ]$nEll)
-        comb <- l
-        fertig <- data.frame("sdx.ell" = sdx.ell, "sdy.ell"=sdy.ell, "sdbhd.ell"=sdbhd.ell,
-                             "sdx.circ" = sdx.circ, "sdy.circ"=sdy.circ, "sdbhd.circ"=sdbhd.circ,
-                             "mean.n.circ" = mean.n.circ, "comb.circ"=comb, "anzahl.pro"=m.vec[k])
-
-        if(l==1){
-          output <- fertig
-        }else{
-          output <- rbind(output, fertig)
-        }
-      }
-      if(k==1){
-        output2 <- output
+  
+  cat(" -> handling", length(file.list), "clusters...\n")
+  
+  
+  if(nr_cores == 0){
+    #cat("Automatic number of core setting:\n   ")
+    nr_cores <- detectCores()
+    #cat(nr_cores, "cores available - setting to max ")
+    nr_cores <- nr_cores - 1
+    
+    # maxCores <- 10
+    # cat(maxCores, "cores recommended.\n")
+    # if(maxCores < 1){
+    #   maxCores <- 1
+    # }
+    # if(maxCores <=  nr_cores){
+    #   nr_cores <- maxCores
+    # }
+  }
+  
+  
+  if(nr_cores == 1){
+    
+    cat(" -> starting serial cluster analysis:")
+    for(datei in 1:length(file.list)){
+      if(datei%%20 == 1) cat("\n    ")
+      cat(paste0(datei, "-"))
+      nowCircles <- fineCluster_i(circleFile = paste0(end_path, file.list[datei]))
+      
+      if(datei==1){
+        #entdeckung <- wahl
+        entdeckung_all <- nowCircles
       }else{
-        output2 <- rbind(output2, output)
+        #entdeckung <- rbind(entdeckung, wahl)
+        entdeckung_all <- rbind(entdeckung_all, nowCircles)
       }
-
-    }
-
-    grenze.xy <- 0.2 #0.2 passt fuer 44, fuer 68 schon zu gross; ist relativ gross gewaehlt
-    grenze.BHD <- 1.85 ##muesste fuer 152 2.2 sein
-    #wenn keiner uebrig bleibt, dann gibt es keinen
-
-    if(length(unique(output2$mean.n.circ))!=1){
-      if(min(output2$mean.n.circ, na.rm = T)<0.35&
-         min(output2$sdx.circ, na.rm = T)<0.07&min(output2$sdy.circ, na.rm = T)<0.07){grenze.BHD <- 2.0}
-
-      if(min(output2$mean.n.circ, na.rm = T)<0.4&
-         min(output2$sdx.circ, na.rm = T)<0.02&min(output2$sdy.circ, na.rm = T)<0.02){grenze.BHD <- 4.7}
-
-      if(median(output2$sdbhd.circ, na.rm =T) > 2.7){grenze.BHD <- 0.8}
-    }
-
-    summary(output2)
-    # hist(output2$sdbhd.circ)
-    # mean(output2$sdbhd.circ, na.rm =T)
-    # median(output2$sdbhd.circ, na.rm =T)
-    # skewness(output2$sdbhd.circ, na.rm =T)
-
-    #auf Grenzen subsetten
-    optim2.circ <- output2[output2$sdx.circ<=grenze.xy&output2$sdy.circ<=grenze.xy&output2$sdbhd.circ<=grenze.BHD&!is.na(output2$sdbhd.circ), ]
-    optim2.ell <- output2[output2$sdx.ell<=grenze.xy&output2$sdy.ell<=grenze.xy&output2$sdbhd.ell<=grenze.BHD&!is.na(output2$sdbhd.ell), ]
-
-    if(nrow(optim2.circ)!=0){ #wenn im Kreis was drinnen ist
-      optim3.circ <- optim2.circ #
-
-      ende.circ <- optim3.circ[optim3.circ$sdbhd.circ<=quantile(optim3.circ$sdbhd.circ, 0.05), ] #nimm die 5% der genauesten hinsichtlich des bhd
-
-      liste6 <- combn(out.vec, 6, simplify = FALSE)
-      liste6 <- lapply(liste6, as.character)
-      vec.6 <- which(sapply(liste6, FUN=function(X) "3" %in% X)) #weil 3 der auf 1.250 BHD-Hoehe ist #Schauen ob die in den Kombis vorhanden ist
-
-      ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ] #
-
-      if(nrow(ende2.circ)!=0){#wenn ein Circle vorhanden ist, nehme den besten, hinsichtlich des sdBHD
-        ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
-
-        liste6 <- combn(out.vec, 6, simplify = FALSE)
-        #schauen was gebraucht wird - rest NA machen
-        wahl_circ <- out[3, ]
-        wahl_circ[, c(6:9)] <- NA
-        wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
-        wahl_circ6[, c(6:9)] <- NA
-      }else{ende3.circ <- ende2.circ}
-
-      if(nrow(ende3.circ)==0){ #wenn es fuer diesen Druchmesser keine Variante gibt, dann anderen suchen
-
-        vec.6 <- which(sapply(liste6, FUN=function(X) "2" %in% X)) #2 ist der unter dem BHD auf 1.125
-
-        ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
-
-        if(nrow(ende2.circ)!=0){
-          ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
-
-          liste6 <- combn(out.vec, 6, simplify = FALSE)
-          #schauen was gebraucht wird - rest NA machen
-          wahl_circ <- out[2, ]
-          wahl_circ[, c(6:9)] <- NA
-          wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
-          wahl_circ6[, c(6:9)] <- NA
-        }else{ende3.circ <- ende2.circ}
-
-        if(nrow(ende3.circ)==0){
-
-          vec.6 <- which(sapply(liste6, FUN=function(X) "1" %in% X)) #
-
-          ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
-
-          if(nrow(ende2.circ)!=0){
-            ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
-
-            liste6 <- combn(out.vec, 6, simplify = FALSE)
-            #schauen was gebraucht wird - rest NA machen
-            wahl_circ <- out[1, ]
-            wahl_circ[, c(6:9)] <- NA
-            wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
-            wahl_circ6[, c(6:9)] <- NA
-          }else{ende3.circ <- ende2.circ}
-
-          if(nrow(ende3.circ)==0){
-
-            vec.6 <- which(sapply(liste6, FUN=function(X) "4" %in% X)) #
-
-            ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
-
-            if(nrow(ende2.circ)!=0){
-              ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
-
-              liste6 <- combn(out.vec, 6, simplify = FALSE)
-              #schauen was gebraucht wird - rest NA machen
-              wahl_circ <- out[4, ]
-              wahl_circ[, c(6:9)] <- NA
-              wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
-              wahl_circ6[, c(6:9)] <- NA
-            }else{ende3.circ <- ende2.circ}
-
-            if(nrow(ende3.circ)==0){
-
-              vec.6 <- which(sapply(liste6, FUN=function(X) "5" %in% X)) #
-
-              ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
-
-              if(nrow(ende2.circ)!=0){
-                ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
-
-                liste6 <- combn(out.vec, 6, simplify = FALSE)
-                #schauen was gebraucht wird - rest NA machen
-                wahl_circ <- out[5, ]
-                wahl_circ[, c(6:9)] <- NA
-                wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
-                wahl_circ6[, c(6:9)] <- NA
-              }else{ende3.circ <- ende2.circ}
-
-              if(nrow(ende3.circ)==0){
-
-                vec.6 <- which(sapply(liste6, FUN=function(X) "6" %in% X)) #
-
-                ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
-
-                if(nrow(ende2.circ)!=0){
-                  ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
-
-                  liste6 <- combn(out.vec, 6, simplify = FALSE)
-                  #schauen was gebraucht wird - rest NA machen
-                  wahl_circ <- out[6, ]
-                  wahl_circ[, c(6:9)] <- NA
-                  wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
-                  wahl_circ6[, c(6:9)] <- NA
-                }else{ende3.circ <- ende2.circ}
-
-                if(nrow(ende3.circ)==0){
-
-                  vec.6 <- which(sapply(liste6, FUN=function(X) "7" %in% X)) #
-
-                  ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
-
-                  if(nrow(ende2.circ)!=0){
-                    ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
-
-                    liste6 <- combn(out.vec, 6, simplify = FALSE)
-                    #schauen was gebraucht wird - rest NA machen
-                    wahl_circ <- out[7, ]
-                    wahl_circ[, c(6:9)] <- NA
-                    wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
-                    wahl_circ6[, c(6:9)] <- NA
-                  }else{ende3.circ <- ende2.circ}
-
-                  if(nrow(ende3.circ)==0){
-
-                    vec.6 <- which(sapply(liste6, FUN=function(X) "8" %in% X)) #
-
-                    ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
-
-                    if(nrow(ende2.circ)!=0){
-                      ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
-
-                      liste6 <- combn(out.vec, 6, simplify = FALSE)
-                      #schauen was gebraucht wird - rest NA machen
-                      wahl_circ <- out[8, ]
-                      wahl_circ[, c(6:9)] <- NA
-                      wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
-                      wahl_circ6[, c(6:9)] <- NA
-                    }else{ende3.circ <- ende2.circ}
-
-                    if(nrow(ende3.circ)==0){
-
-                      vec.6 <- which(sapply(liste6, FUN=function(X) "9" %in% X)) #
-
-                      ende2.circ <- ende.circ[ende.circ$comb.circ %in% vec.6, ]
-
-                      if(nrow(ende2.circ)!=0){
-                        ende3.circ <- ende2.circ[ende2.circ$sdbhd.circ==min(ende2.circ$sdbhd.circ), ][1, ]
-
-                        liste6 <- combn(out.vec, 6, simplify = FALSE)
-                        #schauen was gebraucht wird - rest NA machen
-                        wahl_circ <- out[9, ]
-                        wahl_circ[, c(6:9)] <- NA
-                        wahl_circ6 <- out[liste6[[ende3.circ$comb.circ]], ]
-                        wahl_circ6[, c(6:9)] <- NA
-                      }else{ende3.circ <- ende2.circ}
-                    }
-
-                  }
-
-                }
-
-              }
-
-            }
-          }
-
-        }
-
-      }
-    }else{
-      wahl_circ <- out[1, ]
-      wahl_circ[1, 4:ncol(wahl_circ)] <- NA
-      wahl_circ6 <- out[1:6, ]
-      wahl_circ6[, 4:ncol(wahl_circ6)] <- NA
-    }
-
-    if(nrow(optim2.ell)!=0){ #wenn in einem was drinnen ist
-      optim3.ell <- optim2.ell
-
-      if(nrow(optim3.ell)!=0){ #wenn es dann noch was gibt
-
-        ende.ell <- optim3.ell[optim3.ell$sdbhd.ell<=quantile(optim3.ell$sdbhd.ell, 0.05), ] #nimm die 5% der genauesten hinsichtlich des bhd
-
-        liste6 <- combn(out.vec, 6, simplify = FALSE)
-        liste6 <- lapply(liste6, as.character)
-        vec.6 <- which(sapply(liste6, FUN=function(X) "3" %in% X)) #weil 3 der auf 1.250 BHD-Hoehe ist #Schauen ob die in den Kombis vorhanden ist
-
-        ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
-
-        if(nrow(ende2.ell)!=0){#wenn eine Ellipse vorhanden ist, dasselbe
-          ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
-
-          liste6 <- combn(out.vec, 6, simplify = FALSE)
-          #schauen was gebraucht wird - rest NA machen
-          wahl_ell <- out[3, ]
-          wahl_ell[, c(11:14)] <- NA
-          wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
-          wahl_ell6[, c(11:14)] <- NA
-        }else{ende3.ell <- ende2.ell}
-
-        if(nrow(ende3.ell)==0){ #wenn es fuer diesen Druchmesser keine Variante gibt, dann anderen suchen
-
-          vec.6 <- which(sapply(liste6, FUN=function(X) "2" %in% X)) #2 ist der unter dem BHD auf 1.125
-
-          ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
-
-          if(nrow(ende2.ell)!=0){
-            ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
-
-            liste6 <- combn(out.vec, 6, simplify = FALSE)
-            #schauen was gebraucht wird - rest NA machen
-            wahl_ell <- out[2, ]
-            wahl_ell[, c(11:14)] <- NA
-            wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
-            wahl_ell6[, c(11:14)] <- NA
-          }else{ende3.ell <- ende2.ell}
-
-          if(nrow(ende3.ell)==0){
-
-            vec.6 <- which(sapply(liste6, FUN=function(X) "1" %in% X)) #
-
-            ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
-
-            if(nrow(ende2.ell)!=0){
-              ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
-
-              liste6 <- combn(out.vec, 6, simplify = FALSE)
-              #schauen was gebraucht wird - rest NA machen
-              wahl_ell <- out[1, ]
-              wahl_ell[, c(11:14)] <- NA
-              wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
-              wahl_ell6[, c(11:14)] <- NA
-            }else{ende3.ell <- ende2.ell}
-
-            if(nrow(ende3.ell)==0){
-
-              vec.6 <- which(sapply(liste6, FUN=function(X) "4" %in% X)) #
-
-              ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
-
-              if(nrow(ende2.ell)!=0){
-                ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
-
-                liste6 <- combn(out.vec, 6, simplify = FALSE)
-                #schauen was gebraucht wird - rest NA machen
-                wahl_ell <- out[4, ]
-                wahl_ell[, c(11:14)] <- NA
-                wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
-                wahl_ell6[, c(11:14)] <- NA
-              }else{ende3.ell <- ende2.ell}
-
-              if(nrow(ende3.ell)==0){
-
-                vec.6 <- which(sapply(liste6, FUN=function(X) "5" %in% X)) #
-
-                ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
-
-                if(nrow(ende2.ell)!=0){
-                  ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
-
-                  liste6 <- combn(out.vec, 6, simplify = FALSE)
-                  #schauen was gebraucht wird - rest NA machen
-                  wahl_ell <- out[5, ]
-                  wahl_ell[, c(11:14)] <- NA
-                  wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
-                  wahl_ell6[, c(11:14)] <- NA
-                }else{ende3.ell <- ende2.ell}
-
-                if(nrow(ende3.ell)==0){
-
-                  vec.6 <- which(sapply(liste6, FUN=function(X) "6" %in% X)) #
-
-                  ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
-
-                  if(nrow(ende2.ell)!=0){
-                    ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
-
-                    liste6 <- combn(out.vec, 6, simplify = FALSE)
-                    #schauen was gebraucht wird - rest NA machen
-                    wahl_ell <- out[6, ]
-                    wahl_ell[, c(11:14)] <- NA
-                    wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
-                    wahl_ell6[, c(11:14)] <- NA
-                  }else{ende3.ell <- ende2.ell}
-
-                  if(nrow(ende3.ell)==0){
-
-                    vec.6 <- which(sapply(liste6, FUN=function(X) "7" %in% X)) #
-
-                    ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
-
-                    if(nrow(ende2.ell)!=0){
-                      ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
-
-                      liste6 <- combn(out.vec, 6, simplify = FALSE)
-                      #schauen was gebraucht wird - rest NA machen
-                      wahl_ell <- out[7, ]
-                      wahl_ell[, c(11:14)] <- NA
-                      wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
-                      wahl_ell6[, c(11:14)] <- NA
-                    }else{ende3.ell <- ende2.ell}
-
-                    if(nrow(ende3.ell)==0){
-
-                      vec.6 <- which(sapply(liste6, FUN=function(X) "8" %in% X)) #
-
-                      ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
-
-                      if(nrow(ende2.ell)!=0){
-                        ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
-
-                        liste6 <- combn(out.vec, 6, simplify = FALSE)
-                        #schauen was gebraucht wird - rest NA machen
-                        wahl_ell <- out[8, ]
-                        wahl_ell[, c(11:14)] <- NA
-                        wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
-                        wahl_ell6[, c(11:14)] <- NA
-                      }else{ende3.ell <- ende2.ell}
-
-                      if(nrow(ende3.ell)==0){
-
-                        vec.6 <- which(sapply(liste6, FUN=function(X) "9" %in% X)) #
-
-                        ende2.ell <- ende.ell[ende.ell$comb.circ %in% vec.6, ]
-
-                        if(nrow(ende2.ell)!=0){
-                          ende3.ell <- ende2.ell[ende2.ell$sdbhd.ell==min(ende2.ell$sdbhd.ell), ][1, ]
-
-                          liste6 <- combn(out.vec, 6, simplify = FALSE)
-                          #schauen was gebraucht wird - rest NA machen
-                          wahl_ell <- out[9, ]
-                          wahl_ell[, c(11:14)] <- NA
-                          wahl_ell6 <- out[liste6[[ende3.ell$comb.circ]], ]
-                          wahl_ell6[, c(11:14)] <- NA
-                        }else{ende3.ell <- ende2.ell}
-                      }
-
-                    }
-
-                  }
-
-                }
-
-              }
-            }
-
-          }
-
-        }
-      }
-    }else{
-      wahl_ell <- out[1, ]
-      wahl_ell[1, 4:ncol(wahl_ell)] <- NA
-      wahl_ell6 <- out[1:6, ]
-      wahl_ell6[, 4:ncol(wahl_ell6)] <- NA
-    }
-
-    # wahl_circ
-    # wahl_circ6
-    # wahl_ell
-    # wahl_ell6
-
-
-    if(is.na(wahl_circ$d.circ)&is.na(wahl_ell$d.ell)){
-      wahl_all_ende <- wahl_circ6[1, c("cluster", "cluster2", "cluster3")]
-      wahl_all_ende$x.choosen <- NA
-      wahl_all_ende$y.choosen <- NA
-      wahl_all_ende$d.circ <- NA
-      wahl_all_ende$d.circ2 <- NA
-      wahl_all_ende$d.ell <- NA
-      wahl_all_ende$d.gam <- NA
-      wahl_all_ende$tegam.d_gam <- NA
-      # wahl_all_ende[, colnames(wahl_circ6[19:32])] <- NA #weil die Spalten 19:32 die qgams sind
-
-    }else{
-      if(is.na(wahl_circ$d.circ)==F&is.na(wahl_ell$d.ell)==F){
-        wahl_all_ende <- wahl_circ6[1, c("cluster", "cluster2", "cluster3")]
-        hoehe <- wahl_circ6$z.unten+0.15/2 # weil Schichtbreite 0.15 ist
-        model <- lm(wahl_circ6$x.circ~hoehe)
-        wahl_all_ende$x.choosen <- predict(model, data.frame("hoehe"=1.3))
-        model <- lm(wahl_circ6$y.circ~hoehe)
-        wahl_all_ende$y.choosen <- predict(model, data.frame("hoehe"=1.3))
-        model <- lm(wahl_circ6$d.circ~hoehe)
-        wahl_all_ende$d.circ <- predict(model, data.frame("hoehe"=1.3))
-        model <- lm(wahl_circ6$d.circ2~hoehe)
-        wahl_all_ende$d.circ2 <- predict(model, data.frame("hoehe"=1.3))
-        model <- lm(wahl_ell6$d.ell~hoehe)
-        wahl_all_ende$d.ell <- predict(model, data.frame("hoehe"=1.3))
-        model <- lm(wahl_circ6$d.gam~hoehe)
-        wahl_all_ende$d.gam <- predict(model, data.frame("hoehe"=1.3))
-        wahl_all_ende$tegam.d_gam <- unique(wahl_circ6$tegam.d_gam)
-        # for(column in 19:32){
-        #  model <- lm(wahl_circ6[, column]~hoehe)
-        #  wahl_all_ende[, colnames(wahl_circ6[column])] <- predict(model, data.frame("hoehe"=1.3))
-        # }
-
-      }
-      if(is.na(wahl_circ$d.circ)==F&is.na(wahl_ell$d.ell)){
-        wahl_all_ende <- wahl_circ6[1, c("cluster", "cluster2", "cluster3")]
-        hoehe <- wahl_circ6$z.unten+0.15/2 # weil Schichtbreite 0.15 ist
-        model <- lm(wahl_circ6$x.circ~hoehe)
-        wahl_all_ende$x.choosen <- predict(model, data.frame("hoehe"=1.3))
-        model <- lm(wahl_circ6$y.circ~hoehe)
-        wahl_all_ende$y.choosen <- predict(model, data.frame("hoehe"=1.3))
-        model <- lm(wahl_circ6$d.circ~hoehe)
-        wahl_all_ende$d.circ <- predict(model, data.frame("hoehe"=1.3))
-        model <- lm(wahl_circ6$d.circ2~hoehe)
-        wahl_all_ende$d.circ2 <- predict(model, data.frame("hoehe"=1.3))
-        wahl_all_ende$d.ell <- NA
-        model <- lm(wahl_circ6$d.gam~hoehe)
-        wahl_all_ende$d.gam <- predict(model, data.frame("hoehe"=1.3))
-        wahl_all_ende$tegam.d_gam <- unique(wahl_circ6$tegam.d_gam)
-        # for(column in 19:32){
-        #  model <- lm(wahl_circ6[, column]~hoehe)
-        #  wahl_all_ende[, colnames(wahl_circ6[column])] <- predict(model, data.frame("hoehe"=1.3))
-        # }
-
-      }
-      if(is.na(wahl_circ$d.circ)&is.na(wahl_ell$d.ell)==F){
-        wahl_all_ende <- wahl_circ6[1, c("cluster", "cluster2", "cluster3")]
-        hoehe <- wahl_ell6$z.unten+0.15/2 # weil Schichtbreite 0.15 ist
-        model <- lm(wahl_ell6$x.ell~hoehe)
-        wahl_all_ende$x.choosen <- predict(model, data.frame("hoehe"=1.3))
-        model <- lm(wahl_ell6$y.ell~hoehe)
-        wahl_all_ende$y.choosen <- predict(model, data.frame("hoehe"=1.3))
-        wahl_all_ende$d.circ <- NA
-        wahl_all_ende$d.circ2 <- NA #kann man ueberlegen, ob man den circ nicht hier hineintut - denn es gibt ihn ja auch wenn es den circ nicht gibt
-        model <- lm(wahl_ell6$d.ell~hoehe)
-        wahl_all_ende$d.ell <- predict(model, data.frame("hoehe"=1.3))
-        model <- lm(wahl_ell6$d.gam~hoehe)
-        wahl_all_ende$d.gam <- predict(model, data.frame("hoehe"=1.3))
-        wahl_all_ende$tegam.d_gam <- unique(wahl_ell6$tegam.d_gam)
-        # for(column in 19:32){
-        #  model <- lm(wahl_ell6[, column]~hoehe)
-        #  wahl_all_ende[, colnames(wahl_ell6[column])] <- predict(model, data.frame("hoehe"=1.3))
-        # }
-      }
-    }
-
-    if(datei==1){
-      #entdeckung <- wahl
-      entdeckung_all <- wahl_all_ende
-    }else{
-      #entdeckung <- rbind(entdeckung, wahl)
-      entdeckung_all <- rbind(entdeckung_all, wahl_all_ende)
     }
   }
-
+  else 
+  {
+    # PARALLEL PART
+    cat(" -> going now parallel on", nr_cores, "cores...")
+    
+    library(doParallel)
+    registerDoParallel(nr_cores)
+    
+    file_parallelProtocol <- paste0(dbhPath, "temp_par_fineClust.txt")
+    file.create(file_parallelProtocol)
+    fdc <<- foreach(datei = 1:length(file.list),  .errorhandling = 'remove', 
+                    .export='fineCluster_i') %dopar% {
+                      sink(file_parallelProtocol, append = T)
+                      cat(paste0(datei, "-"))
+                      nowCircles <- fineCluster_i(circleFile = paste0(end_path, file.list[datei]))
+                      
+                      cat(paste0("-", datei, "\n"))
+                      sink()
+                      return(nowCircles)
+                    }
+    
+    stopImplicitCluster()
+    
+    unlink(file_parallelProtocol)
+    
+    skippedTrees <- sum(lengths(fdc) == 0)
+    if(skippedTrees > 0){
+      cat("There were", skippedTrees, "clusters removed.\n")
+      
+      table(lengths(fdc))
+      fdc2 <- NULL
+      for(i in 1:length(fdc)){
+        if(!is.null(fdc[[i]])){
+          if(is.null(fdc2)){
+            fdc2 <- fdc[[i]]
+          } else {
+            fdc2 <- rbind(fdc2, fdc[[i]])
+          }
+        }
+      }
+      df <- fdc2
+      cat("There were", length(df[,1]), "trees calculated on our point.")
+    } else {
+      df <- data.frame(matrix(unlist(fdc), nrow=length(fdc), byrow=TRUE))
+      colnames(df) <- colnames(fdc[[1]])
+      for(j in c(1:length(df[1,]))){ # all num 
+        df[,j] <- as.numeric(as.character(df[,j]))
+      }
+      # #special case, convert treeName if it works
+      # tempTreeNames <- as.numeric(as.character(df[,2]))
+      # if(sum(is.na(tempTreeNames))==0){
+      #   df[,2] <- tempTreeNames
+      # }
+    }
+    entdeckung_all <- df
+  }
+  
+  
   #gleich filtern auf die Baeme die es auch tats. gibt
   entdeckung_all <- entdeckung_all[is.na(entdeckung_all$x.choosen)==F, ]
   write.csv2(entdeckung_all, paste(dbhPath, "clusters_raw.csv", sep=""), row.names = F)
-
+  
   #write.csv2(entdeckung_all, paste("F:/Testen_Intensitaet/END_TLS/", "254", ".csv", sep=""), row.names = F)
-
-
-
-
+  
+  
+  
+  
   #} # only one file
-
-
-
+  
+  
+  
   cat("done!\n")
   cat("\nCreating output tree cluster list:\n")
   ### want to create output file with especially z coordinates, then want to leave referencing for later (when all is done)
-
+  
   #  setStr <- generateSetString(fileFinder = fileFinder, mode = mode,
   #                clipHeight = clipHeight, bottomCut = bottomCut,
   #                bushPreparation = bushPreparation,
@@ -2686,8 +2778,8 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
   # trees <- read.csv2(trees.file)
   trees <- entdeckung_all
   trees <- trees[order(trees$d.gam, decreasing = TRUE), ]
-
-
+  
+  
   ## STRIPING ESSENTIAL COLUMNS to get x and y column
   {
     if(sum(colnames(trees)=="x")==0){
@@ -2705,13 +2797,13 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
       #colnames(trees)[colnames(trees)=="cluster"] <- "id"
     }
   }
-
+  
   if(sum(colnames(trees)=="x") + sum(colnames(trees)=="y") + sum(colnames(trees)=="id") != 3){
     cat("Detected tree file is missing an input value (either x, y or id!\n")
     cat("Terminating alloation, please check your files.\n\n")
     return()
   }
-
+  
   cat(" * attaching z-values from reading _ground_min.grd model\n")
   tryCatch(
     {
@@ -2724,13 +2816,13 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
   trees$z <- round(extract(dtm_z, SpatialPoints(data.frame(x = trees$x, y = trees$y))) + 1.3, 3)
   #extracting the z-value from a dtm, was hard work to find that out... so easy
   #    extract(dtm_c, SpatialPoints(data.frame(x=15, y=-10)))
-
-
-
+  
+  
+  
   cat(" * drawing new random stem ids\n")
   rnlist <- sample(1:65535, length(trees[, 1]))
-
-
+  
+  
   mergedSet <- data.frame("x" = round(trees$x, 3), "y" = round(trees$y, 3),
                           "z" = trees$z, "id" = trees$id)
   if(sum(colnames(trees) == "cluster")==1){
@@ -2745,20 +2837,19 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, allFiles = FALSE,
     mergedSet$d.gam <- round(trees$d.gam, 3)
     mergedSet$tegam.d_gam <- round(trees$tegam.d_gam, 3)
   }
-
+  
   write.table(mergedSet, file = paste0(dbhPath, "trees_dbh.txt"),
               row.names = FALSE, sep = "\t")
   
-  cat(paste0("\n", dbhPath, "trees_dbh.txt"), "created.\n")
-
+  cat(paste0("\nFile ", "\"", dbhPath, "trees_dbh.txt", "\""), "created.\n")
+  
   
   fineTime2 <- Sys.time()
   cat("Fine clustering done in a ")
   print.difftime(round(fineTime2 - fineTime1, 1))
   cat("\n")
-
+  
 }
-
 
 
 
