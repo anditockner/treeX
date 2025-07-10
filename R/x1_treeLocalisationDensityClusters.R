@@ -551,7 +551,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
 ####################################################################################################
 
 
-diameterBeast_i <- function(clusterIndex, dbhPath, 
+diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, 
                             ipad = FALSE, fast = TRUE, allFiles = FALSE){
   
   # ERRORS INDUCED BY LEAVING EMPTY BRACKETS OVER WHOLE PARALLEL ROUTINE! ###
@@ -2154,13 +2154,14 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     for(i in 1:length(cluster.vec)){
       if(i%%20 == 1) cat("\n    ")
       cat(paste0("", cluster.vec[i], "-"))
-      diameterBeast_i(clusterIndex = cluster.vec[i], dbhPath = dbhPath, fast = fast, allFiles = allFiles)
+      diameterBeast_i(clusterIndex = cluster.vec[i], dbhPath = dbhPath, 
+                      fast = fast, allFiles = allFiles, sliVox = sliVox)
     }
   }
   else 
   {
     # PARALLEL PART
-    cat(fileFinder, " - Going parrrallel on", nr_cores, "cores.\n\n")
+    cat(fileFinder, " - Going parallel on", nr_cores, "cores.\n\n")
     
     library(doParallel)
     cl <- makeCluster(nr_cores)#, outfile="")
@@ -2170,22 +2171,14 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=1:length(cluster.vec),  .errorhandling = 'remove', 
                     .export=c('diameterBeast_i', 'v.env', 'sliVox'), 
-                    .packages = c("doParallel", "data.table", 
-                      "ADPclust", "densityClust", "plyr", 
-                      "spatstat", "alphahull", "RANN", 
-                      "flexclust", "sp", "matrixStats", 
-                      "lmfor", "rgl", "conicfit", "MASS", 
-                      "igraph", "geosphere", "pracma", 
-                      "DescTools", "mgcv", "recexcavAAR", 
-                      "raster", "lidR", "TreeLS", "dbscan", 
-                      "rgl", "conicfit"))%dopar% {
+                    .packages = c())%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       numi <- cluster.vec[i]
                       cat(paste0(numi, "-"))
-                      cat(paste0("~numPs", sliVox@header@PHB$`Number of point records`, "jo~"))
+                      #cat(paste0("~numPs", sliVox@header@PHB$`Number of point records`, "jo~"))
                       
-                      diameterBeast_i(clusterIndex = numi, 
+                      diameterBeast_i(clusterIndex = numi, sliVox = sliVox, 
                                       dbhPath = dbhPath, fast = fast, allFiles = allFiles)
                       
                       t2 <- Sys.time()
