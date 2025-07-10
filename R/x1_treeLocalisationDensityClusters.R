@@ -2067,8 +2067,8 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
   cat("\nStarting diameterBeast()\n")
   cat("Current time is", format(Sys.time(), "%H:%M:%S"), "\n")
   
-  #if(!exists("sliVox"))
-  {
+  
+  if(!exists("sliVox")){
     
     cat("Reading in lost slice cluster (normalized):\n")
     # NORMALIZATION
@@ -2156,7 +2156,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
   else 
   {
     # PARALLEL PART
-    cat(fileFinder, " - Going parallel on", nr_cores, "cores.\n\n")
+    cat(fileFinder, " - Going parrrallel on", nr_cores, "cores.\n\n")
     
     library(doParallel)
     registerDoParallel(nr_cores)
@@ -2165,7 +2165,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=1:length(cluster.vec),  .errorhandling = 'remove', 
                     .export=c('diameterBeast_i', 'sliVox', 'v.env'), 
-                    .packages = c("treeX"))%dopar% {
+                    .packages = c("treeX", "lidR"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       numi <- cluster.vec[i]
