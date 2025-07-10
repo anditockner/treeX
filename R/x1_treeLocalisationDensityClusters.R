@@ -5,9 +5,9 @@ retrieveSliVox <- function(){
 }
 
 
-if(!exists("sliVox")){
-  sliVox <<- NA # holds the voxelized slice, to extract per cluster points for dbh measuring faster
-}
+#if(!exists("sliVox")){
+#  sliVox <<- NA # holds the voxelized slice, to extract per cluster points for dbh measuring faster
+#}
 
 
 #' @export
@@ -124,7 +124,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
 
   if(file.exists(paste0(dbhPath, "slice_cluster.laz"))){
     cat("Skipping roughCluster(), loading old slice_cluster.laz file... ")
-    sliVox <<- readLAS(paste0(dbhPath, "slice_cluster.laz"))
+    v.env$sliVox <- readLAS(paste0(dbhPath, "slice_cluster.laz"))
     cat("done!\n")
   } else {
     roughCluster(fileFinder, dbhPath = dbhPath, ipad = ipad, allFiles = allFiles,
@@ -224,7 +224,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
   # if(file.exists(voxSlicePath) && !retainPointClouds){ #CHANGE HERE to always load file when RETAINPOINTCLOUDS = FALSE
   if(file.exists(voxSlicePath) && filterINT == 0){ #old one, please change! AT 21-05-18
     cat("-> We also use processed voxel cluster file, reading in... ")
-    sliVox <<- readLAS(voxSlicePath, select = "xyzcit0")
+    sliVox <- readLAS(voxSlicePath, select = "xyzcit0")
     numP <- sliVox@header@PHB$`Number of point records`
     cat("done.\n")
     try(file.copy(voxSlicePath.slope, paste0(dbhPath, "slice_cluster_slope.laz")))
@@ -376,7 +376,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
       cat("done by treeLS. ")
       print.difftime(round(t3-t2,1))
     }
-    sliVox <<- thin5
+    sliVox <- thin5
     rm(slice, thin5)
     gc()
 
@@ -409,7 +409,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
 
     cat("\nIn total there were ")
     # add information to which cluster point belongs
-    sliVox <<- add_lasattribute(sliVox, x = res$cluster, name = "cluster", desc = "ID of first stem clusters")
+    sliVox <- add_lasattribute(sliVox, x = res$cluster, name = "cluster", desc = "ID of first stem clusters")
     numClustBefore <- length(unique(sliVox@data$cluster))
     cat(numClustBefore, "clusters detected, they are filtered now to number of Points and z-extent:\n")
     #lidR::plot(sliVox, color = "cluster")
@@ -428,7 +428,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
       hilf.tab$keep <- hilf.tab$keepLarger & hilf.tab$keepZExtent
       hilf.tab
 
-      sliVox <<- filter_poi(sliVox, cluster%in%hilf.tab[hilf.tab$keep, ]$cluster)
+      sliVox <- filter_poi(sliVox, cluster%in%hilf.tab[hilf.tab$keep, ]$cluster)
       numClustAfter <- length(unique(sliVox@data$cluster))
       cat(" to", thMk(sliVox@header@PHB$`Number of point records`), "points, lost", numClustBefore - numClustAfter, "clusters.\n")
 
@@ -528,7 +528,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
   #local
   writeLAS(sliVox, paste0(dirPath, groundPath, fileFinder, "_clusterSlice_", bottomCut*100, "to", clipHeight*100, "_vox_slope.laz"))
   write.csv2(hilf, paste(dbhPath, "slice_cluster.csv", sep=""), row.names = F)
-  sliVox <<- sliVox_norm
+  sliVox <- sliVox_norm
   v.env$sliVox <- sliVox_norm
   #points(tab.neu[tab.neu$cluster==0, ]$X, tab.neu[tab.neu$cluster==0, ]$Y, col=grey(0.8), pch=13, cex=0.3)
   #save.image(paste0(dbhPath, fileFinder, ".RData"))
@@ -636,6 +636,8 @@ diameterBeast_i <- function(clusterIndex, dbhPath,
   sliVox <- retrieveSliVox()
   cat("~works~")
   cat(ifelse(exists("sliVox"), "existuje", "neex"))
+  cat(ifelse(exists("sliVox"), 
+             paste0("nPo", sliVox@header@PHB$`Number of point records`)))
   plot.clust2 <- filter_poi(sliVox, 'cluster' == clusterIndex)
   cat("~fí~")
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
