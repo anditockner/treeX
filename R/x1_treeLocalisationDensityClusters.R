@@ -628,7 +628,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath,
   }
   
   cat("~works~")
-  plot.clust2 <- filter_poi(sliVox, cluster == clusterIndex)
+  plot.clust2 <- filter_poi(sliVox, 'cluster' == clusterIndex)
   cat("~fí~")
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
   cat("~sec~")
