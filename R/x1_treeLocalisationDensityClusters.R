@@ -549,6 +549,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
 # 2 DIAMETER HUNT PER CLUSTER ######################################################################
 ####################################################################################################
 
+
 diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, allFiles = F){
   
   # ERRORS INDUCED BY LEAVING EMPTY BRACKETS OVER WHOLE PARALLEL ROUTINE! ###
@@ -588,7 +589,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
   #suppressPackageStartupMessages(library("edci", character.only = T))
   #tryCatch(suppressPackageStartupMessages(library("edci")), 
   #         error = function(e){})
-  
+  cat("~41~")
   #tab.neu <- tab.neu[tab.neu$cluster!=0, ] #alle weg die Noise sind
   u.grenzen.vec <- c(seq(1.0, 2.625, 0.125)) #Grenzen fuer BHD - Findung
   if(ipad){
@@ -600,6 +601,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
   path.output.cluster.end <- paste0(dbhPath, "fineCluster/")
   path.output.cluster.endgraph <- paste0(dbhPath, "graphSlice/")
   path.output.cluster.residuals <- paste0(dbhPath, "residuals/")
+  cat("~53~")
   if(allFiles){
     if(!dir.exists(path.output.cluster.endgraph)) dir.create(path.output.cluster.endgraph)
     if(!dir.exists(path.output.cluster.residuals)) dir.create(path.output.cluster.residuals)
@@ -624,6 +626,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
     return(wink)
   }
   
+  cat("~77~")
   plot.clust2 <- filter_poi(sliVox, cluster == clusterIndex)
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
   if(fast & nrow(plot.clust2) > 9000){
@@ -715,6 +718,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
       
     }
     
+    cat("~169~")
     schoener.kreis.out
     mean(schoener.kreis.out$q)
     sd(schoener.kreis.out$BHD)
@@ -823,6 +827,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
       }
     }
     
+    cat("~278~")
     plot.clust2 <- plot.clu
     #table(plot.clust2$cluster)
     
@@ -989,6 +994,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
   }
   
   
+  cat("~446~")
   plot.clust2 <- plot.clust_final
   (cluster2 <- as.numeric(unique(plot.clust2$cluster)))
   #(cluster3 <- unique(plot.clust2$cluster2))
@@ -2153,14 +2159,15 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     file_parallelProtocol <- paste0(dbhPath, "temp_par_diameterBeast.txt")
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=1:length(cluster.vec),  .errorhandling = 'remove', 
-                    .export=c('diameterBeast_i', 'sliVox'), 
+                    .export=c('diameterBeast_i', 'sliVox', 'v.env'), 
                     .packages = c("treeX"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       numi <- cluster.vec[i]
                       cat(paste0(numi, "-"))
                       
-                      diameterBeast_i(clusterIndex = cluster.vec[i], dbhPath = dbhPath, fast = fast, allFiles = allFiles)
+                      diameterBeast_i(clusterIndex = cluster.vec[i], 
+                                      dbhPath = dbhPath, fast = fast, allFiles = allFiles)
                       
                       t2 <- Sys.time()
                       dt <- difftime(t2,t1)
@@ -2191,6 +2198,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
   
   
 }
+
 
 
 
