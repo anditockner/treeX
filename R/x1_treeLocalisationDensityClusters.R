@@ -628,7 +628,9 @@ diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, al
   
   cat("~works~")
   plot.clust2 <- filter_poi(sliVox, cluster == clusterIndex)
+  cat("~fí~")
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
+  cat("~sec~")
   if(fast & nrow(plot.clust2) > 9000){
     # reduce stem to 9000 points to speed up diameter beast
     plot.clust2 <- plot.clust2[sample(nrow(plot.clust2), 9000, replace = F),]
@@ -2162,12 +2164,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=1:length(cluster.vec),  .errorhandling = 'remove', 
                     .export=c('diameterBeast_i', 'sliVox', 'v.env'), 
-                    .packages = c("treeX", "doParallel", "data.table", "ADPclust", "densityClust", 
-                                  "plyr", "spatstat", "alphahull", "RANN", 
-                                  "flexclust", "sp", "matrixStats", "lmfor", 
-                                  "rgl", "conicfit", "MASS", "igraph", "geosphere", "pracma", 
-                                  "DescTools", "mgcv", "recexcavAAR", "raster", 
-                                  "lidR", "TreeLS", "dbscan", "rgl", "conicfit"))%dopar% {
+                    .packages = c("treeX"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       numi <- cluster.vec[i]
