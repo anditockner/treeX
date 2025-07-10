@@ -366,6 +366,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
       t2 <- Sys.time()
       #cat("lidR done")
       #print.difftime(t2-t1)
+      set.seed(12)
       thin5 <- tlsSample(slice, smp.voxelize(vox.size)) #bei TLS 0.015 # bei PLS ist 0.02 anders # auch da ist das mit smp.voxelize neu # iPAd 0.015
       t3 <- Sys.time()
       cat("done by treeLS. ")
@@ -631,6 +632,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
   if(fast & nrow(plot.clust2) > 9000){
     # reduce stem to 9000 points to speed up diameter beast
+    set.seed(12)
     plot.clust2 <- plot.clust2[sample(nrow(plot.clust2), 9000, replace = F),]
   }
   
@@ -658,7 +660,6 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
         par.ellipse <- EllipseDirectFit(cbind(plot.test$X, plot.test$Y))
         geom.ellipse <- as.vector(AtoG(par.ellipse)$ParG)
         
-        cat("~tCloop~")
         n.vertices <- 400
         
         ellipse.vert <- calculateEllipse(x=geom.ellipse[1], y=geom.ellipse[2], a=geom.ellipse[3], b=geom.ellipse[4],
@@ -2171,7 +2172,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
                       t2 <- Sys.time()
                       dt <- difftime(t2,t1)
                       dt <- paste(round(dt, 1), units(dt))
-                      cat(paste0("+", numi, "in", dt, "\n"))
+                      cat(paste0("+", numi, " in ", dt, "\n"))
                       sink()
                       
                     } 
