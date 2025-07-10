@@ -628,8 +628,6 @@ diameterBeast_i <- function(clusterIndex, dbhPath,
     }
     return(wink)
   }
-  cat("~retr~")
-  sliVox <- get("sliVox")
   cat("~works~")
   cat(ifelse(exists("sliVox"), "existuje", "neex"))
   cat(ifelse(exists("sliVox"), 
@@ -2171,14 +2169,22 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     file_parallelProtocol <- paste0(dbhPath, "temp_par_diameterBeast.txt")
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=1:length(cluster.vec),  .errorhandling = 'remove', 
-                    .export=c('diameterBeast_i', 'v.env'), 
-                    .packages = c("treeX"))%dopar% {
+                    .export=c('diameterBeast_i', 'v.env', 'sliVox'), 
+                    .packages = c("doParallel", "data.table", 
+                      "ADPclust", "densityClust", "plyr", 
+                      "spatstat", "alphahull", "RANN", 
+                      "flexclust", "sp", "matrixStats", 
+                      "lmfor", "rgl", "conicfit", "MASS", 
+                      "igraph", "geosphere", "pracma", 
+                      "DescTools", "mgcv", "recexcavAAR", 
+                      "raster", "lidR", "TreeLS", "dbscan", 
+                      "rgl", "conicfit"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       numi <- cluster.vec[i]
                       cat(paste0(numi, "-"))
+                      cat(paste0("~numPs", sliVox@header@PHB$`Number of point records`, "jo~"))
                       
-                      assign("sliVox", sliVox)
                       diameterBeast_i(clusterIndex = numi, 
                                       dbhPath = dbhPath, fast = fast, allFiles = allFiles)
                       
