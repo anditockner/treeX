@@ -102,9 +102,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
 
     path.output.cluster.end <- paste0(dbhPath, "fineCluster/")
     path.output.cluster.endgraph <- paste0(dbhPath, "graphSlice/")
-    path.chunkclusterLAS <- paste0(dbhPath, "clusterChunks/")
-    
-    if(!dir.exists(path.chunkclusterLAS)) dir.create(path.chunkclusterLAS)
+
     if(!dir.exists(path.output.cluster.end)) dir.create(path.output.cluster.end)
     if(allFiles){
       if(!dir.exists(paste0(dbhPath, "residuals/"))) dir.create(paste0(dbhPath, "residuals/"))
@@ -530,25 +528,10 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
   #save.image(paste0(dbhPath, fileFinder, ".RData"))
   #write.csv(tab.neu, paste0(main_path, "Tabelle_nach_cluster_34.csv"))
   cat("done!\n")
-  
-  allClusterNames <- unique(sliVox@data$cluster)
-  cat("\nCreating", length(allClusterNames), "LAS cluster chunks for faster processing...")
-  for(i in 1:length(allClusterNames)){
-    if(i%%10 == 0) cat(i, "- ")
-    nowClusterName <- allClusterNames[i]
-    nowChunk <- filter_poi(sliVox, cluster == nowClusterName)
-    nowPoints <- nowChunk@header@PHB$`Number of point records`
-    if(fast & nowPoints > 9000){
-      set.seed(12)
-      nowChunk@data <- nowChunk@data[sample(nowPoints, 9000, replace = F),]
-      # reduce stem to 9000 points to speed up diameter beast
-    }
-    writeLAS(nowChunk, paste0(path.chunkclusterLAS, nowClusterName, ".las"))
-  }
-  cat("done!\n")
+  #}
 
   stop <- Sys.time()
-  rm(sliVox_norm, sliVox)
+  rm(sliVox_norm)
   gc()
 
   cat("Rough clustering is done.\n")
@@ -646,7 +629,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath,
   
   cat("~works~")
   cat(ifelse(exists("sliVox"), "existuje", "neex"))
-  plot.clust2 <- filter_poi(sliVox, cluster == clusterIndex)
+  plot.clust2 <- filter_poi(sliVox, 'cluster' == clusterIndex)
   cat("~fí~")
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
   cat("~sec~")
@@ -2182,14 +2165,13 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     file_parallelProtocol <- paste0(dbhPath, "temp_par_diameterBeast.txt")
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=1:length(cluster.vec),  .errorhandling = 'remove', 
-                    .export=c('diameterBeast_i', 'v.env'), 
+                    .export=c('diameterBeast_i', "sliVox", 'v.env'), 
                     .packages = c("treeX"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       numi <- cluster.vec[i]
                       cat(paste0(numi, "-"))
                       
-                      sliVox <- sliVox
                       diameterBeast_i(clusterIndex = numi, 
                                       dbhPath = dbhPath, fast = fast, allFiles = allFiles)
                       
