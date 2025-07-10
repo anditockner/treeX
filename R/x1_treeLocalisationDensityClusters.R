@@ -628,6 +628,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath,
   }
   
   cat("~works~")
+  cat(ifelse(exists("sliVox"), "existuje", "neex"))
   plot.clust2 <- filter_poi(sliVox, 'cluster' == clusterIndex)
   cat("~fí~")
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
@@ -2171,7 +2172,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
                       numi <- cluster.vec[i]
                       cat(paste0(numi, "-"))
                       
-                      diameterBeast_i(clusterIndex = cluster.vec[i], 
+                      diameterBeast_i(clusterIndex = numi, 
                                       dbhPath = dbhPath, fast = fast, allFiles = allFiles)
                       
                       t2 <- Sys.time()
