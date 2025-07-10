@@ -2067,8 +2067,8 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
   cat("\nStarting diameterBeast()\n")
   cat("Current time is", format(Sys.time(), "%H:%M:%S"), "\n")
   
-  
-  if(!exists("sliVox")){
+  #if(!exists("sliVox"))
+  {
     
     cat("Reading in lost slice cluster (normalized):\n")
     # NORMALIZATION
@@ -2085,7 +2085,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
       })
     cat("Successfully retrieved normalized slice cluster file!\n\n")
   }
-  sliVox <- sliVox
+  
   
   # if you had lost sliVox, read in from paste0(dbhPath, "slice_cluster.laz")
   #sliVoxSafe <- sliVox
