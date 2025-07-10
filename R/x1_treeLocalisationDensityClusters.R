@@ -2165,13 +2165,14 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
     file_parallelProtocol <- paste0(dbhPath, "temp_par_diameterBeast.txt")
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=1:length(cluster.vec),  .errorhandling = 'remove', 
-                    .export=c('diameterBeast_i', 'sliVox', 'v.env'), 
-                    .packages = c("treeX", "lidR"))%dopar% {
+                    .export=c('diameterBeast_i', 'v.env'), 
+                    .packages = c("treeX"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       numi <- cluster.vec[i]
                       cat(paste0(numi, "-"))
                       
+                      sliVox <- sliVox
                       diameterBeast_i(clusterIndex = numi, 
                                       dbhPath = dbhPath, fast = fast, allFiles = allFiles)
                       
