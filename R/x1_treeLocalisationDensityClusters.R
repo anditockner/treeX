@@ -550,7 +550,8 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
 ####################################################################################################
 
 
-diameterBeast_i <- function(clusterIndex, dbhPath, ipad = FALSE, fast = TRUE, allFiles = F){
+diameterBeast_i <- function(clusterIndex, dbhPath, 
+                            ipad = FALSE, fast = TRUE, allFiles = FALSE){
   
   # ERRORS INDUCED BY LEAVING EMPTY BRACKETS OVER WHOLE PARALLEL ROUTINE! ###
   suppressPackageStartupMessages(library("doParallel", character.only = T))
@@ -2084,7 +2085,7 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
       })
     cat("Successfully retrieved normalized slice cluster file!\n\n")
   }
-  
+  sliVox <- sliVox
   
   # if you had lost sliVox, read in from paste0(dbhPath, "slice_cluster.laz")
   #sliVoxSafe <- sliVox
