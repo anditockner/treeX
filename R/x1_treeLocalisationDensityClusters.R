@@ -524,7 +524,6 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
   writeLAS(sliVox, paste0(dirPath, groundPath, fileFinder, "_clusterSlice_", bottomCut*100, "to", clipHeight*100, "_vox_slope.laz"))
   write.csv2(hilf, paste(dbhPath, "slice_cluster.csv", sep=""), row.names = F)
   sliVox <<- sliVox_norm
-  v.env$sliVox <- sliVox_norm
   #points(tab.neu[tab.neu$cluster==0, ]$X, tab.neu[tab.neu$cluster==0, ]$Y, col=grey(0.8), pch=13, cex=0.3)
   #save.image(paste0(dbhPath, fileFinder, ".RData"))
   #write.csv(tab.neu, paste0(main_path, "Tabelle_nach_cluster_34.csv"))
@@ -628,20 +627,13 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
     }
     return(wink)
   }
-  cat("~works~")
-  cat(ifelse(exists("sliVox"), "existuje", "neex"))
-  cat(ifelse(exists("sliVox"), 
-             paste0("nPo", sliVox@header@PHB$`Number of point records`)))
   plot.clust2 <- filter_poi(sliVox, 'cluster' == clusterIndex)
-  cat("~fí~")
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
-  cat("~sec~")
   if(fast & nrow(plot.clust2) > 9000){
     # reduce stem to 9000 points to speed up diameter beast
     plot.clust2 <- plot.clust2[sample(nrow(plot.clust2), 9000, replace = F),]
   }
   
-  cat("~tA~")
   #Herausgeben des richtigen Clusters in der jeweiligen Schicht
   #plot(plot.clust2)
   # plot3d(plot.clust2$X, plot.clust2$Y, plot.clust2$Z, col=plot.clust2$cluster, aspect=F)
@@ -653,10 +645,8 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
   groesse <- (max(plot.clust2$X)-min(plot.clust2$X)) * (max(plot.clust2$Y)-min(plot.clust2$Y))
   groesse #m2
   
-  cat("~tB~")
   if(groesse>=0.22){#0.22
     
-    cat("~tC1~")
     hoehen <- seq(1.1, 2.5, 0.3)
     breite.hoehen <- 0.15
     test=4
@@ -729,11 +719,11 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
       
     }
     
-    cat("~NEVER~")
     schoener.kreis.out
     mean(schoener.kreis.out$q)
     sd(schoener.kreis.out$BHD)
     if(sum(schoener.kreis.out$sK)<3&sd(schoener.kreis.out$BHD)>1.5&mean(schoener.kreis.out$q)<0.9|groesse>1.1|groesse>0.4&sum(schoener.kreis.out$sK)<3){
+      cat("~readAgain?~")
       plot.clust2 <- filter_poi(sliVox, cluster == clusterIndex) #Herausgeben des richtigen Clusters in der jeweiligen Schicht
       plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
       
@@ -2089,7 +2079,6 @@ diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, n
       })
     cat("Successfully retrieved normalized slice cluster file!\n\n")
   }
-  sliVox <- sliVox
   
   # if you had lost sliVox, read in from paste0(dbhPath, "slice_cluster.laz")
   #sliVoxSafe <- sliVox
