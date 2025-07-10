@@ -1,7 +1,7 @@
 
 
 retrieveSliVox <- function(){
-  return(sliVox)
+  return(v.env$sliVox)
 }
 
 
@@ -529,6 +529,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
   writeLAS(sliVox, paste0(dirPath, groundPath, fileFinder, "_clusterSlice_", bottomCut*100, "to", clipHeight*100, "_vox_slope.laz"))
   write.csv2(hilf, paste(dbhPath, "slice_cluster.csv", sep=""), row.names = F)
   sliVox <<- sliVox_norm
+  v.env$sliVox <- sliVox_norm
   #points(tab.neu[tab.neu$cluster==0, ]$X, tab.neu[tab.neu$cluster==0, ]$Y, col=grey(0.8), pch=13, cex=0.3)
   #save.image(paste0(dbhPath, fileFinder, ".RData"))
   #write.csv(tab.neu, paste0(main_path, "Tabelle_nach_cluster_34.csv"))
