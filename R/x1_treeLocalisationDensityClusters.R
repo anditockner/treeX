@@ -40,7 +40,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
   # only for debugging
   if(FALSE){
     allDBHs = FALSE
-    allFiles = FALSE
+    allFiles = T
     
     clipHeight = 3
     bottomCut = 1
@@ -537,7 +537,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
 ####################################################################################################
 
 
-diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, 
+diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints = 0, 
                             ipad = FALSE, fast = TRUE, allFiles = FALSE){
   
   # ERRORS INDUCED BY LEAVING EMPTY BRACKETS OVER WHOLE PARALLEL ROUTINE! ###
@@ -616,10 +616,16 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
   }
   plot.clust2 <- filter_poi(sliVox, cluster == clusterIndex)
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
-  if(fast & nrow(plot.clust2) > 9000){
-    # reduce stem to 9000 points to speed up diameter beast
+  if(fast & reduceClusterToPoints == 0){
+    reduceClusterToPoints <- 9000
+    # if fast reduce clusters to 9000 by default
+  }
+  if(nrow(plot.clust2) > reduceClusterToPoints + 100){
     set.seed(12)
-    plot.clust2 <- plot.clust2[sample(nrow(plot.clust2), 9000, replace = F),]
+    # reduce cluster to 9000 points or more to speed up diameter beast
+    plot.clust2 <- plot.clust2[sample(nrow(plot.clust2), 
+                                      reduceClusterToPoints, 
+                                      replace = F),]
   }
   
   #Herausgeben des richtigen Clusters in der jeweiligen Schicht
@@ -642,7 +648,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
       plot.test <- plot.clust2[plot.clust2$Z>=hoehen[test]&plot.clust2$Z<=hoehen[test]+breite.hoehen, ]
       schoener.kreis <- data.frame("sK"=NA, "ksK"=NA)
       #plot(plot.test$X, plot.test$Y, asp=1)
-      if(nrow(plot.test)!=0){
+      if(nrow(plot.test)>2){
         par.ellipse <- EllipseDirectFit(cbind(plot.test$X, plot.test$Y))
         geom.ellipse <- as.vector(AtoG(par.ellipse)$ParG)
         
@@ -733,6 +739,8 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
       hilf.tab <- hilf.tab[hilf.tab$cluster!=0, ]
       hilf.tab <- hilf.tab[order(-hilf.tab$anz), ]
       
+      
+      
       if(nrow(hilf.tab)>=10){
         zahl_cluster <- hilf.tab[1:10, ]$cluster
         plot.clust2 <- plot.clust2[plot.clust2$cluster%in%zahl_cluster, ]
@@ -766,8 +774,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
         plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
       }
     }
-    
-  }  else{
+  }  else {
     zalt <- c(1, 3)
     zneu <- c(1.8, 2.2)
     model <- lm(zneu~zalt)
@@ -858,7 +865,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
       for(j in 1:length(u.grenzen.vec)){
         plot.i <- plot.clust2[plot.clust2$cluster==cluster2[clust2]&plot.clust2$Z>=u.grenzen.vec[j]&plot.clust2$Z<=u.grenzen.vec[j]+z.breite, ] #Herausgeben des richtigen Clusters in der jeweiligen Schicht
         #plot(plot.i$X, plot.i$Y, asp=1)
-        if(!nrow(plot.i)==0){
+        if(nrow(plot.i)>2){
           res <- optics(plot.i[, 1:2], eps = 0.03,  minPts = 30) #eps = 0.03,  minPts = 30
           res
           
@@ -871,6 +878,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
           colnames(hilf.tab) <- c("cluster", "anz")
           hilf.tab <- hilf.tab[hilf.tab$cluster!=0, ]
           
+          # find two trees in one cluster 
           ###
           # new 500 says CG 2022-08-22
           #zahl_cluster <- hilf.tab[which(hilf.tab$anz>=100), ]$cluster
@@ -889,9 +897,8 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
           #plot.i$cluster2 <- NA
         }
         
-        
         plot.zwei <- plot.i
-        if(nrow(plot.zwei)!=0){
+        if(nrow(plot.zwei)>2){
           plot.zwei$ho <- u.grenzen.vec[j]
           plot.zwei$zwei <- zwei
           
@@ -904,8 +911,11 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
           }
         }
       }
+      if(!exists("zwei.out")) return()
       if(sum(zwei.out)>=6){
+        # if more than 6 layers have two clusters in it
         zwei_baum <- plot.zwei.out[plot.zwei.out$zwei==1, ]
+        #zwei_baum <- plot.zwei.out
         
         #plot3d(zwei_baum$X, zwei_baum$Y, zwei_baum$Z, asp=F)
         
@@ -915,7 +925,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
         zwei_baum$Zalt<- zwei_baum$Z
         zwei_baum$Z <- predict(model, newdata=data.frame("zalt"=zwei_baum$Zalt))
         
-        res <- optics(zwei_baum[, 1:3], eps = 0.025,  minPts = 22) #eps = 0.025,  minPts = 18
+        res <- optics(zwei_baum[, 1:2], eps = 0.025,  minPts = 22) #eps = 0.025,  minPts = 18
         res
         #Cluster herausgeben
         res <- extractDBSCAN(res, eps_cl = .020) #0.02
@@ -939,9 +949,11 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
           zwei_baum <- zwei_baum[zwei_baum$cluster2%in%zahl_cluster, ]
         }
         clu2 <- 2
-        for(clu2 in 1:length(unique(zwei_baum$cluster2))){ #bei den 3 mit den meisten Punkten schauen, ob die Baeume sind mit vertikaler ausdehnung
+        for(clu2 in 1:length(unique(zwei_baum$cluster2))){ 
+          #bei den 3 mit den meisten Punkten schauen, ob die Baeume sind mit vertikaler ausdehnung
           clu.i <- zwei_baum[zwei_baum$cluster2==unique(zwei_baum$cluster2)[clu2], ]
           ausdehnung_z <- max(clu.i$Z)-min(clu.i$Z)
+          #cat(clu2, " - ", ausdehnung_z, "m")
           if(ausdehnung_z>0.7){
             ausdehnung_out <- clu.i
           }else{
@@ -1005,7 +1017,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
   j=1
   # says CG 2022-08-22 new but not accepted
   # if(nrow(plot.clust2)!=0&quantil_inten>=7900){ #mind 7900 muss die intensitaet quantile sein
-  if(nrow(plot.clust2)!=0&quantil_inten>=6000){ #vormals 7900 #jetzt 6000
+  if(nrow(plot.clust2)>2&quantil_inten>=6000){ #vormals 7900 #jetzt 6000
     
     for(clust2 in 1:length(cluster2)){
       nr <- cluster2[clust2]
@@ -1014,6 +1026,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
       for(clust3 in 1:length(cluster3)){
         for(j in 1:length(u.grenzen.vec)){
           plot.i <- plot.clust3[plot.clust3$cluster2==cluster3[clust3]&plot.clust3$Z>=u.grenzen.vec[j]&plot.clust3$Z<=u.grenzen.vec[j]+z.breite, ] #Herausgeben des richtigen Clusters in der jeweiligen Schicht
+          # SLOW DOWN ####
           if(nrow(plot.i)>4){
             #plot(plot.i$X, plot.i$Y, asp=1)
             nrow(plot.i)
@@ -1068,7 +1081,8 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
             
             
             if(nrow(plot.i)>50){ #50
-              if(nrow(plot.i)>1300&!q>0.88&!prozent_fuellung>85|nrow(plot.i)>1300&anteil_punk_ell>0.55){
+              if(nrow(plot.i)>1300&!q>0.88&!prozent_fuellung>85 | 
+                 nrow(plot.i)>1300&anteil_punk_ell>0.55){
                 #Ordering points to identify the clustering structure
                 res <- optics(plot.i[, 1:2], eps = 0.03,  minPts = 30) #eps = 0.03, minPts=40
                 res
@@ -1157,7 +1171,8 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
                     plot.i <- plot.i[plot.i$cluster2==zahl_cluster, ]
                     
                     if(!is.null(find.clust.circ)&try.error==F){ #Problem beim Circle Fit abfangen
-                      if(colnames(find.clust.circ)[4]=="value"){ #Problem beim Circle Fit abfangen
+                      if(is.array(find.clust.circ) & colnames(find.clust.circ)[4]=="value" || 
+                         !is.array(find.clust.circ) & names(find.clust.circ)[4] == "value"){ #Problem beim Circle Fit abfangen
                         if(is.na(as.numeric(bestMclust(find.clust.circ, 1))[1])==FALSE){ #Problem beim Circle Fit abfangen
                           par.circle.1 <- as.numeric(bestMclust(find.clust.circ, 1))
                           dbh.circle <- round(2 * par.circle.1[3] * 100, 2)
@@ -1207,7 +1222,9 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
                       hilf.tab <- as.data.frame(table(res$cluster))
                       colnames(hilf.tab) <- c("cluster", "anz")
                       hilf.tab <- hilf.tab[hilf.tab$cluster!=0, ]
-                      
+                      if(nrow(hilf.tab)==0){
+                        return()
+                      }
                       ###
                       zahl_cluster <- hilf.tab[which(hilf.tab$anz==max(hilf.tab$anz)), ]$cluster[1]
                       
@@ -1315,7 +1332,8 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
                     }
                     
                     if(!is.null(find.clust.circ)&try.error==F){ #Problem beim Circle Fit abfangen
-                      if(colnames(find.clust.circ)[4]=="value"){ #Problem beim Circle Fit abfangen
+                      if(is.array(find.clust.circ) & colnames(find.clust.circ)[4]=="value" || 
+                         !is.array(find.clust.circ) & names(find.clust.circ)[4] == "value"){ #Problem beim Circle Fit abfangen
                         if(is.na(as.numeric(bestMclust(find.clust.circ, 1))[1])==FALSE){ #Problem beim Circle Fit abfangen
                           par.circle.1 <- as.numeric(bestMclust(find.clust.circ, 1))
                           dbh.circle <- round(2 * par.circle.1[3] * 100, 6)
@@ -1652,9 +1670,9 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
                   y.circle <- NA
                   anteil_punkte_circ <- NA
                 }
-                
                 if(!is.null(find.clust.circ)&try.error==F){ #Problem beim Circle Fit abfangen
-                  if(colnames(find.clust.circ)[4]=="value"){ #Problem beim Circle Fit abfangen
+                  if(is.array(find.clust.circ) & colnames(find.clust.circ)[4]=="value" || 
+                     !is.array(find.clust.circ) & names(find.clust.circ)[4] == "value"){ #Problem beim Circle Fit abfangen
                     if(is.na(as.numeric(bestMclust(find.clust.circ, 1))[1])==FALSE){ #Problem beim Circle Fit abfangen
                       par.circle.1 <- as.numeric(bestMclust(find.clust.circ, 1))
                       dbh.circle <- round(2 * par.circle.1[3] * 100, 6)
@@ -1927,7 +1945,8 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
               
             }
             
-          }else{
+          }
+          else{
             kreis <- data.frame("cluster"=clusterIndex, "cluster2"=cluster2[clust2], "cluster3"=cluster3[clust3], "z.unten"=u.grenzen.vec[j],
                                 "flaeche"=NA, "x.ell" = NA, "y.ell" = NA, "d.ell" = NA,
                                 "q.ell" = NA, "sk"= NA,  "x.circ"= NA, "y.circ"=NA, "d.circ" = NA, "d.circ2" = NA,
@@ -2028,7 +2047,6 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
           write.csv2(out.kreis, paste(path.output.cluster.end, "cluster_", clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], ".csv", sep=""))
         }
         
-        
         #
       } #for(clust3 in 1:lenght(cluster3)){
       
@@ -2042,7 +2060,8 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
 }
 
 diameterBeast <- function(fileFinder, dbhPath, 
-                          fast = TRUE,
+                          reduceClusterToPoints = 0, 
+                          fast = TRUE, # if fast TRUE then reduceClusterToPoints 9000 overriden
                           ipad = FALSE, 
                           allFiles = FALSE, nr_cores = 0,
                           bushPreparation = FALSE, 
@@ -2052,20 +2071,20 @@ diameterBeast <- function(fileFinder, dbhPath,
   cat("Current time is", format(Sys.time(), "%H:%M:%S"), "\n")
   
   
-  if(!exists("sliVox")){
+  if(!exists("sliVox") || is.na(sliVox)){
     
-    cat("Reading in lost slice cluster (normalized):\n")
+    cat("Reading in lost slice cluster... ")
     # NORMALIZATION
-    sliVox <- readLAS(paste0(dbhPath, "slice_cluster_slope.laz"))
-    
+    sliVox <<- readLAS(paste0(dbhPath, "slice_cluster_slope.laz"))
+    cat("Normalize...")
     tryCatch(
       {
         dtm_z <- raster(paste0(dirPath, v.env$groundPath, fileFinder, "_ground_min.grd"))
-        sliVox <- normalize_height(sliVox, dtm_z, na.rm = TRUE)
+        sliVox <<- normalize_height(sliVox, dtm_z, na.rm = TRUE)
         cat("done!\n")
       }, error = function(error_condition) {
-        dtm_a <- raster(paste0(dirPath, groundPath, fileFinder, "_ground_rough.grd"))
-        sliVox <- normalize_height(sliVox, dtm_a, na.rm = TRUE)
+        dtm_a <- raster(paste0(dirPath, v.env$groundPath, fileFinder, "_ground_rough.grd"))
+        sliVox <<- normalize_height(sliVox, dtm_a, na.rm = TRUE)
       })
     cat("Successfully retrieved normalized slice cluster file!\n\n")
   }
@@ -2134,6 +2153,7 @@ diameterBeast <- function(fileFinder, dbhPath,
       if(i%%20 == 1) cat("\n    ")
       cat(paste0("", cluster.vec[i], "-"))
       diameterBeast_i(clusterIndex = cluster.vec[i], dbhPath = dbhPath, 
+                      reduceClusterToPoints = reduceClusterToPoints,
                       fast = fast, allFiles = allFiles, sliVox = sliVox)
     }
   }
@@ -2158,6 +2178,7 @@ diameterBeast <- function(fileFinder, dbhPath,
                       #cat(paste0("~numPs", sliVox@header@PHB$`Number of point records`, "jo~"))
                       
                       diameterBeast_i(clusterIndex = numi, sliVox = sliVox, 
+                                      reduceClusterToPoints = reduceClusterToPoints,
                                       dbhPath = dbhPath, fast = fast, allFiles = allFiles)
                       
                       t2 <- Sys.time()
