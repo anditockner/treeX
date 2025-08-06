@@ -75,9 +75,6 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
   gloStart <- Sys.time()
   fileFinder <- removeUmlaut(fileFinder)
 
-  #cat("Refering job for total", length(trees.file), "cases...\n")
-  referenced <- FALSE
-  if(!is.na(ref)) referenced <- TRUE
   setStr <- generateSetString(fileFinder = fileFinder, mode = "ALLGO",
                               clipHeight = clipHeight, bottomCut = bottomCut,
                               bushPreparation = bushPreparation,
@@ -109,31 +106,28 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
       if(!dir.exists(path.output.cluster.endgraph)) dir.create(path.output.cluster.endgraph)
     }
 
-    if(referenced){
-      plotReferenceFile(fileFinder = fileFinder, ref.file = ref, ref.plot_id = ref.plot_id,
-                        cutWindow = cutWindow, writePNG = TRUE, pathPNG = dbhPath)
-    }
     #cat("done!\n")
   }
 
 
   if(file.exists(paste0(dbhPath, "slice_cluster.laz"))){
-    cat("Skipping roughCluster(), loading old slice_cluster.laz file... ")
+    cat("Skipping roughCluster(), loading normalized slice_cluster.laz file... ")
     sliVox <<- readLAS(paste0(dbhPath, "slice_cluster.laz"))
     cat("done!\n")
   } else {
     roughCluster(fileFinder, dbhPath = dbhPath, ipad = ipad, allFiles = allFiles,
-                 clipHeight = clipHeight, bottomCut = bottomCut, referenced = referenced,
+                 clipHeight = clipHeight, bottomCut = bottomCut, 
                  numberOfPoints = numberOfPoints, heightExtent = heightExtent, TLS = TLS,
                  bushPreparation = bushPreparation, filterSOR = filterSOR, filterINT = filterINT,
                  cutWindow = cutWindow, silent = silent, retainPointClouds = retainPointClouds, dirPath = dirPath)
   }
 
-  diameterBeast(fileFinder, dbhPath = dbhPath, referenced = referenced, ipad = ipad, allFiles = allFiles,
+  diameterBeast(fileFinder, dbhPath = dbhPath, ipad = ipad, 
+                allFiles = allFiles,
                 bushPreparation = bushPreparation, filterSOR = filterSOR, nr_cores = nr_cores,
                 cutWindow = cutWindow, silent = silent, fast = fast, dirPath = dirPath)
 
-  fineCluster(fileFinder, dbhPath = dbhPath, allDBHs = allDBHs, referenced = referenced, 
+  fineCluster(fileFinder, dbhPath = dbhPath, allDBHs = allDBHs, 
               bushPreparation = bushPreparation, filterSOR = filterSOR, nr_cores = nr_cores, 
               cutWindow = cutWindow, silent = silent, dirPath = dirPath)
 
@@ -146,10 +140,6 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
   cat("\nTree detection completed in a ")
   print.difftime(round(gloStop - gloStart, 1))
 
-  if(referenced){
-    cat("Referencing not implemented yet! \n\n")
-  }
-
   cat("\n\n\n")
   sink()
 }
@@ -161,7 +151,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
 
 roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
                          clipHeight = 3, bottomCut = 1, numberOfPoints = 300, heightExtent = 1.3,
-                         referenced = FALSE, bushPreparation = FALSE, TLS = FALSE, filterSOR = FALSE, filterINT = 0,
+                         bushPreparation = FALSE, TLS = FALSE, filterSOR = FALSE, filterINT = 0,
                          fast = TRUE,
                          cutWindow = c(-1000, -1000, 2000), silent = FALSE, retainPointClouds = FALSE, dirPath = paste0(getwd(), "/")){
 
@@ -2056,7 +2046,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
 }
 
 diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, nr_cores = 0,
-                          referenced = FALSE, bushPreparation = FALSE, filterSOR = FALSE, fast = TRUE,
+                          bushPreparation = FALSE, filterSOR = FALSE, fast = TRUE,
                           cutWindow = c(-1000, -1000, 2000), silent = FALSE, dirPath = paste0(getwd(), "/")){
   start <- Sys.time()
   cat("\nStarting diameterBeast()\n")
@@ -2747,7 +2737,7 @@ fineCluster_i <- function(circleFile){
 }
 
 fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0, 
-                        referenced = FALSE, bushPreparation = FALSE, filterSOR = FALSE,
+                        bushPreparation = FALSE, filterSOR = FALSE,
                         cutWindow = c(-1000, -1000, 2000), silent = FALSE, dirPath = paste0(getwd(), "/")){
   cat("\nStarting fineCluster(), ")
   fineTime1 <- Sys.time()
