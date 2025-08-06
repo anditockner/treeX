@@ -30,7 +30,7 @@ removeUmlaut <- function(inputString){
 #' @useDynLib edc
 clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
                        clipHeight = 3, bottomCut = 1, ipad = FALSE, nr_cores = 0,
-                       bushPreparation = FALSE, filterSOR = FALSE, filterINT = 0, ref = NA, ref.plot_id = NA,
+                       bushPreparation = FALSE, filterINT = 0, ref = NA, ref.plot_id = NA,
                        cutWindow = c(-1000, -1000, 2000), numberOfPoints = 300, heightExtent = 1.3, TLS = FALSE,
                        silent = TRUE, fast = TRUE, retainPointClouds = TRUE, dirPath = paste0(getwd(), "/")){
 
@@ -48,7 +48,6 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
     nr_cores = 0
     
     bushPreparation = FALSE
-    filterSOR = FALSE
     filterINT = 0
     ref = NA
     ref.plot_id = NA
@@ -78,7 +77,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
   setStr <- generateSetString(fileFinder = fileFinder, mode = "ALLGO",
                               clipHeight = clipHeight, bottomCut = bottomCut,
                               bushPreparation = bushPreparation,
-                              filterSOR = filterSOR, cutWindow = cutWindow, silent = TRUE)
+                              cutWindow = cutWindow, silent = TRUE)
   dbhPath <- paste0(dirPath, setStr, "_dbh/")
   if(!dir.exists(dbhPath)) dir.create(dbhPath)
   sink(paste0(dbhPath, fileFinder, "_clustSplit", format(Sys.time(), "%Y%m%d_%H%M"), "_Rcons.txt"), append = TRUE, split = TRUE)
@@ -118,17 +117,19 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
     roughCluster(fileFinder, dbhPath = dbhPath, ipad = ipad, allFiles = allFiles,
                  clipHeight = clipHeight, bottomCut = bottomCut, 
                  numberOfPoints = numberOfPoints, heightExtent = heightExtent, TLS = TLS,
-                 bushPreparation = bushPreparation, filterSOR = filterSOR, filterINT = filterINT,
+                 bushPreparation = bushPreparation, filterINT = filterINT,
                  cutWindow = cutWindow, silent = silent, retainPointClouds = retainPointClouds, dirPath = dirPath)
   }
 
   diameterBeast(fileFinder, dbhPath = dbhPath, ipad = ipad, 
                 allFiles = allFiles,
-                bushPreparation = bushPreparation, filterSOR = filterSOR, nr_cores = nr_cores,
+                bushPreparation = bushPreparation, 
+                nr_cores = nr_cores,
                 cutWindow = cutWindow, silent = silent, fast = fast, dirPath = dirPath)
 
   fineCluster(fileFinder, dbhPath = dbhPath, allDBHs = allDBHs, 
-              bushPreparation = bushPreparation, filterSOR = filterSOR, nr_cores = nr_cores, 
+              bushPreparation = bushPreparation, 
+              nr_cores = nr_cores, 
               cutWindow = cutWindow, silent = silent, dirPath = dirPath)
 
   if(!retainPointClouds){
@@ -151,7 +152,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
 
 roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
                          clipHeight = 3, bottomCut = 1, numberOfPoints = 300, heightExtent = 1.3,
-                         bushPreparation = FALSE, TLS = FALSE, filterSOR = FALSE, filterINT = 0,
+                         bushPreparation = FALSE, TLS = FALSE, filterINT = 0,
                          fast = TRUE,
                          cutWindow = c(-1000, -1000, 2000), silent = FALSE, retainPointClouds = FALSE, dirPath = paste0(getwd(), "/")){
 
@@ -161,7 +162,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
   setStr <- generateSetString(fileFinder = fileFinder, mode = "ALLGO",
                               clipHeight = clipHeight, bottomCut = bottomCut,
                               bushPreparation = bushPreparation,
-                              filterSOR = filterSOR, cutWindow = cutWindow, silent = TRUE)
+                              cutWindow = cutWindow, silent = TRUE)
 
 
 
@@ -324,11 +325,6 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
     }
 
 
-    if(filterSOR){
-      cat("Applying noise filter from inside point cloud (no separate settings specified):")
-      slice <- filter_poi(slice, Classification < 2) #0 = never classified, #1 = unclassified (vegetation) #18 = noise
-      cat("remaining", thMk(slice@header@PHB$`Number of point records`), "points (approx.", round(slice@header@PHB$`Number of point records`/numP*100, 1), "%).\n")
-    }
 
     if(filterINT != 0){
       cat("Applying intensity filter for", filterINT, "percentile: \n")
@@ -2045,8 +2041,11 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox,
   
 }
 
-diameterBeast <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE, nr_cores = 0,
-                          bushPreparation = FALSE, filterSOR = FALSE, fast = TRUE,
+diameterBeast <- function(fileFinder, dbhPath, 
+                          fast = TRUE,
+                          ipad = FALSE, 
+                          allFiles = FALSE, nr_cores = 0,
+                          bushPreparation = FALSE, 
                           cutWindow = c(-1000, -1000, 2000), silent = FALSE, dirPath = paste0(getwd(), "/")){
   start <- Sys.time()
   cat("\nStarting diameterBeast()\n")
@@ -2737,7 +2736,7 @@ fineCluster_i <- function(circleFile){
 }
 
 fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0, 
-                        bushPreparation = FALSE, filterSOR = FALSE,
+                        bushPreparation = FALSE, 
                         cutWindow = c(-1000, -1000, 2000), silent = FALSE, dirPath = paste0(getwd(), "/")){
   cat("\nStarting fineCluster(), ")
   fineTime1 <- Sys.time()
@@ -2860,14 +2859,6 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0,
   cat("\nCreating output tree cluster list:\n")
   ### want to create output file with especially z coordinates, then want to leave referencing for later (when all is done)
   
-  #  setStr <- generateSetString(fileFinder = fileFinder, mode = mode,
-  #                clipHeight = clipHeight, bottomCut = bottomCut,
-  #                bushPreparation = bushPreparation,
-  #                filterSOR = filterSOR, cutWindow = cutWindow, silent = TRUE)
-  #  dbhPath <- paste0(dirPath, setStr, "_dbh/")
-  # trees.file <- paste0(dbhPath, "clusters_raw.csv")
-  # cat("Reading detected stems from ", trees.file, "\n", sep = "")
-  # trees <- read.csv2(trees.file)
   trees <- entdeckung_all
   trees <- trees[order(trees$d.gam, decreasing = TRUE), ]
   
