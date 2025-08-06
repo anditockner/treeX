@@ -26,13 +26,14 @@ removeUmlaut <- function(inputString){
 #'
 #' @param allDBHs add all measured diameters (gam, circle, ellipsis) to the output file trees_dbh.txt
 #* @param nr_cores how many cores to use for parallel cluster analysis
+#* @param reduceClusterToPoints for efficiency decimate the clusters to a maximum number of points, standard 60000, if set to 0, no reduction will be done - if fast is TRUE, then it will be reduced to 9000 points by default
 #' @export
 #' @useDynLib edc
 clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE, 
                        clipHeight = 3, bottomCut = 1, ipad = FALSE, nr_cores = 0,
                        bushPreparation = FALSE, filterINT = 0, ref = NA, ref.plot_id = NA,
                        cutWindow = c(-1000, -1000, 2000), numberOfPoints = 300, heightExtent = 1.3, TLS = FALSE,
-                       silent = TRUE, fast = TRUE, reduceClusterToPoints = 0, 
+                       silent = TRUE, fast = TRUE, reduceClusterToPoints = 60000, 
                        retainPointClouds = TRUE, dirPath = paste0(getwd(), "/")){
 
 
@@ -94,7 +95,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
   
   if(fast){
     cat("~~+ FAST MODE for diameterBeast circle fitting +~~\n")
-    if(reduceClusterToPoints == 0){
+    if(reduceClusterToPoints == 60000){
       cat(" ~+ REDUCING CLUSTERS to 9000 points MAX +~")
     }
   }
@@ -629,7 +630,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
   }
   plot.clust2 <- filter_poi(sliVox, cluster == clusterIndex)
   plot.clust2 <- data.frame("X" = plot.clust2$X, "Y" = plot.clust2$Y, "Z" = plot.clust2$Z, "cluster" = plot.clust2$cluster, "Intensity" = plot.clust2$Intensity)
-  if(fast & reduceClusterToPoints == 0){
+  if(fast & reduceClusterToPoints == 60000){
     reduceClusterToPoints <- 9000
     # if fast reduce clusters to 9000 by default
   }
