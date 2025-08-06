@@ -1267,7 +1267,9 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
                     plot.j <- plot.i
                     # ?circMclust
                     if(allFiles){
-                      png(paste(path.output.cluster.endgraph, "cluster_", clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], "_", "hoehe_", u.grenzen.vec[j] , ".png", sep=""),
+                      png(paste(path.output.cluster.endgraph, 
+                                #"cluster_", 
+                                clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], "_", "hoehe_", u.grenzen.vec[j] , ".png", sep=""),
                           type = "cairo", width = 1000, height = 1000)
                       
                       par(mfrow=c(1, 1))
@@ -1507,7 +1509,9 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
                     if(allFiles) dev.off()
                     
                     if(allFiles){
-                      png(paste(path.output.cluster.endgraph, "cluster_", clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], "_", "hoehe_", u.grenzen.vec[j], "_gam.png", sep=""),
+                      png(paste(path.output.cluster.endgraph, 
+                                #"cluster_", 
+                                clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], "_", "hoehe_", u.grenzen.vec[j], "_gam.png", sep=""),
                           type = "cairo", width = 1200, height = 1200)
                       
                       
@@ -1609,7 +1613,9 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
                 plot.j <- plot.i
                 # ?circMclust
                 if(allFiles){
-                  png(paste(path.output.cluster.endgraph, "cluster_", clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], "_", "hoehe_", u.grenzen.vec[j] , ".png", sep=""),
+                  png(paste(path.output.cluster.endgraph, 
+                            #"cluster_", 
+                            clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], "_", "hoehe_", u.grenzen.vec[j] , ".png", sep=""),
                       type = "cairo", width = 1000, height = 1000)
                   par(mfrow=c(1, 1))
                 }
@@ -1846,7 +1852,9 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
                   
                   dev.off()
                   
-                  png(paste(path.output.cluster.endgraph, "cluster_", clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], "_", "hoehe_", u.grenzen.vec[j], "_gam.png", sep=""),
+                  png(paste(path.output.cluster.endgraph, 
+                            #"cluster_", 
+                            clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], "_", "hoehe_", u.grenzen.vec[j], "_gam.png", sep=""),
                       type = "cairo", width = 1200, height = 1200)
                   
                   par(mfrow=c(2, 1))
@@ -1994,7 +2002,8 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
         #write.csv2(out.3d.data, paste("F:/Testen_Intensitaet/Ergebnis/", "cluster_", clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], ".csv", sep=""))
         
         if(allFiles) write.csv2(out.res,
-                                paste(path.output.cluster.residuals, "cluster_",
+                                paste(path.output.cluster.residuals, 
+                                      #"cluster_",
                                       clusterIndex, "_", cluster2[clust2],
                                       "_", cluster3[clust3], ".csv", sep=""),
                                 row.names = F)
@@ -2039,12 +2048,14 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
           
           out.kreis$tegam.d_gam <- d.gam
           
-          write.csv2(out.kreis, paste(path.output.cluster.end, "cluster_", clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], ".csv", sep=""))
+          write.csv2(out.kreis, paste(path.output.cluster.end, #"cluster_", 
+                                      clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], ".csv", sep=""))
         }else{
           
           out.kreis$tegam.d_gam <- NA
           
-          write.csv2(out.kreis, paste(path.output.cluster.end, "cluster_", clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], ".csv", sep=""))
+          write.csv2(out.kreis, paste(path.output.cluster.end, #"cluster_", 
+                                      clusterIndex, "_", cluster2[clust2], "_", cluster3[clust3], ".csv", sep=""))
         }
         
         #
