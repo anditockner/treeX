@@ -28,11 +28,12 @@ removeUmlaut <- function(inputString){
 #* @param nr_cores how many cores to use for parallel cluster analysis
 #' @export
 #' @useDynLib edc
-clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
+clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE, 
                        clipHeight = 3, bottomCut = 1, ipad = FALSE, nr_cores = 0,
                        bushPreparation = FALSE, filterINT = 0, ref = NA, ref.plot_id = NA,
                        cutWindow = c(-1000, -1000, 2000), numberOfPoints = 300, heightExtent = 1.3, TLS = FALSE,
-                       silent = TRUE, fast = TRUE, retainPointClouds = TRUE, dirPath = paste0(getwd(), "/")){
+                       silent = TRUE, fast = TRUE, reduceClusterToPoints = 0, 
+                       retainPointClouds = TRUE, dirPath = paste0(getwd(), "/")){
 
 
 
@@ -125,7 +126,9 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
                 allFiles = allFiles,
                 bushPreparation = bushPreparation, 
                 nr_cores = nr_cores,
-                cutWindow = cutWindow, silent = silent, fast = fast, dirPath = dirPath)
+                cutWindow = cutWindow, silent = silent, 
+                fast = fast, reduceClusterToPoints = reduceClusterToPoints,
+                dirPath = dirPath)
 
   fineCluster(fileFinder, dbhPath = dbhPath, allDBHs = allDBHs, 
               bushPreparation = bushPreparation, 
