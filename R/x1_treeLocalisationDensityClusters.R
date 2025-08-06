@@ -91,6 +91,16 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
     LAS_veg <<- NA
     LAS_veg_name <<- "blank"
   }
+  
+  if(fast){
+    cat("~~+ FAST MODE for diameterBeast circle fitting +~~\n")
+    if(reduceClusterToPoints == 0){
+      cat(" ~+ REDUCING CLUSTERS to 9000 points MAX +~")
+    }
+  }
+  if(reduceClusterToPoints >= 0){
+    cat(" ~+ REDUCING CLUSTERS to", reduceClusterToPoints, "points MAX +~")
+  }
 
 
 
