@@ -592,6 +592,38 @@ computeTree_i <- function(treeLAS.path,
 
   # cat("Single Tree Measurements in folder\n   ", measurePath,"\n")
   gstart <- Sys.time()
+  
+  if(FALSE) # DEBUGGING
+  {
+    treeLAS.path <- "D:/0006.laz"
+    treeName <- "0006"
+    drawImage = F
+    
+    z_stemBase = NA
+    nowMeta = data.frame("x" = 0, "y" = 0, "z" = -1.838, "dbh" = 41.1)
+    detail.level = 0
+    decimateTreeForFasterCrowns = FALSE
+    
+    extendedTaper = 0
+    
+    #writeLAZ = TRUE, writePicture = TRUE,
+    #density.CrownLAS = 800, # how many points in random() filter for LAS to be kept for crown hulling
+    
+    vol.alpha = 2
+    area.alpha = 0.3
+    alternativeCrownBase.Ratio = 0.3
+    fogFilter.estHeight = FALSE
+    measurePath = dirname(treeLAS.path)
+    fileFinder = ""
+    
+    remeasureDBH = FALSE
+    do.Plot = TRUE
+    limitSpanSide = 30
+    limitSpanArea = 440
+    referenceDiameterLimit = 150
+  }
+  
+  
 
   {
 
@@ -1379,7 +1411,6 @@ computeTree_i <- function(treeLAS.path,
 
 
         {
-
           png(paste0(crownImagePath,treeName,"_crown.png"), height = 800, width = 1400, type = "cairo")
           par(mfrow=c(2,2))
           if(do.Plot){
