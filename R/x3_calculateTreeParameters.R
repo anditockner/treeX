@@ -1757,7 +1757,7 @@ computeTree_i <- function(treeLAS.path,
 #'
 #' @export
 computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
-                               drawImages = T,
+                               drawImages = F,
                                remeasureDBH = F,
                                decimateTreeForFasterCrowns = FALSE,
                                
