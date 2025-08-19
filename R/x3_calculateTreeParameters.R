@@ -2137,8 +2137,9 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
       df <- fdc2
       cat("There were", length(df[,1]), "trees calculated on our point.")
     } else {
-      df <- data.frame(matrix(unlist(fdc), nrow=length(fdc), byrow=TRUE))
-      colnames(df) <- colnames(fdc[[1]])
+      df <- plyr::ldply(fdc, rbind)
+      #df <- data.frame(matrix(unlist(fdc), nrow=length(fdc), byrow=TRUE))
+      #colnames(df) <- colnames(fdc[[1]])
       for(j in c(3:length(df[1,]))){ # all num unless file and treeName
         df[,j] <- as.numeric(as.character(df[,j]))
       }
@@ -2968,8 +2969,9 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
       df <- fdc2
       cat("There were", length(df[,1]), "trees calculated on our point.")
     } else {
-      df <- data.frame(matrix(unlist(fdc), nrow=length(fdc), byrow=TRUE))
-      colnames(df) <- colnames(fdc[[1]])
+      df <- plyr::ldply(fdc, rbind)
+      #df <- data.frame(matrix(unlist(fdc), nrow=length(fdc), byrow=TRUE))
+      #colnames(df) <- colnames(fdc[[1]])
       for(j in c(2:length(df[1,]))){ # all num unless tile
         df[,j] <- as.numeric(as.character(df[,j]))
       }
