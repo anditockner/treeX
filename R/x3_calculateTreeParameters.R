@@ -595,12 +595,12 @@ computeTree_i <- function(treeLAS.path,
   
   if(FALSE) # DEBUGGING
   {
-    treeLAS.path <- "D:/0006.laz"
-    treeName <- "0006"
+    treeLAS.path <- "D:/0005.laz"
+    treeName <- "0005"
     drawImage = F
     
     z_stemBase = NA
-    nowMeta = data.frame("x" = 0, "y" = 0, "z" = -1.838, "dbh" = 41.1)
+    nowMeta = data.frame("x" = 0, "y" = 0, "z" = -4.573, "dbh" = 42.3)
     detail.level = 0
     decimateTreeForFasterCrowns = FALSE
     
@@ -1007,7 +1007,7 @@ computeTree_i <- function(treeLAS.path,
 
 
 
-        referenceCounter <- 0 #counts when to start taking reference diameter
+        referenceCounter <- 0 #counts if we need to start taking reference diameter (105 - 80 cm above ground)
         referenceDiameter <- 100 #initially 100m
         if(is.element("dbh", colnames(nowMeta))){
           try({
@@ -1048,11 +1048,22 @@ computeTree_i <- function(treeLAS.path,
 
 
         considerTrunkStart <- -1 # if slices down from dbh already
+        
+        
+        ### LOOOP CROWN BASE DETECTION ####
         # contain the crown, this value holds
         # how many slices we have to consider
-        for(k in 1:length(measureOrder)){ #for every slice of stem diameter
+        for(k in 1:length(measureOrder)){
+          #cat(paste0("k ", k, " "))
+          if(k %% 50 == 0){
+            rm("sliceLAS")
+            rm("stemLAS")
+            gc()
+            # remove unused objects to make crown base detection in R more efficient
+          }
+          #for every slice of stem diameter
           # downwards dbh
-          if(k <= 28) {
+          if(k <= dbhPosition + 1) {
             par(mfg = panelToRow(k)) # jump to DBH position and draw backwards
           }
           
@@ -1114,7 +1125,8 @@ computeTree_i <- function(treeLAS.path,
             centers[j,] <- center
             if(do.Plot) points(sliceLAS@data$X, sliceLAS@data$Y, col = "green",  cex = 0.001)
             if(do.Plot) points(center$x, center$y, cex = 2, col = "red")
-            if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",round(minZ + heightGrip[j],2),") LESS THAN 20 POINTS"))
+            if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",round(minZ + heightGrip[j],2),
+                                            ") LESS THAN 20 POINTS"))
             #cat("There are too few points in slice at",(minZ + heightGrip[j]),"m - next!\n")
             next()
           }
@@ -1127,9 +1139,9 @@ computeTree_i <- function(treeLAS.path,
 
 
 
-          if(crownBaseMissing){
+          if(crownBaseMissing || k <= dbhPosition){
             # FILTERING
-            referenceCounter <- referenceCounter + 1
+            referenceCounter <- referenceCounter + 1 # non-empty slice that can be used for reference dbh
             if(do.Plot) points(sliceLAS@data$X, sliceLAS@data$Y,
                                col = "red", pch = ".")
             filter.x <- quantile(sliceLAS@data$X, c(filter.quant, 1 - filter.quant))
@@ -1151,6 +1163,8 @@ computeTree_i <- function(treeLAS.path,
 
             # criteria for crown basal height!
             exceedingLimitForCrownBase <- center$d > 2*referenceDiameter
+            if(j <= 6) exceedingLimitForCrownBase <- center$d > 3*referenceDiameter
+            
 
 
 
@@ -1252,7 +1266,7 @@ computeTree_i <- function(treeLAS.path,
             # only if crown base was not found yet
 
             if(referenceCounter <= 10 && referenceCounter > 5){
-              # reference Diameter is taken between 5x slice (25 cm) and 10x slice (50 cm) from floor
+              # reference Diameter is taken between 5x slice (130-25 cm) and 10x slice (50 cm) from floor
               # if slice of course is 5 cm...
               refList <- c(refList, center$d)
             }
@@ -1260,6 +1274,7 @@ computeTree_i <- function(treeLAS.path,
             # only if we don't have a valid referenceDiameter, then we take the newly measured one
             if(referenceDiameter == 100){
               # nowMeta doesn't contain a dbh or bhd field, so we measure it from slice 5 - 10
+              # when 5cm slices, 5 to 10 means 105 cm to 80 cm above ground for reference diameter
               if(referenceCounter == 10){
                 referenceDiameter <- mean(refList)
                 cat("- CALCULATING NEW REFERENCE STEM DIAMETER",round(referenceDiameter*100,2),"cm.\n")
@@ -1275,20 +1290,21 @@ computeTree_i <- function(treeLAS.path,
             }
 
             # CHECKING if we are now at crown base
-            if(referenceCounter >= 0){ # change noiw 06.02.2025 crown base can be zero!
+            #if(referenceCounter >= 0){ # change noiw 06.02.2025 crown base can be zero!
               # above 50 cms we can detect crown starting point (10*5cm)
               if(exceedingLimitForCrownBase){
                 crownCounter <- crownCounter + 1
-                if(crownCounter > 1/slice.height || #must be steady over 1 m if going down from dbh
+                if(crownCounter >= 1/slice.height || #must be steady over 1 m if going down from dbh
                    (k > dbhPosition && # if going up from dbh, we need to consider the trunkstart below
                     (crownCounter + considerTrunkStart) > 1/slice.height)){
-                  if(j < 1.3){
-                    crownStart <- heightGrip[j] #go down again for that one meter (20 slices)
-                  } else {
-                    crownStart <- heightGrip[trunc(j - 1/slice.height)] #go down again for that one meter (20 slices)
-                  }
+                  #if(j < 1.3){
+                  #  crownStart <- heightGrip[j] #go down again for that one meter (20 slices)
+                  #} else {
+                  #  crownStart <- heightGrip[trunc(j - 1/slice.height)] #go down again for that one meter (20 slices)
+                  #}
+                  crownStart <- heightGrip[j]
                   crownBase <- crownStart+minZ
-                  cat("at z =",crownBase,"(rel. height",crownStart,"m).\n")
+                  cat(" at z =",crownBase,"(rel. height",crownStart,"m).\n")
                   crownBaseMissing <- FALSE
 
                   crownLength <- treeLAS@header@PHB$`Max Z` - crownBase
@@ -1311,7 +1327,7 @@ computeTree_i <- function(treeLAS.path,
                 crownCounter <- 0
               }
             }
-          }
+          #}
         } #for every slice of stem diameter
         #rm(referenceCounter, crownCounter, j, sliceLAS, center, refList, heightGrip, c2)
 
