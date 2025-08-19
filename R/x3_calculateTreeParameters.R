@@ -593,6 +593,8 @@ computeTree_i <- function(treeLAS.path,
   # cat("Single Tree Measurements in folder\n   ", measurePath,"\n")
   gstart <- Sys.time()
   
+  library("plyr")
+  
   if(FALSE) # DEBUGGING
   {
     treeLAS.path <- "D:/0005.laz"
