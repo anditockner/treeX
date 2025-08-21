@@ -1774,7 +1774,7 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                                fogFilter.estHeight = FALSE,
                                detail.level = 0,
 
-                               selector = "xyzcit0",
+                               selector = "xyzcit0RGB",
                                limitSpanSide = 30, limitSpanArea = 440,
                                referenceDiameterLimit = 150,
 
