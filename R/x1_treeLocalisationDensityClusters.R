@@ -32,7 +32,7 @@ removeUmlaut <- function(inputString){
 #' @useDynLib edc
 clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE, 
                        clipHeight = 3, bottomCut = 1, ipad = FALSE, nr_cores = 0,
-                       bushPreparation = FALSE, filterINT = 0, ref = NA, ref.plot_id = NA,
+                       bushPreparation = FALSE, filterINT = 95, ref = NA, ref.plot_id = NA,
                        cutWindow = c(-1000, -1000, 2000), numberOfPoints = 300, heightExtent = 1.3, TLS = FALSE,
                        silent = TRUE, fast = FALSE, reduceClusterToPoints = 80000, 
                        retainPointClouds = TRUE, dirPath = paste0(getwd(), "/")){
