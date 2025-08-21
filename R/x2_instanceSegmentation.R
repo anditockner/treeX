@@ -44,16 +44,19 @@ changeLASVEG <- function() {
 #' @param retainPointClouds if TRUE, the used point clouds will be stored for another run (more performant for different settings), if FALSE the point clouds will be passed to next function layer (always) and then discarded.
 #'
 #' @export
-crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALSE, doReferencedOnly = FALSE, referenced = FALSE,
-                      zScale = 2, merged = FALSE, totalRuns = 1000, limitShare = 0.004, incrementDistance = 0.005,
-                      limitStems = 0, tileClipping = 5, diagonals = FALSE,
+crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALSE, 
+                      limitStems = 50, limitShare = 0.003, 
+                      zScale = 2, voxelSize = 4,
+                      doReferencedOnly = FALSE, referenced = FALSE,
+                      merged = FALSE, totalRuns = 1000, incrementDistance = 0.005,
+                      tileClipping = 3, diagonals = FALSE,
                       useTreeFile = "",
-                      selector = "xyzcit0", distanceCounter_cm_limit = 220,
+                      selector = "xyzcit0RGB", distanceCounter_cm_limit = 220,
                       quantileIntensity = 15, CC_level = 10, CC_numberPoints = 1000, durationMins = 2400, maximumDistance = 0.50,
-                      clipHeight = 3, bottomCut = 1, bushPreparation = FALSE, filterSOR = FALSE, voxelSize = 0,
+                      clipHeight = 3, bottomCut = 1, bushPreparation = FALSE, filterSOR = FALSE, 
                       numberIntensity = 0, silent = TRUE, fast = TRUE, plotEvery = 100, mode = "ALLGO",
                       frame.up = 0.3, frame.down = 0.3, frame.rad = 1.05, # cutting m up and down for start seed, frame.rad factor 1.6xDBH
-                      retainPointClouds = FALSE, dirPath = paste0(getwd(), "/")) {
+                      retainPointClouds = TRUE, dirPath = paste0(getwd(), "/")) {
   if (ipad) {
     clipHeight <- 2.2
     bottomCut <- 0.2
