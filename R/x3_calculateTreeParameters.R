@@ -1768,7 +1768,7 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                                mode = "ALLGO", maxRadius = 0, ipad = FALSE,
 
                                cutWindow = c(-1000,-1000,2000),
-                               zScale = 2, limitShare = 0.003, voxelSize = 4,
+                               limitShare = 0.003, zScale = 2, voxelSize = 4,
 
                                vol.alpha = 2, alternativeCrownBase.Ratio = 0.3,
                                fogFilter.estHeight = FALSE,
@@ -2252,7 +2252,7 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
 #'
 #' @export
 computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = FALSE,
-                              limitShare = 0.004, zScale = 2, voxelSize = 0,
+                              limitShare = 0.003, zScale = 2, voxelSize = 4,
                               detail.level = 0,
                               
                               vol.alpha = 2, 
