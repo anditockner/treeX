@@ -173,6 +173,13 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           filterSOR = filterSOR, silent = TRUE
         )
         dbhPath <- paste0(dirPath, dbhPath, "_dbh/")
+        
+        if (!dir.exists(dbhPath)) {
+          dbhPath <- paste0(dirPath, fileFinder, "/")
+          if(!dir.exists(dbhPath)){
+            dir.create(dbhPath)
+          }
+        }
       }
 
       if (useTreeFile != "") {

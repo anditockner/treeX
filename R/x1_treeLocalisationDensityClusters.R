@@ -82,7 +82,12 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
                               bushPreparation = bushPreparation,
                               cutWindow = cutWindow, silent = TRUE)
   dbhPath <- paste0(dirPath, setStr, "_dbh/")
-  if(!dir.exists(dbhPath)) dir.create(dbhPath)
+  if(!dir.exists(dbhPath)){
+    dbhPath <- paste0(dirPath, fileFinder, "/")
+    if(!dir.exists(dbhPath)){
+      dir.create(dbhPath)
+    }
+  } 
   sink(paste0(dbhPath, fileFinder, "_clustSplit", format(Sys.time(), "%Y%m%d_%H%M"), "_Rcons.txt"), append = TRUE, split = TRUE)
 
   cat("\nStarting ALLGO Stem Detection and DBH Estimation for", fileFinder, "\n")

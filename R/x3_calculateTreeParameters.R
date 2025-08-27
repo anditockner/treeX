@@ -1838,6 +1838,13 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                                        bushPreparation = bushPreparation,
                                        filterSOR = filterSOR, silent = TRUE)
           dbhPath <- paste0(dirPath,dbhPath,"_dbh/")
+          
+          if (!dir.exists(dbhPath)) {
+            dbhPath <- paste0(dirPath, fileFinder, "/")
+            if(!dir.exists(dbhPath)){
+              dir.create(dbhPath)
+            }
+          }
         }
 
         if(!dir.exists(dbhPath)){
@@ -2384,6 +2391,13 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                                        bushPreparation = bushPreparation,
                                        filterSOR = filterSOR, silent = TRUE)
           dbhPath <- paste0(dirPath,dbhPath,"_dbh/")
+          
+          if (!dir.exists(dbhPath)) {
+            dbhPath <- paste0(dirPath, fileFinder, "/")
+            if(!dir.exists(dbhPath)){
+              dir.create(dbhPath)
+            }
+          }
         }
 
         if(!dir.exists(dbhPath)){
