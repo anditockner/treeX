@@ -1768,13 +1768,13 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                                mode = "ALLGO", maxRadius = 0, ipad = FALSE,
 
                                cutWindow = c(-1000,-1000,2000),
-                               zScale = 2, limitShare = 0.004, voxelSize = 0,
+                               limitShare = 0.003, zScale = 2, voxelSize = 4,
 
                                vol.alpha = 2, alternativeCrownBase.Ratio = 0.3,
                                fogFilter.estHeight = FALSE,
                                detail.level = 0,
 
-                               selector = "xyzcit0",
+                               selector = "xyzcit0RGB",
                                limitSpanSide = 30, limitSpanArea = 440,
                                referenceDiameterLimit = 150,
 
@@ -2259,7 +2259,11 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
 #'
 #' @export
 computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = FALSE,
+                              limitShare = 0.003, zScale = 2, voxelSize = 4,
                               detail.level = 0,
+                              
+                              vol.alpha = 2, 
+                              
 
                               drawNumberPoints = TRUE,
                               extendedTaper = 0, 
@@ -2267,8 +2271,8 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                               writeLAZ = TRUE, writePicture = TRUE, crownParameters = TRUE,
 
                               mode = "ALLGO", maxRadius = 0, ipad = FALSE,
-                              cutWindow = c(-1000,-1000,2000), zScale = 2, limitShare = 0.004, voxelSize = 0,
-                              vol.alpha = 2, alternativeCrownBase.Ratio = 0.3, fogFilter.estHeight = FALSE,
+                              cutWindow = c(-1000,-1000,2000), 
+                              alternativeCrownBase.Ratio = 0.3, fogFilter.estHeight = FALSE,
 
                               selector = "xyzcit0",
                               limitSpanSide = 30, limitSpanArea = 440,
@@ -2279,8 +2283,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
 
                               do.CrownBase = TRUE,
                               groundCutHeight = 0, silent = TRUE, retainPointClouds = FALSE,
-                              nr_cores = 0, nr_cores_params = 0,
-
+                              nr_cores = 2, nr_cores_params = 0,
 
                               treeNames = NULL,
                               smallTrees = FALSE,
