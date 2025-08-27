@@ -68,7 +68,7 @@ if(1==2){
   if(!exists("fileFinder")) fileFinder <<- "p4"
   if(!exists("ref.plot_id")) ref.plot_id <<- 4
 
-  if(!exists("mode")) mode <- "ALLGO"
+  if(!exists("mode")) mode <- ""
   if(!exists("clipHeight")) clipHeight <<- 3
   if(!exists("bottomCut")) bottomCut <<- 1
   if(!exists("numberOfPoints")) numberOfPoints <<- 300
@@ -138,11 +138,6 @@ generateSetString <- function(fileFinder = NA, mode = NA, threshold = NA, thresh
   if(!is.na(overlap)){
     setString <- paste0(setString,"+",overlap)
   }
-
-
-
-
-
 
   if(clipHeight > 0){
     setString <- paste0(setString, "_",round(bottomCut*100),"to",round(clipHeight*100))
