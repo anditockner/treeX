@@ -208,6 +208,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
             paste0(fileFinder, "_traj.ply\n"))
       }
     }
+    cat("\n")
     
   }, error = function(error_condition) {
     cat("-> problem with the trajectory! ")
