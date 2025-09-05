@@ -123,6 +123,40 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
   allStart <- Sys.time()
 
+  tempName <- basename(LASfile)
+  
+  finLaz <- strfind(tempName, "_100pct")
+  if(is.null(finLaz)){
+    finLaz <- strfind(tempName, ".las")
+  }
+  if(is.null(finLaz)){
+    finLaz <- strfind(tempName, ".laz")
+  }
+  cat("TRAJECTORY: Trying to find file in",paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1),"...\n    ..._results_traj.txt "))
+  
+  trajfile <- paste0(dirname(LASfile),
+                     "/", substr(tempName, 1, finLaz-1), "_results_traj.txt")
+  if(!file.exists(trajfile)){
+    trajfile <- paste0(dirname(LASfile),
+                       "/", substr(tempName, 1, finLaz-1), ".gs-traj")
+  }
+  if(!file.exists(trajfile)){
+    trajfile <- paste0(dirname(LASfile),
+                       "/", substr(tempName, 1, finLaz-1), ".txt")
+  }
+  if(!file.exists(trajfile)){
+    trajfile <- paste0(dirname(LASfile),
+                       "/", substr(tempName, 1, finLaz-1), "_traj.txt")
+  }
+  if(!file.exists(trajfile) & clip.trajectory.distance > 0){
+    cat("No trajectory found!\n")
+    return("Clipping cannot be done without trajectory...\n\n")
+  }
+  
+  
+  
+  
+  
   if(tooBig){
     cat("tooBig: Reading only every 3rd point: ", LASfile, "...\n", sep = "")
     big <- readLAS(paste0(LASfile), select = selector, filter = "-keep_every_nth 3")
@@ -210,37 +244,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   txtExists <- FALSE
   plyExists <- FALSE
   tryCatch({
-    tempName <- basename(LASfile)
-
-    finLaz <- strfind(tempName, "_100pct")
-    if(is.null(finLaz)){
-      finLaz <- strfind(tempName, ".las")
-    }
-    if(is.null(finLaz)){
-      finLaz <- strfind(tempName, ".laz")
-    }
-
-    cat("TRAJECTORY: Trying to find file in",paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1),"...\n    ..._results_traj.txt "))
-
-
-    trajfile <- paste0(dirname(LASfile),
-                       "/", substr(tempName, 1, finLaz-1), "_results_traj.txt")
-    if(!file.exists(trajfile)){
-      trajfile <- paste0(dirname(LASfile),
-                         "/", substr(tempName, 1, finLaz-1), ".gs-traj")
-    }
-    if(!file.exists(trajfile)){
-      trajfile <- paste0(dirname(LASfile),
-                         "/", substr(tempName, 1, finLaz-1), ".txt")
-    }
-    if(!file.exists(trajfile)){
-      trajfile <- paste0(dirname(LASfile),
-                         "/", substr(tempName, 1, finLaz-1), "_traj.txt")
-    }
-    if(!file.exists(trajfile) & clip.trajectory.distance > 0){
-      return("No trajectory found! Clipping cannot be done...\n\n")
-    }
-
+    
     if(file.exists(trajfile)){
       txtExists <- TRUE
       file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.txt"), overwrite = T)
