@@ -10,7 +10,7 @@
 #' @param fileFinder user defined name to find this certain dataset in further processing
 #' @param changeFileFinder rename app background to this name
 #' @param quickPreview set TRUE to plot only reduced density of slice
-#
+#'
 #' @param pixelUnit_cm how many cms are represented in one pixel - default 1 (100 pixel equals one meter), also 2 works for smaller plots
 #' @param circleRadius radius of the additional circle that is plot in blue on top of the background file - recommended: 5 m more than desired sample plot radius
 #' @param fixedLimit limit in meters that defines boundary of background file - for round circles set it to the clipped file size, so that all backgrounds have the same dimensions
