@@ -125,33 +125,94 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
   tempName <- basename(LASfile)
   
-  finLaz <- strfind(tempName, "_100pct")
-  if(is.null(finLaz)){
-    finLaz <- strfind(tempName, ".las")
-  }
-  if(is.null(finLaz)){
-    finLaz <- strfind(tempName, ".laz")
-  }
-  cat("TRAJECTORY: Trying to find file in",paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1),"...\n    ..._results_traj.txt "))
   
-  trajfile <- paste0(dirname(LASfile),
-                     "/", substr(tempName, 1, finLaz-1), "_results_traj.txt")
-  if(!file.exists(trajfile)){
+  
+  
+  # TRAJECTORY SEARCH
+  tryCatch({
+    
+    finLaz <- strfind(tempName, "_100pct")
+    if(is.null(finLaz)){
+      finLaz <- strfind(tempName, ".las")
+    }
+    if(is.null(finLaz)){
+      finLaz <- strfind(tempName, ".laz")
+    }
+    cat("Searching trajectory in",paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1),"...\n    "))
+    
     trajfile <- paste0(dirname(LASfile),
-                       "/", substr(tempName, 1, finLaz-1), ".gs-traj")
-  }
-  if(!file.exists(trajfile)){
-    trajfile <- paste0(dirname(LASfile),
-                       "/", substr(tempName, 1, finLaz-1), ".txt")
-  }
-  if(!file.exists(trajfile)){
-    trajfile <- paste0(dirname(LASfile),
-                       "/", substr(tempName, 1, finLaz-1), "_traj.txt")
-  }
-  if(!file.exists(trajfile) & clip.trajectory.distance > 0){
-    cat("No trajectory found!\n")
-    return("Clipping cannot be done without trajectory...\n\n")
-  }
+                       "/", substr(tempName, 1, finLaz-1), "_results_traj.txt")
+    if(file.exists(trajfile)) cat("..._results_traj.txt ")
+    if(!file.exists(trajfile)){
+      trajfile <- paste0(dirname(LASfile),
+                         "/", substr(tempName, 1, finLaz-1), ".gs-traj")
+      if(file.exists(trajfile)) cat("...x.gs-traj ")
+    }
+    if(!file.exists(trajfile)){
+      trajfile <- paste0(dirname(LASfile),
+                         "/", substr(tempName, 1, finLaz-1), ".txt")
+      if(file.exists(trajfile)) cat("...x.txt ")
+    }
+    if(!file.exists(trajfile)){
+      trajfile <- paste0(dirname(LASfile),
+                         "/", substr(tempName, 1, finLaz-1), "_traj.txt")
+      if(file.exists(trajfile)) cat("..._traj.txt ")
+    }
+    if(!file.exists(trajfile) & clip.trajectory.distance > 0){
+      cat("No trajectory found!\n")
+      return("Clipping cannot be done without trajectory...\n\n")
+    }
+    
+    # copy trajectory
+    oneDone <- FALSE
+    txtExists <- FALSE
+    plyExists <- FALSE
+    
+    if(file.exists(trajfile)){
+      txtExists <- TRUE
+      file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.txt"), overwrite = T)
+      cat("ok!    ")
+    } else {
+      cat("xXx non ")
+    }
+    oneDone <- TRUE
+    cat("..._results_traj_time.ply ")
+    
+    trajfile <- paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1), "_results_traj_time.ply")
+    if(file.exists(trajfile)){
+      plyExists <- TRUE
+      file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.ply"), overwrite = T)
+      cat("ok!\n")
+    } else {
+      trajfile <- paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1), ".ply")
+      if(file.exists(trajfile)){
+        plyExists <- TRUE
+        file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.ply"), overwrite = T)
+        cat("ok!    ")
+      } else {
+        cat("xXx non ")
+      }
+    }
+    
+    cat("\n")
+    if(txtExists && plyExists){
+      cat("2 of 2 files sucessfully copied, find them as",
+          paste0(fileFinder, "_traj.txt&ply\n"))
+    } else{
+      if(txtExists){
+        cat("1 of 2 files sucessfully copied, find them as",
+            paste0(fileFinder, "_traj.txt\n"))
+      }
+      if(plyExists){
+        cat("1 of 2 files sucessfully copied, find them as",
+            paste0(fileFinder, "_traj.ply\n"))
+      }
+    }
+    
+  }, error = function(error_condition) {
+    cat("-> problem with the trajectory! ")
+    if(oneDone) cat("Only the .txt file was copied!\n")
+  })
   
   
   
@@ -238,58 +299,6 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   }
 
 
-
-  # copy trajectory
-  oneDone <- FALSE
-  txtExists <- FALSE
-  plyExists <- FALSE
-  tryCatch({
-    
-    if(file.exists(trajfile)){
-      txtExists <- TRUE
-      file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.txt"), overwrite = T)
-      cat("ok!    ")
-    } else {
-        cat("xXx non ")
-    }
-    oneDone <- TRUE
-    cat("..._results_traj_time.ply ")
-
-    trajfile <- paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1), "_results_traj_time.ply")
-    if(file.exists(trajfile)){
-      plyExists <- TRUE
-      file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.ply"), overwrite = T)
-      cat("ok!\n")
-    } else {
-      trajfile <- paste0(dirname(LASfile), "/", substr(tempName, 1, finLaz-1), ".ply")
-      if(file.exists(trajfile)){
-        plyExists <- TRUE
-        file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.ply"), overwrite = T)
-        cat("ok!    ")
-      } else {
-        cat("xXx non ")
-      }
-    }
-
-    cat("\n")
-    if(txtExists && plyExists){
-      cat("2 of 2 files sucessfully copied, find them as",
-          paste0(fileFinder, "_traj.txt&ply\n"))
-    } else{
-      if(txtExists){
-        cat("1 of 2 files sucessfully copied, find them as",
-            paste0(fileFinder, "_traj.txt\n"))
-      }
-      if(plyExists){
-        cat("1 of 2 files sucessfully copied, find them as",
-            paste0(fileFinder, "_traj.ply\n"))
-      }
-    }
-
-  }, error = function(error_condition) {
-    cat("-> problem with the trajectory! ")
-    if(oneDone) cat("Only the .txt file was copied!\n")
-  })
 
   if(trafoMatrix.path != "" & file.exists(trafoMatrix.path) & txtExists){
     cat("\n\nTransforming trajectory with file", basename(trafoMatrix.path),"\n")
