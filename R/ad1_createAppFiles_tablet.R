@@ -17,6 +17,10 @@
 #' @param exportClippedLAS if set TRUE, then a laz file will be exported according to clip.radius
 #' @export
 createAppFiles <- function(fileFinder = NA, 
+                           createBGR_pic = TRUE, 
+                           createJPG = TRUE, jpgQuality = 0.3, # 0.3 means 30%, for smaller files can also increase to 50%
+                           createTIFF = FALSE, 
+                           
                            changeFileFinder = "", addTrajLAZ = F, 
                            drawTraj = FALSE, 
                            greySpots = data.frame(),
@@ -24,21 +28,20 @@ createAppFiles <- function(fileFinder = NA,
                            cutWindow = c(-1000, -1000, 2000, 2000), 
                            reduceName = FALSE, # take only first lettter of long_name_now = lnn
                            onlySuffixFileFinder = FALSE, # take only the last underscore example: project_c2b -> c2b for non-registered point-clouds
-                           createJPG = TRUE, 
+
                            slices = c("_clusterSlice_100to300.laz"),
                            laz.path = NA, slice.cut.low = NA, slice.cut.high = NA,
                            drawGround = F, colorVersion = F, 
                            eraseSpecies = F, highlightNew = F, setSpecies = "", 
                            dtm.path = "", trees.path = "", 
                            isoLines = 0, 
-                           jpgQuality = 0.3, # 0.3 means 30%, for smaller files can also increase to 50%
                            drawRedSlice = T, thin = FALSE,
                            pixelUnit_cm = 1, 
                            modeApp = 1, selector = "xyzi",
                            writeColoredLAZ = FALSE,
                            circleRadius = 0, fixedLimit = 0,
                            wait5s = TRUE, 
-                           quickPreview = F, writePNG = T, greenTreeLocations = F){
+                           quickPreview = F, greenTreeLocations = F){
   
   
   if(1==2){
@@ -68,9 +71,11 @@ createAppFiles <- function(fileFinder = NA,
     circleRadius = 0
     fixedLimit = 0
     quickPreview = F
-    writePNG = T
+    createBGR_pic = T
     greenTreeLocations = F
   }
+  
+  if(createTIFF) createJPG <- FALSE
   # for borders
   library(sf)
   library(spatstat)
@@ -86,8 +91,14 @@ createAppFiles <- function(fileFinder = NA,
   
   if(!is.na(fileFinder[1])){
     if(length(fileFinder) == 1){
-      if(writePNG) {
-        cat("Creating app files (.png and .txt) for set", fileFinder, "\n")
+      if(createBGR_pic) {
+        if(createTIFF){
+          cat("Creating app files (.tiff and .txt) for set", fileFinder, "\n")
+        } else if(createJPG){
+          cat("Creating app files (.jpg and .txt) for set", fileFinder, "\n")
+        } else{
+          cat("Creating app files (.png and .txt) for set", fileFinder, "\n")
+        }
       } else {
         cat("Creating app files (only .txt) for set", fileFinder, "\n")
       }
@@ -114,8 +125,14 @@ createAppFiles <- function(fileFinder = NA,
       
       
     } else {
-      if(writePNG) {
-        cat("Creating app files (.png and .txt) for", length(fileFinder), "sets:\n")
+      if(createBGR_pic) {
+          if(createTIFF){
+            cat("Creating app files (.tiff and .txt) for", length(fileFinder), "sets:\n")
+          } else if(createJPG){
+            cat("Creating app files (.jpg and .txt) for", length(fileFinder), "sets:\n")
+          } else{
+            cat("Creating app files (.png and .txt) for", length(fileFinder), "sets:\n")
+          }
       } else {
         cat("Creating app files (only .txt) for", length(fileFinder), "sets:\n")
       }
@@ -224,13 +241,19 @@ createAppFiles <- function(fileFinder = NA,
       cat("Reduce set name to ", outName, "\n")
     }
     
-    if(writePNG) {
-      cat("Creating app files (.png and .txt) for", length(laz.path), "files: \n  ")
+    if(createBGR_pic) {
+      if(createTIFF){
+        cat("Creating app files (.tiff and .txt) for", length(laz.path), "sets:\n")
+      } else if(createJPG){
+        cat("Creating app files (.jpg and .txt) for", length(laz.path), "sets:\n")
+      } else{
+        cat("Creating app files (.png and .txt) for", length(laz.path), "sets:\n")
+      }
     } else {
       cat("Creating app files (only .txt) for", length(laz.path), "files: \n  ")
     }
-    cat("Today is", format(Sys.time()), "\n")
     cat(basename(laz.path), sep = "\n  ")
+    cat("Today is", format(Sys.time()), "\n")
     cat("Using DTM from:", dtm.path, "\n")
     dirPath <- paste0(dirname(laz.path[1]), "/")
     groundPath <- dirPath
@@ -254,7 +277,7 @@ createAppFiles <- function(fileFinder = NA,
   }
   
   
-  if(writePNG){
+  if(createBGR_pic){
     
     if(colorVersion){
       cat("\nDrawing colorful image")
@@ -666,7 +689,7 @@ createAppFiles <- function(fileFinder = NA,
   
   timeRead1 <- Sys.time()
   # CREATING PNG BGR PICTURE ####
-  if(writePNG){
+  if(createBGR_pic){
     
     if(!is.na(fileFinder[1])){
       ## ...FROM FILEFINDER ####
@@ -890,8 +913,14 @@ createAppFiles <- function(fileFinder = NA,
           {
             #png(paste0(picPath.bgr, fileFinder, "_", clip.radius,slices[i],".png"), width = 8000, height = 8000, type = "cairo")
             
-            png(paste0(picPath.bgr, outName, slices[i],".png"),
-                width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
+            if(createTIFF){
+              tiff(paste0(picPath.bgr, outName, slices[i],".png"), 
+                  width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
+              
+            } else {
+              png(paste0(picPath.bgr, outName, slices[i],".png"),
+                  width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
+            }
             par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i')
             plot(1, type = "n", xlim = c(topLeftX/100,bottomRightX/100), ylim = c(bottomRightY/100, topLeftY/100),
                  asp = 1, axes = T)
@@ -1241,16 +1270,20 @@ createAppFiles <- function(fileFinder = NA,
       
       # copy app bgr pic to folder
       fromFile <- paste0(picPath.bgr, outName, slices[1], ".png")
-      toFile <- paste0(dirPath,"app/bgr_", tolower(outName), setStringApp, ".jpg")
-      cbind(fromFile, toFile)
       
       # file.copy(fromFile, toFile, overwrite = T)
       if(createJPG){
+        toFile <- paste0(dirPath,"app/bgr_", tolower(outName), setStringApp, ".jpg")
         img <- readPNG(fromFile)
         writeJPEG(img, target = toFile, quality = jpgQuality)
         rm(img)
         gc()
       } else {
+        if(createTIFF){
+          toFile <- paste0(dirPath,"app/bgr_", tolower(outName), setStringApp, ".tif")
+        } else {
+          toFile <- paste0(dirPath,"app/bgr_", tolower(outName), setStringApp, ".png")
+        }
         file.copy(fromFile, toFile, overwrite = T)
       }
       cat("Done in a ")
