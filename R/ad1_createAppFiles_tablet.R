@@ -943,7 +943,7 @@ createAppFiles <- function(fileFinder = NA,
               bothLAS <- filter_duplicates(bothLAS)
               # NORMALIZE HEIGHT
               cat(" - done, reading dtm ")
-              dtm <- raster(dtm.path)
+              dtm <- raster(groundModel.path)
               
               
               if (sum(cutWindow == c(-1000, -1000, 2000, 2000)) != 4) {
@@ -1775,12 +1775,6 @@ createAppFiles <- function(fileFinder = NA,
       colnames(lines3) <- c("X", "Y")
       
       
-      if(!exists("dtm")){
-        cat("Reading DTM model from", basename(groundModel.path))
-        dtm <- raster(groundModel.path)
-        cat(" - done\n")
-      }
-      
       
       # attaching z from DTM
       tryCatch(
@@ -1948,6 +1942,7 @@ createAppFiles <- function(fileFinder = NA,
     
     if(!is.element("z", colnames(trees))){
       cat("Attaching missing z-values from ground model.\n")
+      if(!exists("dtm")) dtm <- raster(groundModel.path)
       trees$z <- round(extract(dtm, SpatialPoints(data.frame(x = trees$x, y = trees$y))) + 1.3, 3)
     }
     
