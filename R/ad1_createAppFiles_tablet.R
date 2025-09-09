@@ -298,7 +298,7 @@ createAppFiles <- function(fileFinder = NA,
     cat("Background .png is skipped")
   }
   if(eraseSpecies){
-    cat(", erasing randomCol and species")
+    cat(", erasing comment (old randomCol) and species")
   }
   if(setSpecies != ""){
     cat(paste0(", setting all to ", "\"", setSpecies, "\""))
@@ -1946,10 +1946,14 @@ createAppFiles <- function(fileFinder = NA,
       trees$z <- round(extract(dtm, SpatialPoints(data.frame(x = trees$x, y = trees$y))) + 1.3, 3)
     }
     
-    if(!is.element("randomCol", colnames(trees))){
-      warning("Deleting field randomCol (50800).")
-      trees$randomCol <- ""
+    if(is.element("randomCol", colnames(trees))){
+      trees$comment <- trees$randomCol
     }
+    if(!is.element("comment", colnames(trees))){
+      warning("Adding empty field for comment")
+      trees$comment <- ""
+    }
+    
     
     if(is.element("BHD", colnames(trees))){
       warning("Converting BHD to DBH - is input file in German?")
@@ -2074,7 +2078,7 @@ createAppFiles <- function(fileFinder = NA,
                           "y" = trees$y,
                           "z" = trees$z,
                           "id" = trees$id,
-                          "randomCol" = trees$randomCol,
+                          "comment" = trees$comment,
                           "species" = trees$species_text,
                           "dbh" = trees$dbh,
                           "height" = trees$est.height,
@@ -2085,7 +2089,7 @@ createAppFiles <- function(fileFinder = NA,
     
     if(eraseSpecies) {
       appList$species <- "NA"
-      appList$randomCol <- ""
+      appList$comment <- ""
     }
     
     if(highlightNew){
