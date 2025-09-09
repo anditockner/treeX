@@ -1774,6 +1774,14 @@ createAppFiles <- function(fileFinder = NA,
       #plot(lines3)
       colnames(lines3) <- c("X", "Y")
       
+      
+      if(!exists("dtm")){
+        cat("Reading DTM model from", basename(groundModel.path))
+        dtm <- raster(groundModel.path)
+        cat(" - done\n")
+      }
+      
+      
       # attaching z from DTM
       tryCatch(
         {
