@@ -82,6 +82,7 @@ createAppFiles <- function(fileFinder = NA,
   library(alphahull)
   
   # for converting png to jpg (faster than writing jpg)
+  # correct jpeg
   library(png)
   library(jpeg)
   library(pracma) # for strRep()
