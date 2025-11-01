@@ -1833,21 +1833,24 @@ createAppFiles <- function(fileFinder = NA,
       for(j in 1:length(fileFinder)){
         trees.file <- paste0(dirPath,fileFinder[j],"_ALLGO_100to300_dbh/trees_dbh.txt")
         if(!file.exists(trees.file)){
-          warning("Directory doesn't contain a trees_dbh.txt file!")
-          cat("\n\n")
-          return()
+          trees.file <- paste0(dirPath,fileFinder[j],"/trees_dbh.txt")
+          if(!file.exists(trees.file)){
+            warning("Directory doesn't contain a trees_dbh.txt file!")
+            cat("\n\n")
+            return()
+          }
         }
-        check.file <- paste0(dirPath,fileFinder[j],"_ALLGO_100to300_dbh/trees_measured_species.txt")
+        check.file <- paste0(dirname(trees.file),"/trees_measured_species.txt")
         if(file.exists(check.file)){
           trees.file <- check.file
           cat("Working with species file!\n")
         } else {
-          check.file <- paste0(dirPath,fileFinder[j],"_ALLGO_100to300_dbh/trees_measured.txt")
+          check.file <- paste0(dirname(trees.file),"/trees_measured.txt")
           if(file.exists(check.file)){
             trees.file <- check.file
             cat("Working with segmented crown file!\n")
           } else {
-            trees_h_file <- list.files(paste0(dirPath, fileFinder, "_ALLGO_100to300_dbh"), pattern = "trees_height", full.names = T)
+            trees_h_file <- list.files(dirname(trees.file), pattern = "trees_height", full.names = T)
           }
         }
         if(length(trees_h_file) > 0){
