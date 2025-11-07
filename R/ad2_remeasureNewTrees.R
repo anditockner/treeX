@@ -621,6 +621,7 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   #i <- which(clustList$id == nowId)
   
   selectorius <- c(1:4, 9, 11, 13, 15)
+  cat("\t")
   cat(paste(colnames(clustList)[selectorius]), sep = "\t")
   cat("\n")
   
