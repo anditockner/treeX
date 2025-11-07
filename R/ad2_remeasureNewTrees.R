@@ -284,6 +284,9 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   
   table(metaList$species)
   
+  if(!is.element("comment", colnames(metaList))){
+    metaList$comment <- ""
+  }
   table(metaList$comment)
   
   
