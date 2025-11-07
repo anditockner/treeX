@@ -154,7 +154,12 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   
   groundPath <- "_total_ground_veg/"
   dbhPath <- paste0(dirPath, fileFinder, "_ALLGO_100to300_dbh/")
-  if(!dir.exists(dbhPath)) dir.create(dbhPath)
+  if(!dir.exists(dbhPath)){
+    dbhPath <- paste0(dirPath, fileFinder, "/")
+  }
+  if(!dir.exists(dbhPath)){
+    dir.create(dbhPath)
+  }
   circlePath <- paste0(dbhPath, "circleFits/")
   if(!dir.exists(circlePath)) dir.create(circlePath)
   
@@ -239,7 +244,9 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   # best way to remove columns: 
   #metaList <- metaList[, !is.element(colnames(metaList), 
   #                                   c("height", "vol", "fz"))]
-  
+  if(!is.element("species", colnames(metaList))){
+    metaList$species <- "NE"
+  }
   if(is.element("speciesNum", colnames(metaList))){
     treeSpecies <- function(number) {
       species <- "YY"
