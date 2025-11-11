@@ -1245,6 +1245,10 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
 
 
+      if(nrow(seedSet)==0 || nrow(blankSet.sub)==0){
+        cat("Terminating search before running into empty set error in round", j, "\n\n")
+        break
+      }
       cat(" nn2... ")
       # closest <- nn2(data.frame(seedSet[, 1:3]), query = data.frame(blankSet.sub[, 1:3]),
       #                k = howManyClosestPoints, searchtype = "standard")
