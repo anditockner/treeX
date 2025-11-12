@@ -22,7 +22,6 @@ Depends:
     dismo,
     doParallel,
     ks,
-    lidR,
     Metrics,
     plotrix,
     RANN,

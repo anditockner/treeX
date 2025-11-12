@@ -20,10 +20,6 @@ library("spatstat")
 library("Morpho") # for transformation of point clouds
 
 
-.onLoad <- function(libname, pkgname) {
-  # Force TreeLS to use nabor::knn instead of lidR::knn
-  assign("knn", nabor::knn, envir = parent.env(environment()))
-}
 
 .onAttach <- function(libname, pkgname) {
   packageStartupMessage(
