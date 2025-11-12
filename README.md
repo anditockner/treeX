@@ -6,13 +6,14 @@ A sample workflow can be found in the script "WORKFLOW_sample.R".
 
 # Installation
 
-Install the package from GitHub via
-
-       devtools::install_github("https://github.com/anditockner/treeX")
-
 Before first use, make sure to also run the script "_install_for_treeX.R" once for installing the required libraries. 
 
        source("https://raw.githubusercontent.com/anditockner/treeX/refs/heads/main/_install_for_treeX.R")
+
+
+After getting all dependencies, install the package from GitHub via
+
+       devtools::install_github("https://github.com/anditockner/treeX")
 
 
 
