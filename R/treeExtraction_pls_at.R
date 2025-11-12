@@ -1,12 +1,13 @@
 
 .onLoad <- function(libname, pkgname) {
-  suppressWarnings({
-    # any code that triggers the knn import conflict
-    # usually nothing is needed if you only use importFrom
-  })
+  # Access your package namespace
+  ns <- asNamespace(pkgname)
+  
+  # Remove the 'knn' function if it exists
+  if (exists("knn", envir = ns, inherits = FALSE)) {
+    rm(list = "knn", envir = ns)
+  }
 }
-
-
 
 library("lidR")
 library("TreeLS")
