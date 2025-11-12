@@ -642,7 +642,7 @@ computeTree_i <- function(treeLAS.path,
       cat("File not found! Skipping...\n\n")
       return(data.frame())
     }
-    treeLAS <- readLAS(treeLAS.path)
+    co <- capture.output(treeLAS <- readLAS(treeLAS.path))
     cat(thMk(treeLAS@header$`Number of point records`), "pts ok.\n")
 
 
@@ -2274,7 +2274,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                               cutWindow = c(-1000,-1000,2000), 
                               alternativeCrownBase.Ratio = 0.3, fogFilter.estHeight = FALSE,
 
-                              selector = "xyzcit0",
+                              selector = "xyzcit0RGB",
                               limitSpanSide = 30, limitSpanArea = 440,
                               referenceDiameterLimit = 150,
 
@@ -2453,7 +2453,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
       cat("Reading big crown las file... ")
 
       rt1 <- Sys.time()
-      las <- readLAS(LASfile, select = selector)
+      co <- capture.output(las <- readLAS(LASfile, select = selector))
       timeNB <- as.difftime(Sys.time() - rt1)
       cat("done in",round(timeNB,1),units(timeNB))
       cat(".\n")
@@ -3135,7 +3135,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
 
 #' @export
 plotOneTree <- function(treePath = "D:/tree0354.laz", pic = "cb", stemBase = 12.3){
-  tempTree <- readLAS(treePath)
+  co <- capture.output(tempTree <- readLAS(treePath))
   minZ <- tempTree@header@PHB$`Min Z`
   maxZ <- tempTree@header@PHB$`Max Z`
   lZ <- maxZ - minZ
