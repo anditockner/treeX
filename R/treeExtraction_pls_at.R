@@ -6,7 +6,13 @@ library("alphashape3d")
 library("alphahull")
 library("plotrix")
 library("dbscan")
-library("doParallel")
+
+if (.Platform$OS.type == "windows") {
+  library(doParallel)
+} else {
+  library(doMC)
+}
+
 library("plyr")
 library("sf")
 library("sp")
