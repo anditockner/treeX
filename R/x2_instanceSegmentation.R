@@ -232,9 +232,9 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     totalCloud.name <- paste0(dirPath, groundPath, fileFinder, "_raw_veg.laz")
     groundCloud.name <- paste0(dirPath, groundPath, fileFinder, "_ground.laz")
     cat("Reading in totalCloud from", totalCloud.name, "\n")
-    totalCloud <- readLAS(totalCloud.name, select = selector)
+    co <- capture.output(totalCloud <- readLAS(totalCloud.name, select = selector))
     cat("Reading in groundCloud from", groundCloud.name, "\n")
-    groundCloud <- readLAS(groundCloud.name, select = selector)
+    co <- capture.output(groundCloud <- readLAS(groundCloud.name, select = selector))
 
     if (retainPointClouds) {
       cat("Retaining LAS_veg and LAS_ground variable for ")
@@ -248,7 +248,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     totalCloud <- LAS_veg
     if (is.na(LAS_ground)) {
       cat("Reading in groundCloud from", groundCloud.name, "\n")
-      groundCloud <- readLAS(groundCloud.name, select = selector)
+      co <- capture.output(groundCloud <- readLAS(groundCloud.name, select = selector))
     } else {
       cat("Also using old groundCloud!\n")
       groundCloud <- LAS_ground
@@ -274,7 +274,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       cat("Crown feeling is done only with stem information.\n")
     }
     cat("Reading in stemCloud from", stemCloud.name, "\n")
-    stemCloud <- readLAS(stemCloud.name, select = selector)
+    co <- capture.output(stemCloud <- readLAS(stemCloud.name, select = selector))
 
 
     idlist <- unique(stemCloud@data$StemID)
@@ -467,7 +467,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     }
     if (file.exists(paste0(dbhPath, "seedLAS_cylinders.las"))) {
       cat("Reading old seedLAS_cylinders.las file... ")
-      seedLAS <- readLAS(paste0(dbhPath, "seedLAS_cylinders.las"), select = selector)
+      co <- capture.output(seedLAS <- readLAS(paste0(dbhPath, "seedLAS_cylinders.las"), select = selector))
       seedClusts <- length(unique(seedLAS@data$StemID))
       cat("- ", seedClusts, "stemIDs found!\n")
     } else {

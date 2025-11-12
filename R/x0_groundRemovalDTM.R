@@ -40,7 +40,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
                               doFilter = FALSE, filterRes = 0.05, filterN = 27, tooBig = F,
                               clip.radius = 0, clip.trajectory.distance = 0,
                               clip.x = 0, clip.y = 0,
-                              selector = "xyzcit0", dtm.path = "",
+                              selector = "xyzcit0RGB", dtm.path = "",
                               trafoMatrix.path = "",
                               rainFilter = 0,
                               additionalSlices = TRUE,
@@ -221,7 +221,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   
   if(tooBig){
     cat("tooBig: Reading only every 3rd point: ", LASfile, "...\n", sep = "")
-    big <- readLAS(paste0(LASfile), select = selector, filter = "-keep_every_nth 3")
+    co <- capture.output(big <- readLAS(paste0(LASfile), select = selector, filter = "-keep_every_nth 3"))
     if(clothSize == 0.1){
       clothSize <- 0.5
     }
@@ -234,9 +234,12 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
         cat(paste0(" - base point is set to x=", round(clip.x, 2), " and y=", round(clip.y, 2), "m"))
       }
       cat("... ")
-      big <- readLAS(paste0(LASfile), select = selector, filter = paste0("-keep_circle ", clip.x, " ", clip.y, " ",clip.radius))
+      co <- capture.output(big <- readLAS(paste0(LASfile), 
+                                          select = selector, 
+                                          filter = paste0("-keep_circle ", clip.x, " ", 
+                                                          clip.y, " ",clip.radius)))
     } else {
-      big <- readLAS(paste0(LASfile), select = selector)
+      co <- capture.output(big <- readLAS(paste0(LASfile), select = selector))
     }
     cat("done!\n")
   }
@@ -1400,7 +1403,7 @@ stemSplit <- function(fileFinder, quantileIntensity = 15, CC_level = 10, CC_numb
 
     if(file.exists(paste0(dbhPath,"slice_cluster.laz"))){
       cat("Skipping creation of cluster, loading old slice_cluster.laz file... ")
-      sliVox <<- readLAS(paste0(dbhPath,"slice_cluster.laz"))
+      co <- capture.output(sliVox <<- readLAS(paste0(dbhPath,"slice_cluster.laz")))
       cat("done!\n")
     } else {
       cat("Gathering diffuse slice file... \n")
@@ -1473,7 +1476,7 @@ stemSplit <- function(fileFinder, quantileIntensity = 15, CC_level = 10, CC_numb
 
         if(is.na(LAS_veg) || fileFinder != LAS_veg_name){
           cat("Reading in: ",paste0(dirPath,groundPath,fileFinder,"_raw_veg.las"),"...\n",sep = "")
-          vegetation <- readLAS(file = paste0(dirPath,groundPath,fileFinder,"_raw_veg.las"), select = selector)
+          co <- capture.output(vegetation <- readLAS(file = paste0(dirPath,groundPath,fileFinder,"_raw_veg.las"), select = selector))
 
           if(retainPointClouds){
             cat("Retaining LAS_veg variable for ")
@@ -1573,7 +1576,7 @@ stemSplit <- function(fileFinder, quantileIntensity = 15, CC_level = 10, CC_numb
           cat("complete file copied.\n")
         } else {
           cat("reading in... ")
-          slice <- readLAS(slicePath, select = selector)
+          co <- capture.output(slice <- readLAS(slicePath, select = selector))
           numP <- slice@header@PHB$`Number of point records`
           cat("found originally",thMk(numP), "points.\n")
           cat("Clipping to dimensions", cutWindow, "leaves ")
@@ -1594,7 +1597,7 @@ stemSplit <- function(fileFinder, quantileIntensity = 15, CC_level = 10, CC_numb
       # CREATING DIFFUSE FILE
       if(is.na(slice)){
         cat("Reading in slice file... ")
-        slice <- readLAS(slicePath, select = selector)
+        co <- capture.output(slice <- readLAS(slicePath, select = selector))
         cat("done, there were", thMk(slice@header@PHB$`Number of point records`), "points found.\n")
       }
 
@@ -1643,7 +1646,7 @@ stemSplit <- function(fileFinder, quantileIntensity = 15, CC_level = 10, CC_numb
     } else # READING IN OLD DIFFUSE FILE
     {
       cat("The diffuse file already exists (skipping intensity filtering part).\n")
-      lasInt <- readLAS(file = diffuseFile, select = selector)
+      co <- capture.output(lasInt <- readLAS(file = diffuseFile, select = selector))
       cat("There were", thMk(lasInt@header@PHB$`Number of point records`), "points found.\n")
       file.copy(diffuseFile, paste0(dbhSidePath,ClassifiedOutFileName))
       cat("File",diffuseFile,"copied succesfully to the new directory.\n")
@@ -1730,12 +1733,12 @@ stemSplit <- function(fileFinder, quantileIntensity = 15, CC_level = 10, CC_numb
     if(!exists("mergedLAS")){
       # First tree is exclusive, because we need to create new LAS object, change some day
 
-      mergedLAS <- readLAS(file.path(files[i]), select = selector)
+      co <- capture.output(mergedLAS <- readLAS(file.path(files[i]), select = selector))
       mergedLAS$StemID <- i
 
       tempLAS <- mergedLAS
     } else {
-      tempLAS <- readLAS(file.path(files[i]), select = selector)
+      co <- capture.output(tempLAS <- readLAS(file.path(files[i]), select = selector))
 
       tempLAS@data$StemID <- i
       mergedLAS <- rbind(mergedLAS, tempLAS)
