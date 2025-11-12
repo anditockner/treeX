@@ -3,7 +3,6 @@ measureNewDBH <- function(treeLAS, nowMeta, picPath = getwd(),
                           threshold_percent = 50,
                           threshold_percent_kde = 94){
 
-  library("lidR")
   library("ks")
   library("mgcv")
   library("stats")

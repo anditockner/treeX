@@ -2143,7 +2143,7 @@ createAppFiles <- function(fileFinder = NA,
 openColoredLAZ <- function(fileFinder, 
                            withGround = T, 
                            dirPath = paste0(getwd(), "/")){
-  library(lidR)
+  #library(lidR)
   library(PBSmodelling) #open files
   
   # # # open and explore # # #
