@@ -2804,7 +2804,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
     if(!crownParameters){
       cat(" - ONLY HEIGHTS")
     }
-    cat(".")
+    cat("...\n")
     
     if (.Platform$OS.type == "windows") {
       library(doParallel)
