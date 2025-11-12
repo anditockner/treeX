@@ -2192,9 +2192,16 @@ diameterBeast <- function(fileFinder, dbhPath,
     # PARALLEL PART
     cat(fileFinder, " - Going parallel on", nr_cores, "cores.\n\n")
     
-    library(doParallel)
-    
-    registerDoParallel(nr_cores)
+    if (.Platform$OS.type == "windows") {
+      library(doParallel)
+      cl <- makeCluster(nr_cores)
+      registerDoParallel(cl)
+      cat("   (on WINDOWS system using doParallel)\n")
+    } else {
+      library(doMC)
+      registerDoMC(cores = nr_cores)
+      cat("   (on Unix-like system using doMC)\n")
+    }
     
     file_parallelProtocol <- paste0(dbhPath, "temp_par_diameterBeast.txt")
     file.create(file_parallelProtocol)
@@ -2220,7 +2227,7 @@ diameterBeast <- function(fileFinder, dbhPath,
                     } 
     
     
-    stopImplicitCluster()
+    if (exists("cl")) stopCluster(cl)
     
     #unlink(file_parallelProtocol)
     
