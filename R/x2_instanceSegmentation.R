@@ -1071,7 +1071,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       #                k = howManyClosestPoints, searchtype = "standard")
       select_cols <- c("X", "Y", "Z")
       closest <- as.data.table(
-        nn2(seedSet[, ..select_cols],
+        RANN::nn2(seedSet[, ..select_cols],
           query = blankSet.sub[, ..select_cols],
           k = howManyClosestPoints, searchtype = "radius", radius = searchDistance
         )
@@ -1254,7 +1254,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       #                k = howManyClosestPoints, searchtype = "standard")
       select_cols <- c("X", "Y", "Z")
       closest <- as.data.table(
-        nn2(seedSet[, ..select_cols],
+        RANN::nn2(seedSet[, ..select_cols],
           query = blankSet.sub[, ..select_cols],
           k = howManyClosestPoints, searchtype = "radius", radius = searchDistance
         )
@@ -1555,7 +1555,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           cat("Searching neighbors... ")
           te1 <- Sys.time()
           closest <- as.data.table(
-            nn2(as1@data[, .(X, Y, Z)],
+            RANN::nn2(as1@data[, .(X, Y, Z)],
               query = tC1@data[, .(X, Y, Z)],
               k = 1, searchtype = "radius", radius = (allocationDistance / 100)
             )
@@ -1617,7 +1617,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           cat("Searching neighbors... ")
           te1 <- Sys.time()
           closest <- as.data.table(
-            nn2(as2@data[, .(X, Y, Z)],
+            RANN::nn2(as2@data[, .(X, Y, Z)],
               query = tC2@data[, .(X, Y, Z)],
               k = 1, searchtype = "radius", radius = (allocationDistance / 100)
             )
@@ -1683,7 +1683,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         cat("Searching neighbors... ")
         te1 <- Sys.time()
         closest <- as.data.table(
-          nn2(outLAS@data[, .(X, Y, Z)],
+          RANN::nn2(outLAS@data[, .(X, Y, Z)],
             query = allocationCloud@data[, .(X, Y, Z)],
             k = 1, searchtype = "radius", radius = (allocationDistance / 100)
           )
