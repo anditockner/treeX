@@ -17,6 +17,10 @@
 #' @param exportClippedLAS if set TRUE, then a laz file will be exported according to clip.radius
 #' @export
 createAppFiles <- function(fileFinder = NA, 
+                           drawGround = T, 
+                           drawRedSlice = T, 
+                           pixelUnit_cm = 2, 
+                           
                            createBGR_pic = TRUE, 
                            createJPG = TRUE, jpgQuality = 0.3, # 0.3 means 30%, for smaller files can also increase to 50%
                            createTIFF = FALSE, 
@@ -31,16 +35,14 @@ createAppFiles <- function(fileFinder = NA,
 
                            slices = c("_clusterSlice_100to300.laz"),
                            laz.path = NA, slice.cut.low = NA, slice.cut.high = NA,
-                           drawGround = F, colorVersion = F, 
+                           colorVersion = F, 
                            eraseSpecies = F, highlightNew = F, setSpecies = "", 
                            dtm.path = "", trees.path = "", 
-                           isoLines = 0, 
-                           drawRedSlice = T, thin = FALSE,
-                           pixelUnit_cm = 1, 
+                           isoLines = 0, thin = FALSE,
                            modeApp = 1, selector = "xyzi",
                            writeColoredLAZ = FALSE,
                            circleRadius = 0, fixedLimit = 0,
-                           wait5s = TRUE, 
+                           wait5s = FALSE, 
                            quickPreview = F, greenTreeLocations = F){
   
   
