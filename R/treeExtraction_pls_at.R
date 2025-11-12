@@ -733,7 +733,9 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
             fileFinder <- fileFinders[i]
             trafoFiles <- trafoFiles[i]
             
-            file_parallelProtocol <- paste0(dirPath, fileFinder, "_parallel_console.txt")
+            consolePath <- paste0(dirPath, "/parallel_console/")
+            if(!dir.exists(consolePath)) dir.create(consolePath)
+            file_parallelProtocol <- paste0(consolePath, fileFinder, "_par.txt")
             file.create(file_parallelProtocol)
             sink(file_parallelProtocol, append = T)
             
