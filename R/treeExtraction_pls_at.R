@@ -1,4 +1,4 @@
-library("lidR")
+#library("lidR")
 library("TreeLS")
 library("RANN")
 library("conicfit")
