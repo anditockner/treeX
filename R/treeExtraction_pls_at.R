@@ -20,7 +20,13 @@ library("spatstat")
 library("Morpho") # for transformation of point clouds
 
 
-
+.onAttach <- function(libname, pkgname) {
+  packageStartupMessage(
+    sprintf("%s version %s loaded.",
+            pkgname,
+            utils::packageVersion(pkgname))
+  )
+}
 
 v.env <- new.env(parent = emptyenv())
 v.env$groundPath <- "_total_ground_veg/"
