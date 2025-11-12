@@ -791,7 +791,3 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   
   
 }
-
-processPlotsParallel(list.files("D:/_input/inputTest/", full.names = T), 
-                     fileFinders = c(1:8), 
-                     dirPath = "D:/tryHarder/", segmentTrees = T)
