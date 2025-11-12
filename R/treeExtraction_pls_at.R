@@ -627,7 +627,7 @@ circMclust <- function (datax, datay, bw, method = "const", prec = 4, minsx = mi
 #' @param createAppFiles runs function createAppFiles with new background images
 #' #' @export
 processPlotsParallel <- function (inputFiles, fileFinders = "", 
-                                  dirPath = getwd(),
+                                  dirPath = paste0(getwd(), "/"),
                                   nr_cores_plots = 4, trafoFiles = "", 
                                   detectTrees = TRUE, 
                                   segmentTrees = FALSE, 
