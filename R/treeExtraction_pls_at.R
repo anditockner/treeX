@@ -603,4 +603,195 @@ circMclust <- function (datax, datay, bw, method = "const", prec = 4, minsx = mi
 
 
 
+#' Full tree detection and instance segmentation workflow
+#'
+#' Runs the complete workflow for multiple plots parallel. 
+#' Be careful, as this process can be computationally demanding
+#' and the system might fail when limited in RAM. 
+#' I recommend having at least 20 GB of RAM for each sample plot radius 20 m
+#' and at least 60 GB of RAM for each scan up to 1 ha. 
+#'
+#' @param inputFiles vector of paths to .laz or .las files as input for processing (plots)
+#' @param fileFinders vector of file names for renaming input files. Must be of same length as lazFiles
+#' @param trafoFiles vector of path to transformation matrices for each plot
+#' @param nr_cores_plots how many plots should be calculated simultaneously
+#' @param detectTrees runs functions extractVegetation and clustSplit
+#' @param segmentTrees runs functions crownFeel and computeTreeParams
+#' @param crownParameters also performs stem analysis and extracts crown basal height, projection area and hull volume 
+#' @export
+processPlotsParallel <- function (inputFiles, fileFinders = "", 
+                                  dirPath = getwd(),
+                                  nr_cores_plots = 4, trafoFiles = "", 
+                                  detectTrees = TRUE, 
+                                  segmentTrees = FALSE, 
+                                  crownParameters = TRUE,
+                                  
+                                  clip.trajectory.distance = 0, 
+                                  clip.radius = 0, 
+                                  
+                                  
+                                  voxelSize = 3, 
+                                  limitShare = 0.003, 
+                                  limitStems = 50,
+                                  zScale = 3, 
+                                  
+                                  tileClipping = 2 # 2x2 for plots, 3x3 or 4x4 for large 1 ha scans
+                                  
+                                  )
+{
+  
+  
+  if(!dir.exists(dirPath)) dir.create(dirPath)
+  setwd(dirPath) # all the files and folder structure will be created here
+  
+  
+  
+  {
+    #LASfile <- NA
+    cat("\n#########################################\n",
+        "#\n",
+        "#  STARTING PARALLEL PROCESSING \n",
+        "#           FOR ", length(inputFiles), " PLOTS\n",
+        "#           IN \"", getwd(), "\"\n", sep = "")
+    cat("#  \n")
+    cat("#  TODAY IS", paste(Sys.time()),"\n")
+    cat("#  \n")
+    
+    
+    if(detectTrees){
+      if(clip.trajectory.distance > 0){
+        cat("#  clip trajectory to ", clip.trajectory.distance, "m\n")
+      }
+      if(clip.radius > 0){
+        cat("#  clip circle of", clip.radius, "m\n")
+      }
+      cat("#  \n")
+    }
+    if(segmentTrees){
+      cat("#   voxelSize = ", voxelSize, " cm\n")
+      cat("#  limitShare = ", limitShare, "\n")
+      cat("#  limitStems = ", limitStems, "%\n")
+      cat("#      zScale = ", zScale, "x\n") 
+      cat("#    and", tileClipping*tileClipping, "tiles are done", tileClipping, "x", tileClipping, "\n")
+    }
+    cat("#\n")
+    
+    if(trafoFiles[1] == ""){
+      trafoFiles <- rep("", length(inputFiles))
+    } else {
+      if(length(trafoFiles)!=length(inputFiles)){
+        stop("Transformation files not provided for all input files.\nPlease double check trafo files and provide one for each plot!")
+      }
+      cat("#  GLOBAL TRANSFORMATION MATRICES PROVIDED\n")
+      cat("#\n")
+    }
+    cat("#########################################\n")
+    cat("\n\n")
+  }
+  
+  
+  if(fileFinders[1] == ""){
+    cat("Extracting filenames from input files:\n")
+    fileFinders <- gsub(".laz", "", basename(inputFiles))
+    fileFinders <- gsub(".las", "", fileFinders)
+    cat(paste0(sprintf(" %03d", c(1:length(fileFinders))), "  ", fileFinders, collapse = "\n"))
+    cat("\n\n")
+  }
+  
+  
+  
+  cat("Going parallel on", nr_cores_plots, "cores.\n")
+  
+  if (.Platform$OS.type == "windows") {
+    library(doParallel)
+    cl <- makeCluster(nr_cores_plots)
+    registerDoParallel(cl)
+    cat("   (on windows system using doParallel)\n")
+  } else {
+    library(doMC)
+    registerDoMC(cores = nr_cores_plots)
+    cat("   (on Unix-like system using doMC)\n")
+  }
+  cat("\n")
+  
+  library(foreach)
+  
+  foreach(i=1:length(fileFinders),  .errorhandling = 'remove', 
+          .packages = c("treeX"))%dopar% {
+            
+            t1 <- Sys.time()
+            
+            nowLAZ <- inputFiles[i]
+            fileFinder <- fileFinders[i]
+            trafoFiles <- trafoFiles[i]
+            
+            file_parallelProtocol <- paste0(dirPath, fileFinder, "_parallel_console.txt")
+            file.create(file_parallelProtocol)
+            sink(file_parallelProtocol, append = T)
+            
+            
+            if(detectTrees){
+              
+              try(extractVegetation(nowLAZ, fileFinder, 
+                                    trafoMatrix.path = trafoFiles, 
+                                    clip.trajectory.distance = clip.trajectory.distance, 
+                                    clip.radius = clip.radius))
+              
+              try(clustSplit(fileFinder = fileFinder, filterINT = 97, 
+                             nr_cores = 1, 
+                             retainPointClouds = T))
+              
+              
+            }
+            
+            if(segmentTrees){
+              
+              try(crownFeel(fileFinder, 
+                            voxelSize = voxelSize, 
+                            limitShare = limitShare, 
+                            limitStems = limitStems, 
+                            zScale = zScale,
+                            tileClipping = tileClipping, frame.rad = 1.1, 
+                            retainPointClouds = T))
+              
+              try(computeTreeParams(fileFinder, getRAM = F, 
+                                    voxelSize = voxelSize,
+                                    limitShare = limitShare, 
+                                    zScale = zScale, nr_cores = 1, nr_cores_params = 1,
+                                    writeLAZ = T, 
+                                    retainPointClouds = F, 
+                                    crownParameters = crownParameters))
+              
+              try(createAppFiles(fileFinder,
+                                 pixelUnit_cm = 2, eraseSpecies = T, drawTraj = F, 
+                                 #drawLines = drawLines, slices = nowSlices,
+                                 #isoLines = 1,
+                                 writeColoredLAZ = F, createBGR_pic = T, createJPG = T,
+                                 drawGround = T, 
+                                 drawRedSlice = T))
+              
+            }
+            
+            {
+              t2 <- Sys.time()
+              dt <- difftime(t2,t1)
+              dt <- paste(round(dt, 1), units(dt))
+              
+              cat("#################################\n")
+              cat("#\n")
+              cat("#  Complete Workflow done for", fileFinder,"\n")
+              cat("#  Time required: ", dt,"\n")
+              cat("#\n")
+              cat("#################################\n")
+              cat("\n\n")
+            }
+            sink()
+            
+          }
+  
+  
+}
 
+processPlotsParallel(list.files("D:/_input/inputTest/", full.names = T), 
+                     fileFinders = c(1:8), 
+                     dirPath = "D:/tryHarder/", segmentTrees = T)
