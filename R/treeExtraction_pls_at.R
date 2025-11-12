@@ -10,7 +10,6 @@
 }
 
 library("lidR")
-library("TreeLS")
 library("RANN")
 library("conicfit")
 library("alphashape3d")

@@ -786,7 +786,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     if (voxelSize != 0) {
       cat("Reduction into VOXEL with a cube length of", voxelSize, "cm... \n")
 
-      seedLAS <- tlsSample(seedLAS, smp.voxelize(voxelSize / 100))
+      seedLAS <- TreeLS::tlsSample(seedLAS, TreeLS::smp.voxelize(voxelSize / 100))
       # TODO: Change that into normal voxels, but then all the rest of the script goes down...
       cat(" VOXEL POINTS in total ")
       cat(thMk(seedLAS@header@PHB$`Number of point records`), "seed points and ")

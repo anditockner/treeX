@@ -376,7 +376,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
       #cat("lidR done")
       #print.difftime(t2-t1)
       set.seed(12)
-      thin5 <- tlsSample(slice, smp.voxelize(vox.size)) #bei TLS 0.015 # bei PLS ist 0.02 anders # auch da ist das mit smp.voxelize neu # iPAd 0.015
+      thin5 <- TreeLS::tlsSample(slice, TreeLS::smp.voxelize(vox.size)) #bei TLS 0.015 # bei PLS ist 0.02 anders # auch da ist das mit smp.voxelize neu # iPAd 0.015
       t3 <- Sys.time()
       cat("done by treeLS. ")
       print.difftime(round(t3-t2,1))
