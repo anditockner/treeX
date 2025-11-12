@@ -21,14 +21,6 @@ export(remeasureNewTrees)
 export(grabDBH)
 export(thMk)
 export(processPlotsParallel)
-importFrom(lidR, add_lasattribute, add_lasattribute_manual, 
-           classify_ground, classify_noise, clip_circle, 
-           clip_roi, crs, csf, decimate_points, density, 
-           filter_duplicates, filter_poi, grid_canopy, 
-           grid_terrain, homogenize, ivf, knnidw, LAS,
-           normalize_height, p2r, plot, random, random_per_voxel, 
-           readLAS, sor, unnormalize_height, voxelize_points, 
-           writeLAS)
 importFrom(data.table,":=")
 importFrom(data.table,.BY)
 importFrom(data.table,.EACHI)

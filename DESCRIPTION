@@ -21,6 +21,7 @@ Depends:
     dbscan,
     dismo,
     doParallel,
+    lidR,
     ks,
     Metrics,
     plotrix,
