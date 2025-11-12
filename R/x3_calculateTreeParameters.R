@@ -2035,10 +2035,24 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
     # PARALLEL SCRIPT
 
 
-    cl <- makeCluster(nr_cores, outfile="")
-    registerDoParallel(cl)
+    
+    
 
     cat("Parallel measuring now of", (loopEnd-loopStart+1), "trees on", nr_cores,"cores...\n")
+    
+    if (.Platform$OS.type == "windows") {
+      library(doParallel)
+      cl <- makeCluster(nr_cores, outfile="")
+      registerDoParallel(cl)
+      cat("   (on windows system using doParallel)\n")
+    } else {
+      library(doMC)
+      registerDoMC(cores = nr_cores)
+      cat("   (on Unix-like system using doMC)\n")
+    }
+    cat("\n")
+    
+    
     i <- 1
     timePar1 <- Sys.time()
 
@@ -2108,7 +2122,8 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
     #cat("Serial work done in a ")
     #timeEnded <- Sys.time()
     #print.difftime(timeEnded - timeStarted)
-    stopCluster(cl)
+    
+    if (exists("cl")) stopCluster(cl)
     getDoParWorkers()
 
     cat("Parallel work done in a ")
@@ -2777,21 +2792,34 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
 
   } else {
     # PARALLEL SPLITTING
-
-
-
-    cl <- makeCluster(nr_cores, outfile="")
-    registerDoParallel(cl)
+    
+    ## CAREFUL - THIS EATS A LOT OF RAM!
+    
     if(loopEnd == 0){
       loopEnd <- length(trees)
     }
+    
 
-
+    
     cat("Going parallel now for", (loopEnd-loopStart+1), "trees on", nr_cores,"cores")
     if(!crownParameters){
       cat(" - ONLY HEIGHTS")
     }
-    cat(".\n")
+    cat(".")
+    
+    if (.Platform$OS.type == "windows") {
+      library(doParallel)
+      cl <- makeCluster(nr_cores, outfile="")
+      registerDoParallel(cl)
+      cat("   (on windows system using doParallel)\n")
+    } else {
+      library(doMC)
+      registerDoMC(cores = nr_cores)
+      cat("   (on Unix-like system using doMC)\n")
+    }
+    cat("\n")
+    
+    
     i <- 1
     timePar1 <- Sys.time()
 
@@ -2956,8 +2984,8 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                       return(metaVars)
                     }
 
-
-    stopCluster(cl)
+    
+    if (exists("cl")) stopCluster(cl)
     getDoParWorkers()
 
     cat("Parallel work done in a ")
