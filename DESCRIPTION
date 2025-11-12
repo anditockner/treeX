@@ -29,5 +29,4 @@ Depends:
     sf,
     spatstat,
     stringi,
-    TreeLS,
     VoxR
