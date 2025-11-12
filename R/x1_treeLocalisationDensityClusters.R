@@ -466,7 +466,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
 
   cat("Drawing image cluster_all.png... ")
   {
-    png(paste0(dbhPath, "cluster_all.png"), height = 4000, width = 4000)
+    png(paste0(dbhPath, "cluster_all.png"), type = "cairo", height = 4000, width = 4000)
     plot(sliVox@data$X, sliVox@data$Y, col=sliVox@data$cluster, asp=1, cex=0.5, cex.axis=4) #Zeichnen der geclusterten Punkte
     #Dazuschreiben der Clusternummer
     hilf <- aggregate(cbind(sliVox@data$X, sliVox@data$Y), by=list(sliVox@data$cluster), FUN=mean)
