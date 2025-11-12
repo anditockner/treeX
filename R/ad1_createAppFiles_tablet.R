@@ -20,7 +20,7 @@ createAppFiles <- function(fileFinder = NA,
                            createBGR_pic = TRUE, 
                            createJPG = TRUE, jpgQuality = 0.3, # 0.3 means 30%, for smaller files can also increase to 50%
                            createTIFF = FALSE, 
-                           dirPath = getwd(),
+                           dirPath = paste0(getwd(), "/"),
                            changeFileFinder = "", addTrajLAZ = F, 
                            drawTraj = FALSE, 
                            greySpots = data.frame(),
