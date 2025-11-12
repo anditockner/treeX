@@ -3146,7 +3146,6 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
     print.difftime(round(gstop - gstart,1))
     globalTimeDiff <<- paste0(round(gstop-gstart, 1), " ", units(gstop - gstart))
 
-    sink()
     gc()
   }
 
