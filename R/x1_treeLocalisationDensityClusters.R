@@ -129,7 +129,7 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
 
   if(file.exists(paste0(dbhPath, "slice_cluster.laz"))){
     cat("Skipping roughCluster(), loading normalized slice_cluster.laz file... ")
-    sliVox <<- readLAS(paste0(dbhPath, "slice_cluster.laz"))
+    co <- capture.output(sliVox <<- readLAS(paste0(dbhPath, "slice_cluster.laz")))
     cat("done!\n")
   } else {
     roughCluster(fileFinder, dbhPath = dbhPath, ipad = ipad, allFiles = allFiles,
@@ -202,11 +202,11 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
     cat("-> We use prevailing raw slice file... ")
     if(sum(cutWindow == c(-1000, -1000, 2000)) == 3){
       #file.copy(slicePath, paste0(dbhPath, "slice_raw.laz"))
-      slice <- readLAS(slicePath, select = "xyzcit0")
+      co <- capture.output(slice <- readLAS(slicePath, select = "xyzcit0"))
       cat("complete file copied.\n")
     } else {
       cat("reading for clipping... ")
-      slice <- readLAS(slicePath, select = "xyzcit0")
+      co <- capture.output(slice <- readLAS(slicePath, select = "xyzcit0"))
       numP <- slice@header@PHB$`Number of point records`
       cat("found originally", thMk(numP), "points.\n")
       cat("Clipping to dimensions", cutWindow, "leaves ")
@@ -229,7 +229,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
   # if(file.exists(voxSlicePath) && !retainPointClouds){ #CHANGE HERE to always load file when RETAINPOINTCLOUDS = FALSE
   if(file.exists(voxSlicePath) && filterINT == 0){ #old one, please change! AT 21-05-18
     cat("-> We also use processed voxel cluster file, reading in... ")
-    sliVox <<- readLAS(voxSlicePath, select = "xyzcit0")
+    co <- capture.output(sliVox <<- readLAS(voxSlicePath, select = "xyzcit0"))
     numP <- sliVox@header@PHB$`Number of point records`
     cat("done.\n")
     try(file.copy(voxSlicePath.slope, paste0(dbhPath, "slice_cluster_slope.laz")))
@@ -242,7 +242,9 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
       cat("-> We create new slice file! \nBy ")
       if(is.na(LAS_veg) || fileFinder != LAS_veg_name){
         cat("reading in: ", paste0(fileFinder, "_raw_veg.laz"), "...\n", sep = "")
-        vegetation <- readLAS(file = paste0(dirPath, groundPath, fileFinder, "_raw_veg.laz"), select = "xyzcit0")
+        co <- capture.output(vegetation <- readLAS(file = paste0(dirPath, groundPath, 
+                                                                 fileFinder, "_raw_veg.laz"), 
+                                                   select = "xyzcit0RGB"))
 
         if(retainPointClouds){
           cat("Retaining LAS_veg variable for ")
@@ -253,7 +255,9 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
 
         if(bottomCut < 1){
           cat("Also reading in: ", paste0(fileFinder, "_ground.laz"), "...\n", sep = "")
-          ground <- readLAS(file = paste0(dirPath, groundPath, fileFinder, "_ground.laz"), select = "xyzcit0")
+          co <- capture.output(ground <- readLAS(file = paste0(dirPath, groundPath, 
+                                                               fileFinder, "_ground.laz"), 
+                                                 select = "xyzcit0RGB"))
           vegetation <- rbind(vegetation, ground)
           rm(ground)
           gc()
@@ -2105,7 +2109,7 @@ diameterBeast <- function(fileFinder, dbhPath,
     
     cat("Reading in lost slice cluster... ")
     # NORMALIZATION
-    sliVox <<- readLAS(paste0(dbhPath, "slice_cluster_slope.laz"))
+    co <- capture.output(sliVox <<- readLAS(paste0(dbhPath, "slice_cluster_slope.laz")))
     cat("Normalize...")
     tryCatch(
       {
@@ -2190,18 +2194,19 @@ diameterBeast <- function(fileFinder, dbhPath,
   else 
   {
     # PARALLEL PART
-    cat(fileFinder, " - Going parallel on", nr_cores, "cores.\n\n")
+    cat(fileFinder, " - Going parallel on", nr_cores, "cores.\n")
     
     if (.Platform$OS.type == "windows") {
       library(doParallel)
       cl <- makeCluster(nr_cores)
       registerDoParallel(cl)
-      cat("   (on WINDOWS system using doParallel)\n")
+      cat("   (on windows system using doParallel)\n")
     } else {
       library(doMC)
       registerDoMC(cores = nr_cores)
       cat("   (on Unix-like system using doMC)\n")
     }
+    cat("\n")
     
     file_parallelProtocol <- paste0(dbhPath, "temp_par_diameterBeast.txt")
     file.create(file_parallelProtocol)
