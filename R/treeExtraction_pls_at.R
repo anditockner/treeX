@@ -20,6 +20,14 @@ library("spatstat")
 library("Morpho") # for transformation of point clouds
 
 
+.onLoad <- function(libname, pkgname) {
+  # Remove lidR::knn from the package namespace to prevent conflict
+  ns <- asNamespace(pkgname)
+  
+  if (exists("knn", envir = ns, inherits = FALSE)) {
+    rm(list = "knn", envir = ns)
+  }
+}
 
 .onAttach <- function(libname, pkgname) {
   packageStartupMessage(
