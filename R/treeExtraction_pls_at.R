@@ -648,7 +648,8 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                   )
 {
   
-  
+  dirPath <- paste0(dirPath, "/")
+  dirPath <- gsub("//", "/", dirPath)
   if(!dir.exists(dirPath)) dir.create(dirPath)
   setwd(dirPath) # all the files and folder structure will be created here
   
