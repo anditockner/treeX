@@ -624,13 +624,15 @@ circMclust <- function (datax, datay, bw, method = "const", prec = 4, minsx = mi
 #' @param detectTrees runs functions extractVegetation and clustSplit
 #' @param segmentTrees runs functions crownFeel and computeTreeParams
 #' @param crownParameters also performs stem analysis and extracts crown basal height, projection area and hull volume 
-#' @export
+#' @param createAppFiles runs function createAppFiles with new background images
+#' #' @export
 processPlotsParallel <- function (inputFiles, fileFinders = "", 
                                   dirPath = getwd(),
                                   nr_cores_plots = 4, trafoFiles = "", 
                                   detectTrees = TRUE, 
                                   segmentTrees = FALSE, 
                                   crownParameters = TRUE,
+                                  createAppFiles = TRUE,
                                   
                                   clip.trajectory.distance = 0, 
                                   clip.radius = 0, 
@@ -768,6 +770,9 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                     retainPointClouds = F, 
                                     crownParameters = crownParameters))
               
+            }
+            
+            if(createAppFiles){
               try(createAppFiles(fileFinder,
                                  pixelUnit_cm = 2, eraseSpecies = T, drawTraj = F, 
                                  #drawLines = drawLines, slices = nowSlices,
@@ -775,7 +780,6 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                  writeColoredLAZ = F, createBGR_pic = T, createJPG = T,
                                  drawGround = T, 
                                  drawRedSlice = T))
-              
             }
             
             {
