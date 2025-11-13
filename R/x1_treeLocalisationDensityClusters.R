@@ -2191,9 +2191,9 @@ diameterBeast <- function(fileFinder, dbhPath,
     for(i in 1:length(cluster.vec)){
       if(i%%20 == 1) cat("\n    ")
       cat(paste0("", cluster.vec[i], "-"))
-      diameterBeast_i(clusterIndex = cluster.vec[i], dbhPath = dbhPath, 
+      try(diameterBeast_i(clusterIndex = cluster.vec[i], dbhPath = dbhPath, 
                       reduceClusterToPoints = reduceClusterToPoints,
-                      fast = fast, allFiles = allFiles, sliVox = sliVox)
+                      fast = fast, allFiles = allFiles, sliVox = sliVox))
     }
   }
   else 
