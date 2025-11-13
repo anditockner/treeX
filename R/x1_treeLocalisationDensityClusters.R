@@ -990,14 +990,18 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
           }
         }
         
-        plot.clust_end <- plot.clu
-        plot.clust_end <- plot.clust_end[, c("X", "Y", "Z", "Intensity", "cluster", "cluster2")]
         if(nrow(plot.clust_end)<300){
           plot.clust_end <- plot.clust2[plot.clust2$cluster==cluster2[clust2], ]
           plot.clust_end$cluster2 <- 333 #0
+          if(nrow(plot.clust_end)==0) return()
+          plot.clust_end <- plot.clust_end[, c("X", "Y", "Z", "Intensity", "cluster", "cluster2")]
+        } else {
+          plot.clust_end <- plot.clu
+          if(nrow(plot.clust_end)==0) return()
           plot.clust_end <- plot.clust_end[, c("X", "Y", "Z", "Intensity", "cluster", "cluster2")]
         }
       }else{
+        rm("plot.zwei.out", "zwei.out")
         plot.clust_end <- plot.clust2[plot.clust2$cluster==cluster2[clust2], ]
         plot.clust_end$cluster2 <- 333 #0
         plot.clust_end <- plot.clust_end[, c("X", "Y", "Z", "Intensity", "cluster", "cluster2")]
