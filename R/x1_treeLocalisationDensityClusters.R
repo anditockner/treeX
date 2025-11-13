@@ -48,10 +48,10 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
     clipHeight = 3
     bottomCut = 1
     ipad = FALSE
-    nr_cores = 0
+    nr_cores = 1
     
     bushPreparation = FALSE
-    filterINT = 0
+    filterINT = 95
     ref = NA
     ref.plot_id = NA
     
@@ -61,7 +61,8 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
     TLS = FALSE
     
     silent = TRUE
-    fast = TRUE
+    fast = FALSE
+    reduceClusterToPoints = 80000
     retainPointClouds = TRUE
     dirPath = paste0(getwd(), "/")
   }
