@@ -396,7 +396,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     if(clip.radius > 0){
       big_sm <- decimate_points(big, random(10))
       tempHeight <- clip.radius*20
-      if(tempHeight < 300) tempHeight <- 300
+      if(tempHeight < 500) tempHeight <- 500
       png(paste0(dirPath, imgPath, fileFinder, "_circle_traj.png"),
           height = tempHeight, width = tempHeight)
       yLims <- c(clip.y - clip.radius, clip.y + clip.radius)
