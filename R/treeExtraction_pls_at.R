@@ -725,9 +725,9 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   }
   
   
-  
   cat("Going parallel on", nr_cores_plots, "cores.\n")
   
+  useProgressBar <- FALSE # works only for windows so far
   if (.Platform$OS.type == "windows") {
     library(doParallel)
     cl <- makeCluster(nr_cores_plots)
@@ -735,12 +735,30 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     cat("   (on windows system using doParallel)\n")
   } else {
     library(doMC)
-    library(utils)
+    library(progress)
     
+    # Create a progress bar
+    pb <- progress_bar$new(
+      format = "  Progress [:bar] :percent in :elapsed",
+      total = length(fileFinders),
+      clear = FALSE,
+      width = 60
+    )
+    
+    # Create a shared environment to track progress
+    progress_env <- new.env()
+    progress_env$counter <- 0
+    
+    # Function to update the progress bar
+    update_progress <- function() {
+      progress_env$counter <- progress_env$counter + 1
+      pb$tick()
+    }
+    
+    useProgressBar <- TRUE
+    handlers(global = TRUE)
     registerDoMC(cores = nr_cores_plots)
     cat("   (on Unix-like system using doMC)\n")
-    
-    pb <- txtProgressBar(min = 0, max = length(fileFinders), style = 3)
     
   }
   cat("\n")
@@ -751,7 +769,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   foreach(i=1:length(fileFinders),  .errorhandling = 'remove', 
           .packages = c("treeX"))%dopar% {
             t1 <- Sys.time()
-            setTxtProgressBar(pb, i)
+            update_progress() # Update progress bar
             
             nowLAZ <- inputFiles[i]
             fileFinder <- fileFinders[i]
@@ -771,6 +789,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                     clip.trajectory.distance = clip.trajectory.distance, 
                                     clip.radius = clip.radius))
               
+              update_progress() # Update progress bar
               try(clustSplit(fileFinder = fileFinder, filterINT = 97, 
                              nr_cores = 1, 
                              retainPointClouds = T))
