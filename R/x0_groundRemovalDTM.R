@@ -286,6 +286,10 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       cat("Remain", thMk(pointsAfter), "pts in the", paste0("d=", clip.radius*2, " m"), "circle.\n")
       cat("We lost", thMk(pointsLost), "pts (or", round(pointsLost/pointsBefore*100,1), "% of original pts)\n")
     } else {
+      
+      pointsBefore <- oldHeader@PHB$`Number of point records`
+      pointsAfter <- big@header@PHB$`Number of point records`
+      pointsLost <- pointsBefore - pointsAfter
       co <- capture.output(big <- readLAS(LASfile, select = selector))
       cat("done!\n")
     }
