@@ -753,7 +753,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
             
             consolePath <- paste0(dirPath, "/parallel_console/")
             if(!dir.exists(consolePath)) dir.create(consolePath)
-            file_parallelProtocol <- paste0(consolePath, fileFinder, "_par.txt")
+            file_parallelProtocol <- paste0(consolePath, fileFinder, "_par_",format(Sys.time(), "%Y%m%d_%H%M"),"_Rcons.txt")
             file.create(file_parallelProtocol)
             sink(file_parallelProtocol, append = T)
             
