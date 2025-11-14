@@ -287,10 +287,10 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       cat("We lost", thMk(pointsLost), "pts (or", round(pointsLost/pointsBefore*100,1), "% of original pts)\n")
     } else {
       
-      pointsBefore <- oldHeader@PHB$`Number of point records`
-      pointsAfter <- big@header@PHB$`Number of point records`
-      pointsLost <- pointsBefore - pointsAfter
       co <- capture.output(big <- readLAS(LASfile, select = selector))
+      pointsBefore <- big@header@PHB$`Number of point records`
+      pointsAfter <- pointsBefore
+      pointsLost <- 0L
       cat("done!\n")
     }
     readTime2 <- Sys.time()
