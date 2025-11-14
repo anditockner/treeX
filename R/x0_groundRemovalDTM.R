@@ -37,9 +37,10 @@ if(!exists("LAS_veg")){
 #' @export
 extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FALSE,
                               groundCutHeight = 1.0, steepSlope = TRUE, clothSize = 0.10,
-                              doFilter = FALSE, filterRes = 0.05, filterN = 27, tooBig = F,
+                              doFilter = FALSE, filterRes = 0.05, filterN = 27, 
                               clip.radius = 0, clip.trajectory.distance = 0,
                               clip.x = 0, clip.y = 0,
+                              draw.trajectory = TRUE, 
                               selector = "xyzcit0RGB", dtm.path = "",
                               trafoMatrix.path = "",
                               rainFilter = 0,
@@ -69,7 +70,6 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     exportSlice.lowerLimit = 1 #m
     additionalSlices = T
 
-    tooBig = F
     groundPath <- paste0("_total_ground_veg/")
   }
 
@@ -216,32 +216,82 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   })
   
   
-  
-  
-  
-  if(tooBig){
-    cat("tooBig: Reading only every 3rd point: ", LASfile, "...\n", sep = "")
-    co <- capture.output(big <- readLAS(paste0(LASfile), select = selector, filter = "-keep_every_nth 3"))
-    if(clothSize == 0.1){
-      clothSize <- 0.5
+  if(clip.trajectory.distance > 0 || draw.trajectory && txtExists){
+    clipTime <- Sys.time()
+    cat("Reading trajectory... ")
+    try({
+      traj <- read.csv(paste0(dirPath, groundPath, fileFinder, "_traj.txt"), sep = " ")
+      if(is.element("X.time", colnames(traj))){
+        duration_sec <- max(traj$X.time) - min(traj$X.time)
+      } else if(is.element("X..world_time", colnames(traj))){
+        duration_sec <- max(traj$X..world_time) - min(traj$X..world_time)
+      } else {
+        duration_sec <- max(traj[, 1]) - min(traj[, 1])
+      }
+      cat("(scan went", round(duration_sec/60,1), "mins)\n")
+    })
+    
+    # GeoSLAM trajectory contains approx. 83 points per second,
+    # we reduce them to 2 points per second for alpha-hulling
+    #traj$X.time[2] - traj$X.time[1] original spacing of points is 1/100 of a second
+    #traj2$X.time[2] - traj2$X.time[1] # now trajectory is spaced every 0.5 seconds
+    
+    traj2 <- traj[seq(from = 1, to = nrow(traj), by = 50),]
+    traj <- traj2
+    traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
+    rm(traj2)
+    
+    #dups <- duplicated.data.frame(data.frame("x" = traj$x, "y" = traj$y))
+    shiftX <- min(traj$x)
+    shiftY <- min(traj$y)
+    if(shiftX > 1000){
+      cat("Shifting x by", shiftX, "m...\n")
+      traj$x <- traj$x - shiftX
     }
-  } else {
+    if(shiftY > 1000){
+      cat("Shifting y by", shiftY, "m...\n")
+      traj$y <- traj$y - shiftY
+    }
+  }
+  
+  #if(tooBig){
+  #  cat("tooBig: Reading only every 3rd point: ", LASfile, "...\n", sep = "")
+  #  co <- capture.output(big <- readLAS(paste0(LASfile), select = selector, filter = "-keep_every_nth 3"))
+  #  if(clothSize == 0.1){
+  #    clothSize <- 0.5
+  #  }
+  # READING INPUT FILES SECTION ####
+  {
     cat("Reading in: ", basename(LASfile), "... \n", sep = "")
     cat("(from ", dirname(LASfile), ")...", sep = "")
+    readTime1 <- Sys.time()
     if(clip.radius > 0){
-      cat("\nGoing to produce a circle of r =",clip.radius,"m")
+      cat("\nReading only a circle of r =",clip.radius,"m")
       if(clip.x != 0 || clip.y != 0){
         cat(paste0(" - base point is set to x=", round(clip.x, 2), " and y=", round(clip.y, 2), "m"))
       }
       cat("... ")
-      co <- capture.output(big <- readLAS(paste0(LASfile), 
+      co <- capture.output(big <- readLAS(LASfile, 
                                           select = selector, 
                                           filter = paste0("-keep_circle ", clip.x, " ", 
                                                           clip.y, " ",clip.radius)))
+      
+      
+      pointsBefore <- readLASheader(LASfile)@PHB$`Number of point records`
+      pointsAfter <- big@PHB$`Number of point records`
+      pointsLost <- pointsBefore - pointsAfter
+      
+      cat("done!\n")
+      cat("Remain", thMk(pointsAfter), "pts in the", paste0("d=", clip.radius*2, " m"), "circle.\n")
+      cat("We lost", thMk(pointsLost), "pts (or", round(pointsLost/pointsBefore*100,1), "% of original pts)\n")
     } else {
-      co <- capture.output(big <- readLAS(paste0(LASfile), select = selector))
+      co <- capture.output(big <- readLAS(LASfile, select = selector))
+      cat("done!\n")
     }
-    cat("done!\n")
+    readTime2 <- Sys.time()
+    cat("Reading input files took a ")
+    print.difftime(round(readTime2 - readTime1, 1))
+    cat("\n")
   }
 
 
@@ -339,50 +389,54 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   cat("\n")
 
 
+  
+  ## TRAJECTORY PNG IF CIRCLE OR FULL AREA ####
+  if(exists("traj") & clip.trajectory.distance == 0){
+    if(clip.radius > 0){
+      png(paste0(dirPath, imgPath, fileFinder, "_circle_traj.png"),
+          height = clip.radius*10, width = clip.radius*10)
+      yLims <- c(clip.y - clip.radius, clip.y + clip.radius)
+      xLims <- c(clip.x - clip.radius, clip.x + clip.radius)
+      nowTitle <-  paste0(fileFinder, " circle radius ", clip.radius, 
+                          " m (area=", round(clip.radius^2*pi/10000,3), "ha)")
+    } else {
+      png(paste0(dirPath, imgPath, fileFinder, "_plot_traj.png"),
+          height = (big_sm@header@PHB$`Max Y` - big_sm@header@PHB$`Min Y`)*5, 
+          width = (big_sm@header@PHB$`Max X` - big_sm@header@PHB$`Min X`)*5)
+      yLims <- c(big_sm@header@PHB$`Min Y`, big_sm@header@PHB$`Max Y`)
+      xLims <- c(big_sm@header@PHB$`Min X`, big_sm@header@PHB$`Max X`)
+      nowTitle <-  paste0(fileFinder, " full plot")
+    }
+    plot(big_sm$Y ~ big_sm$X, cex = 0.0001, asp = 1,
+         xlab = "x [m]", ylab = "y [m]", xlim = xLims, ylim = yLims,
+         main = nowTitle)
+    points(traj$y ~ traj$x, col = traj$col, cex = 0.5, pch = 16)
+    legend("topright", col = c("blue", "red"), lwd = 3,
+           legend = c("start", paste0(round(duration_sec/60,1), " min")),
+           bty = "n")
+    #legend("bottomleft", legend = c("1", "2", "3"), cex = 0.5)
+    legend("bottomleft", legend = c(paste0(" ", thMk(pointsBefore), " pts"),
+                                    paste0("-",thMk(pointsAfter), " pts"),
+                                    paste0("", strcat(rep("-", nchar(thMk(pointsAfter))*2)), "---"),
+                                    paste0(" ", thMk(pointsLost), " pts lost")), cex = 1.1, bty = "n")
+    
+    #plot(hull.traj, add=TRUE, border= 2, lwd = 2)
+    dev.off()
+  }
+  
+  
+  
+      
+      
+      
+      
+      
+      
 
 
-  # DTM SECTION ####
+  # TRAJECTORY CLIPPING SECTION ####
 
   if(clip.trajectory.distance > 0 && txtExists){
-    clipTime <- Sys.time()
-    cat("Reading trajectory for clipping input... ")
-    try({
-      traj <- read.csv(paste0(dirPath, groundPath, fileFinder, "_traj.txt"), sep = " ")
-      if(is.element("X.time", colnames(traj))){
-        duration_sec <- max(traj$X.time) - min(traj$X.time)
-      } else if(is.element("X..world_time", colnames(traj))){
-        duration_sec <- max(traj$X..world_time) - min(traj$X..world_time)
-      } else {
-        duration_sec <- max(traj[, 1]) - min(traj[, 1])
-      }
-      cat("(scan went", round(duration_sec/60,1), "mins)\n")
-    })
-
-
-
-    # GeoSLAM trajectory contains approx. 83 points per second,
-    # we reduce them to 2 points per second for alpha-hulling
-    #traj$X.time[2] - traj$X.time[1] original spacing of points is 1/100 of a second
-    #traj2$X.time[2] - traj2$X.time[1] # now trajectory is spaced every 0.5 seconds
-
-    traj2 <- traj[seq(from = 1, to = nrow(traj), by = 50),]
-    traj <- traj2
-    traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
-    rm(traj2)
-
-    #dups <- duplicated.data.frame(data.frame("x" = traj$x, "y" = traj$y))
-    shiftX <- min(traj$x)
-    shiftY <- min(traj$y)
-    if(shiftX > 1000){
-      cat("Shifting x by", shiftX, "m...\n")
-      traj$x <- traj$x - shiftX
-    }
-    if(shiftY > 1000){
-      cat("Shifting y by", shiftY, "m...\n")
-      traj$y <- traj$y - shiftY
-    }
-
-
     cat("Clipping total cloud to trajectory +", clip.trajectory.distance, "m radius (a=25m)...")
     borderHull <- ashape(traj$x, traj$y, alpha = 25)
     owin.window <-owin(xrange=range(traj$x), yrange=range(traj$y))
@@ -419,6 +473,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     cat("Remain", thMk(pointsAfter), "pts after clipping to shape.\n")
     cat("We lost", thMk(pointsLost), "pts (or", round(pointsLost/pointsBefore*100,1), "% of original pts)\n")
 
+    ### TRAJECTORY CLIP PNG ####
     png(paste0(dirPath, imgPath, fileFinder, "_traj_clipping.png"),
         height = diff(hull.traj$yrange)*5, width = diff(hull.traj$xrange)*5)
     plot(big_sm$Y ~ big_sm$X, cex = 0.0001, asp = 1,
@@ -448,8 +503,10 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     gc()
   }
 
+  
+  # DTM SECTION ####
 
-  # DTM GIVEN ####
+  ## DTM GIVEN ####
   if(file.exists(dtm.path)){
     # if DTM is given, we only need to cut it once to absolute values (need no puffer)
 
