@@ -734,8 +734,8 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     registerDoParallel(cl)
     cat("   (on windows system using doParallel)\n")
   } else {
-    library(doMC)
     library(mcprogress)
+    library(doMC)
     
     useProgressBar <- TRUE
     registerDoMC(cores = nr_cores_plots)
@@ -748,8 +748,9 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   library(foreach)
   start <- Sys.time()
   
+  {
   foreach(i=1:length(fileFinders),  .errorhandling = 'remove', 
-          .packages = c("treeX"), combine = cbind) %dopar% {
+          .packages = c("treeX"), .combine = cbind) %dopar% {
             
             if(useProgressBar){
               mcProgressBar(i, length(fileFinders), 
@@ -831,5 +832,5 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
           }
   
   if(useProgressBar) closeProgress(start)
-  
+  }
 }
