@@ -409,9 +409,21 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
                           " m (area=", round(clip.radius^2*pi/10000,3), "ha)")
     } else {
       big_sm <- decimate_points(big, random(1))
+      
+      tempHeight <- (big_sm@header@PHB$`Max Y` - big_sm@header@PHB$`Min Y`)*5
+      tempWidth <-  (big_sm@header@PHB$`Max X` - big_sm@header@PHB$`Min X`)*5
+      if(tempHeight < 500 || tempWidth < 500){
+        if(tempHeight < tempWidth){
+          tempWidth <- tempWidth/tempHeight * 500
+          tempHeight <- 500
+        } else {
+          tempHeight <- tempHeight/tempWidth * 500
+          tempWidth <- 500
+        }
+      } 
       png(paste0(dirPath, imgPath, fileFinder, "_plot_traj.png"),
-          height = (big_sm@header@PHB$`Max Y` - big_sm@header@PHB$`Min Y`)*5, 
-          width = (big_sm@header@PHB$`Max X` - big_sm@header@PHB$`Min X`)*5)
+          height = tempHeight, 
+          width = tempWidth)
       yLims <- c(big_sm@header@PHB$`Min Y`, big_sm@header@PHB$`Max Y`)
       xLims <- c(big_sm@header@PHB$`Min X`, big_sm@header@PHB$`Max X`)
       nowTitle <-  paste0(fileFinder, " full plot")
