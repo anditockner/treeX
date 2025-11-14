@@ -756,7 +756,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
             
             
             t1 <- Sys.time()
-            nowPRB <- 0
+            nowStep <- 1
             nowLAZ <- inputFiles[i]
             fileFinder <- fileFinders[i]
             trafoFiles <- trafoFiles[i]
@@ -773,10 +773,11 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                     clip.trajectory.distance = clip.trajectory.distance, 
                                     clip.radius = clip.radius))
               if(useProgressBar){
-                mcProgressBar((i+nowPRB)*progressBarSteps, length(fileFinders)*progressBarSteps, 
+                mcProgressBar(i, length(fileFinders), 
                               cores = nr_cores_plots, 
+                              subval = nowStep/progressBarSteps,
                               start = start)
-                nowPRB <- nowPRB+1
+                nowStep <- nowStep+1
               }
             }
             
@@ -785,10 +786,11 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                              nr_cores = 1, 
                              retainPointClouds = T))
               if(useProgressBar){
-                mcProgressBar((i+nowPRB)*progressBarSteps, length(fileFinders)*progressBarSteps, 
+                mcProgressBar(i, length(fileFinders), 
                               cores = nr_cores_plots, 
+                              subval = nowStep/progressBarSteps,
                               start = start)
-                nowPRB <- nowPRB+1
+                nowStep <- nowStep+1
               }
             }
             
@@ -801,10 +803,11 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                             tileClipping = tileClipping, frame.rad = 1.1, 
                             retainPointClouds = T))
               if(useProgressBar){
-                mcProgressBar((i+nowPRB)*progressBarSteps, length(fileFinders)*progressBarSteps, 
+                mcProgressBar(i, length(fileFinders), 
                               cores = nr_cores_plots, 
+                              subval = nowStep/progressBarSteps,
                               start = start)
-                nowPRB <- nowPRB+1
+                nowStep <- nowStep+1
               }
               try(computeTreeParams(fileFinder, getRAM = F, 
                                     voxelSize = voxelSize,
@@ -814,10 +817,11 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                     retainPointClouds = F, 
                                     crownParameters = crownParameters))
               if(useProgressBar){
-                mcProgressBar((i+nowPRB)*progressBarSteps, length(fileFinders)*progressBarSteps, 
+                mcProgressBar(i, length(fileFinders), 
                               cores = nr_cores_plots, 
+                              subval = nowStep/progressBarSteps,
                               start = start)
-                nowPRB <- nowPRB+1
+                nowStep <- nowStep+1
               }
             }
             
@@ -845,10 +849,10 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
               cat("\n\n")
             }
             if(useProgressBar){
-              mcProgressBar((i+nowPRB)*progressBarSteps, length(fileFinders)*progressBarSteps, 
+              mcProgressBar(i, length(fileFinders), 
                             cores = nr_cores_plots, 
+                            subval = nowStep/progressBarSteps,
                             start = start)
-              nowPRB <- nowPRB+1
             }
             sink()
           }
