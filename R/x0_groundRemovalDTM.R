@@ -413,6 +413,11 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     plot(big_sm$Y ~ big_sm$X, cex = 0.0001, asp = 1,
          xlab = "x [m]", ylab = "y [m]", xlim = xLims, ylim = yLims,
          main = nowTitle)
+    if(clip.radius > 20){
+      draw.circle(clip.x, clip.y, 20, lwd = 1, lty = 2, col = "red")
+    } else if(clip.radius > 10){
+      draw.circle(clip.x, clip.y, 10, lwd = 1, lty = 2, col = "red")
+    }
     points(traj$y ~ traj$x, col = traj$col, cex = 0.5, pch = 16)
     legend("topright", col = c("blue", "red"), lwd = 3,
            legend = c("start", paste0(round(duration_sec/60,1), " min")),
@@ -421,7 +426,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     legend("bottomleft", legend = c(paste0(" ", thMk(pointsBefore), " pts"),
                                     paste0("-",thMk(pointsAfter), " pts"),
                                     paste0("", strcat(rep("-", nchar(thMk(pointsAfter))*2)), "---"),
-                                    paste0(" ", thMk(pointsLost), " pts lost")), cex = 1.1, bty = "n")
+                                    paste0("  ", thMk(pointsLost), " pts lost")), cex = 1.1, bty = "n")
     
     rm(big_sm)
     #plot(hull.traj, add=TRUE, border= 2, lwd = 2)
@@ -618,10 +623,10 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
                y1 = -clip.radius + clip.y + 0.5, y2 = clip.radius + clip.y - 0.5)
         }
         abline(h = clip.y, v = clip.x, lwd = 1)
-        if(clip.radius > 10){
-          draw.circle(clip.x, clip.y, 10, lwd = 2, lty = 2)
-        } else if(clip.radius > 20){
+        if(clip.radius > 20){
           draw.circle(clip.x, clip.y, 20, lwd = 2, lty = 2)
+        } else if(clip.radius > 10){
+          draw.circle(clip.x, clip.y, 10, lwd = 2, lty = 2)
         }
         dev.off()
 
