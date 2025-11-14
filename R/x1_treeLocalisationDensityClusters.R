@@ -2968,6 +2968,43 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0,
   #extracting the z-value from a dtm, was hard work to find that out... so easy
   #    extract(dtm_c, SpatialPoints(data.frame(x=15, y=-10)))
   
+  # fix na of z values
+  naZ <- which(is.na(trees$z))
+  if(length(naZ > 0)){
+    for(i in seq_along(naZ)){
+      treePos <- data.frame(x = trees$x[naZ[i]], y = trees$y[naZ[i]])
+      radius <- c(0.3, 0.5)  # 30 and 50 cm circle
+      n_points <- 72  
+      # Create angles evenly spaced around the circle
+      angles <- seq(0, 2*pi, length.out = n_points + 1)[- (n_points + 1)]  # exclude last point to avoid duplication
+      # Compute x and y coordinates for each point
+      circle_points <- data.frame(
+        x = treePos$x + radius * cos(angles),
+        y = treePos$y + radius * sin(angles)
+      )
+      #plot(circle_points, asp = 1)
+      #text(x = circle_points$x, y = circle_points$y, labels = newZ)
+      outZ <- round(extract(dtm, SpatialPoints(circle_points)) + 1.3, 3)
+      averagedZ <- mean(newZ, na.rm = T)
+      if(is.na(averagedZ)){
+        radius <- c(1)  # 1 m circle
+        n_points <- 36  
+        angles <- seq(0, 2*pi, length.out = n_points + 1)[- (n_points + 1)]  # exclude last point to avoid duplication
+        circle_points <- data.frame(
+          x = treePos$x + radius * cos(angles),
+          y = treePos$y + radius * sin(angles)
+        )
+        #plot(circle_points, asp = 1)
+        #text(x = circle_points$x, y = circle_points$y, labels = newZ)
+        outZ <- round(extract(dtm, SpatialPoints(circle_points)) + 1.3, 3)
+        averagedZ <- mean(newZ, na.rm = T)
+        if(is.na(averagedZ)){
+          averagedZ <- -100
+        }
+      }
+      trees$z[naZ[i]] <- averagedZ
+    }
+  }
   
   
   cat(" * drawing new random stem ids\n")
