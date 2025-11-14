@@ -1785,7 +1785,8 @@ createAppFiles <- function(fileFinder = NA,
           
           dtm_z <- raster(paste0(groundPath, fileFinder, "_ground_min.grd"))
           lines3$Z <- round(extract(dtm_z, SpatialPoints(data.frame(x = lines3$X, y = lines3$Y))) + 1.3, 3)
-        }, error = function(error_condition) {
+          lines3$Z[is.na(lines3$Z)] <- 0
+          }, error = function(error_condition) {
           cat("Error in reading the dtm-model, next loop!")
           return()
         })
@@ -1950,6 +1951,7 @@ createAppFiles <- function(fileFinder = NA,
       cat("Attaching missing z-values from ground model.\n")
       if(!exists("dtm")) dtm <- raster(groundModel.path)
       trees$z <- round(extract(dtm, SpatialPoints(data.frame(x = trees$x, y = trees$y))) + 1.3, 3)
+      trees$z[is.na(trees$z)] <- 0
     }
     
     if(is.element("randomCol", colnames(trees))){
