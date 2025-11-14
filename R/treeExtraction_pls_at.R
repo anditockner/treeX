@@ -41,6 +41,7 @@ library("Morpho") # for transformation of point clouds
 
 v.env <- new.env(parent = emptyenv())
 v.env$groundPath <- "_total_ground_veg/"
+v.env$rndV <- "1989e10e48ae4bbc7a6ed615367367768ea2bd574929a0ea1fa118c031973596"
 # groundPath <- v.env$groundPath
 
 
@@ -637,7 +638,9 @@ circMclust <- function (datax, datay, bw, method = "const", prec = 4, minsx = mi
 #' @param inputFiles vector of paths to .laz or .las files as input for processing (plots)
 #' @param fileFinders vector of file names for renaming input files. Must be of same length as lazFiles
 #' @param trafoFiles vector of path to transformation matrices for each plot
-#' @param nr_cores_plots how many plots should be calculated simultaneously
+#' @param nr_plots_parallel how many plots should be calculated simultaneously
+#' @param nr_cores_per_plot how many cores should each plot use
+#' @param maximum_cores quick setting to process 20 plots at the same time with 10 cores per plot
 #' @param detectTrees runs functions extractVegetation and clustSplit
 #' @param segmentTrees runs functions crownFeel and computeTreeParams
 #' @param crownParameters also performs stem analysis and extracts crown basal height, projection area and hull volume 
@@ -645,7 +648,10 @@ circMclust <- function (datax, datay, bw, method = "const", prec = 4, minsx = mi
 #' #' @export
 processPlotsParallel <- function (inputFiles, fileFinders = "", 
                                   dirPath = paste0(getwd(), "/"),
-                                  nr_cores_plots = 4, trafoFiles = "", 
+                                  maximum_cores = 0,
+                                  nr_plots_parallel = 4, 
+                                  nr_cores_per_plot = 5,
+                                  trafoFiles = "", 
                                   groundModels = TRUE, 
                                   detectTrees = TRUE, 
                                   segmentTrees = FALSE, 
@@ -666,6 +672,64 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                   )
 {
   
+  # error checking for number of core settings
+  {
+    nr_plots_parallel <- round(nr_plots_parallel)
+    nr_cores_per_plot <- round(nr_cores_per_plot)
+    if(nr_plots_parallel < 0){
+      nr_plots_parallel <- 4
+    }
+    if(nr_cores_per_plot < 0){
+      nr_cores_per_plot <- 5
+    }
+    if(maximum_cores == 1){
+      nr_plots_parallel <- 20
+      nr_cores_per_plot <- 10
+      if(detectTrees == FALSE && segmentTrees == FALSE){
+        nr_plots_parallel <- 200
+        nr_cores_per_plot <- 1
+      }
+    }
+    cores_used <- nr_plots_parallel * nr_cores_per_plot
+    if(detectTrees == FALSE && segmentTrees == FALSE){
+      nr_plots_parallel <- cores_used
+      nr_cores_per_plot <- 1
+    }
+    
+    # PASSWORD PROTECTION FOR ALL CORES
+    if(cores_used > 20){
+      useAllCores <- F
+      password <- getPass::getPass("Please confirm to access all WAFO cores: ", 
+                                   forcemask = T)
+      
+      if (digest(password, algo = "sha256") == v.env$rndV) {
+        cat("Access granted!\n")
+        
+      } else {
+        password <- getPass::getPass("Wrong password, do you want to downgrade to 20 cores? (type yes)")
+        if(is.null(password)){
+          stop("User terminated script.")
+        }
+        if(is.element(password, c("yess", "yes", "y", "ye", "j", "ja", "z", "zes", "ze"))){
+          useAllCores <- F
+        } else if(digest(password, algo = "sha256") == v.env$rndV){
+          cat("Access granted!\n")
+          useAllCores <- T
+        } else {
+          stop("User terminated script.")
+        }
+      }
+    }
+    if(!useAllCores){
+      nr_plots_parallel <- 4
+      nr_cores_per_plot <- 5
+    }
+  }
+  
+ 
+  
+  
+  
   dirPath <- paste0(dirPath, "/")
   dirPath <- gsub("//", "/", dirPath)
   if(!dir.exists(dirPath)) dir.create(dirPath)
@@ -681,6 +745,8 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
         "#           FOR ", length(inputFiles), " PLOTS\n",
         "#           IN \"", getwd(), "\"\n", sep = "")
     cat("#  \n")
+    cat("#    ", nr_plots_parallel, " PLOTS PARALLEL\n", sep = "")
+    cat("#    ", nr_cores_per_plot, " CORES PER PLOT\n", sep = "")
     cat("#  TODAY IS", paste(Sys.time()),"\n")
     cat("#  \n")
     
@@ -695,10 +761,8 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
       cat("#  \n")
     }
     if(segmentTrees){
-      cat("#   voxelSize = ", voxelSize, " cm\n")
-      cat("#  limitShare = ", limitShare, "\n")
-      cat("#  limitStems = ", limitStems, "%\n")
-      cat("#      zScale = ", zScale, "x\n") 
+      cat("#  limitShare = ", limitShare, "  limitStems = ", limitStems, "%\n")
+      cat("#      zScale = ", zScale, "x  voxelSize = ", voxelSize, " cm\n")
       cat("#    and", tileClipping*tileClipping, "tiles are done", tileClipping, "x", tileClipping, "\n")
     }
     cat("#\n")
@@ -726,12 +790,12 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   }
   
   
-  cat("Going parallel on", nr_cores_plots, "cores for", length(fileFinders),"plots.\n")
+  cat("Going parallel on", nr_plots_parallel, "cores for", length(fileFinders),"plots.\n")
   
   useProgressBar <- FALSE # works only for windows so far
   if (.Platform$OS.type == "windows") {
     library(doParallel)
-    cl <- makeCluster(nr_cores_plots)
+    cl <- makeCluster(nr_plots_parallel)
     registerDoParallel(cl)
     cat("   (on windows system using doParallel)\n")
   } else {
@@ -739,7 +803,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     library(doMC)
     
     useProgressBar <- TRUE
-    registerDoMC(cores = nr_cores_plots)
+    registerDoMC(cores = nr_plots_parallel)
     cat("   (on Unix-like system using doMC)\n")
     
   }
@@ -774,7 +838,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                     clip.radius = clip.radius))
               if(useProgressBar){
                 mcProgressBar(i, length(fileFinders), 
-                              cores = nr_cores_plots, 
+                              cores = nr_plots_parallel, 
                               subval = nowStep/progressBarSteps,
                               start = start)
                 nowStep <- nowStep+1
@@ -783,11 +847,11 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
             
             if(detectTrees){
               try(clustSplit(fileFinder = fileFinder, filterINT = 97, 
-                             nr_cores = 1, 
+                             nr_cores = nr_cores_per_plot, 
                              retainPointClouds = T))
               if(useProgressBar){
                 mcProgressBar(i, length(fileFinders), 
-                              cores = nr_cores_plots, 
+                              cores = nr_plots_parallel, 
                               subval = nowStep/progressBarSteps,
                               start = start)
                 nowStep <- nowStep+1
@@ -804,7 +868,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                             retainPointClouds = T))
               if(useProgressBar){
                 mcProgressBar(i, length(fileFinders), 
-                              cores = nr_cores_plots, 
+                              cores = nr_plots_parallel, 
                               subval = nowStep/progressBarSteps,
                               start = start)
                 nowStep <- nowStep+1
@@ -812,13 +876,13 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
               try(computeTreeParams(fileFinder, getRAM = F, 
                                     voxelSize = voxelSize,
                                     limitShare = limitShare, 
-                                    zScale = zScale, nr_cores = 1, nr_cores_params = 1,
+                                    zScale = zScale, nr_cores = 1, nr_cores_params = nr_cores_per_plot,
                                     writeLAZ = T, 
                                     retainPointClouds = F, 
                                     crownParameters = crownParameters))
               if(useProgressBar){
                 mcProgressBar(i, length(fileFinders), 
-                              cores = nr_cores_plots, 
+                              cores = nr_plots_parallel, 
                               subval = nowStep/progressBarSteps,
                               start = start)
                 nowStep <- nowStep+1
@@ -850,7 +914,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
             }
             if(useProgressBar){
               mcProgressBar(i, length(fileFinders), 
-                            cores = nr_cores_plots, 
+                            cores = nr_plots_parallel, 
                             subval = nowStep/progressBarSteps,
                             start = start)
             }
