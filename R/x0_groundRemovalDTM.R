@@ -395,8 +395,10 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   if(exists("traj") & clip.trajectory.distance == 0){
     if(clip.radius > 0){
       big_sm <- decimate_points(big, random(10))
+      tempHeight <- clip.radius*20
+      if(tempHeight < 300) tempHeight <- 300
       png(paste0(dirPath, imgPath, fileFinder, "_circle_traj.png"),
-          height = clip.radius*20, width = clip.radius*20)
+          height = tempHeight, width = tempHeight)
       yLims <- c(clip.y - clip.radius, clip.y + clip.radius)
       xLims <- c(clip.x - clip.radius, clip.x + clip.radius)
       nowTitle <-  paste0(fileFinder, " circle radius ", clip.radius, 
