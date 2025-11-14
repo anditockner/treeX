@@ -277,8 +277,9 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
                                                           clip.y, " ",clip.radius)))
       
       
-      pointsBefore <- readLASheader(LASfile)@PHB$`Number of point records`
-      pointsAfter <- big@PHB$`Number of point records`
+      oldHeader <- readLASheader(LASfile)
+      pointsBefore <- oldHeader@PHB$`Number of point records`
+      pointsAfter <- big@header@PHB$`Number of point records`
       pointsLost <- pointsBefore - pointsAfter
       
       cat("done!\n")
@@ -393,6 +394,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   ## TRAJECTORY PNG IF CIRCLE OR FULL AREA ####
   if(exists("traj") & clip.trajectory.distance == 0){
     if(clip.radius > 0){
+      big_sm <- decimate_points(big, random(10))
       png(paste0(dirPath, imgPath, fileFinder, "_circle_traj.png"),
           height = clip.radius*10, width = clip.radius*10)
       yLims <- c(clip.y - clip.radius, clip.y + clip.radius)
@@ -400,6 +402,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       nowTitle <-  paste0(fileFinder, " circle radius ", clip.radius, 
                           " m (area=", round(clip.radius^2*pi/10000,3), "ha)")
     } else {
+      big_sm <- decimate_points(big, random(1))
       png(paste0(dirPath, imgPath, fileFinder, "_plot_traj.png"),
           height = (big_sm@header@PHB$`Max Y` - big_sm@header@PHB$`Min Y`)*5, 
           width = (big_sm@header@PHB$`Max X` - big_sm@header@PHB$`Min X`)*5)
@@ -420,6 +423,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
                                     paste0("", strcat(rep("-", nchar(thMk(pointsAfter))*2)), "---"),
                                     paste0(" ", thMk(pointsLost), " pts lost")), cex = 1.1, bty = "n")
     
+    rm(big_sm)
     #plot(hull.traj, add=TRUE, border= 2, lwd = 2)
     dev.off()
   }
@@ -497,6 +501,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     print.difftime(round(clipTime2 - clipTime,1))
 
 
+    rm(big_sm)
     if(exportClippedLAS){
       writeLAS(big, paste0(out.path.clip, fileFinder, "_traj", clip.trajectory.distance, "m.laz"))
     }
