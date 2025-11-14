@@ -756,7 +756,6 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     }
     
     useProgressBar <- TRUE
-    handlers(global = TRUE)
     registerDoMC(cores = nr_cores_plots)
     cat("   (on Unix-like system using doMC)\n")
     
