@@ -685,8 +685,8 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
       nr_cores_per_plot <- 5
     }
     if(maximum_cores == 1){
-      nr_plots_parallel <- 20
-      nr_cores_per_plot <- 10
+      nr_plots_parallel <- 50
+      nr_cores_per_plot <- 4
       if(detectTrees == FALSE && segmentTrees == FALSE){
         nr_plots_parallel <- 200
         nr_cores_per_plot <- 1
@@ -755,17 +755,18 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     
     if(detectTrees){
       if(clip.trajectory.distance > 0){
-        cat("#  clip trajectory to ", clip.trajectory.distance, "m\n")
+        cat("#  trajectory clip at", clip.trajectory.distance, "m - ")
       }
       if(clip.radius > 0){
-        cat("#  clip circle of", clip.radius, "m\n")
+        cat("#  circle clip with radius of", clip.radius, "m - ")
       }
-      cat("#  \n")
+    } else {
+      cat("#  ")
     }
     if(segmentTrees){
+      cat("using", tileClipping*tileClipping, "tiles in", tileClipping, "x", tileClipping, "\n")
       cat("#  limitShare = ", limitShare, "  limitStems = ", limitStems, "%\n")
-      cat("#      zScale = ", zScale, "x  voxelSize = ", voxelSize, " cm\n")
-      cat("#    and", tileClipping*tileClipping, "tiles are done", tileClipping, "x", tileClipping, "\n")
+      cat("#      zScale = ", zScale, "x     voxelSize = ", voxelSize, " cm\n")
     }
     cat("#\n")
     
@@ -792,7 +793,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   }
   
   
-  cat("Going parallel on", nr_plots_parallel, "cores for", length(fileFinders),"plots.\n")
+  cat("Going parallel on", nr_plots_parallel, "x", nr_cores_per_plot, "cores for", length(fileFinders),"plots.\n")
   
   useProgressBar <- FALSE # works only for windows so far
   if (.Platform$OS.type == "windows") {
