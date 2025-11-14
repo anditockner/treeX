@@ -396,7 +396,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     if(clip.radius > 0){
       big_sm <- decimate_points(big, random(10))
       png(paste0(dirPath, imgPath, fileFinder, "_circle_traj.png"),
-          height = clip.radius*10, width = clip.radius*10)
+          height = clip.radius*20, width = clip.radius*20)
       yLims <- c(clip.y - clip.radius, clip.y + clip.radius)
       xLims <- c(clip.x - clip.radius, clip.x + clip.radius)
       nowTitle <-  paste0(fileFinder, " circle radius ", clip.radius, 
@@ -1094,10 +1094,10 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
              y1 = -clip.radius + clip.y + 0.5, y2 = clip.radius + clip.y - 0.5)
       }
       abline(h = clip.y, v = clip.x, lwd = 1)
-      if(clip.radius > 10){
-        draw.circle(clip.x, clip.y, 10, lwd = 2, lty = 2)
-      } else if(clip.radius > 20){
+      if(clip.radius > 20){
         draw.circle(clip.x, clip.y, 20, lwd = 2, lty = 2)
+      } else if(clip.radius > 10){
+        draw.circle(clip.x, clip.y, 10, lwd = 2, lty = 2)
       }
       dev.off()
 
