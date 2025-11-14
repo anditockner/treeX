@@ -402,7 +402,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       tempHeight <- clip.radius*20
       if(tempHeight < 500) tempHeight <- 500
       png(paste0(dirPath, imgPath, fileFinder, "_circle_traj.png"),
-          height = tempHeight, width = tempHeight)
+          height = tempHeight, width = tempHeight, type = "cairo")
       yLims <- c(clip.y - clip.radius, clip.y + clip.radius)
       xLims <- c(clip.x - clip.radius, clip.x + clip.radius)
       nowTitle <-  paste0(fileFinder, " circle radius ", clip.radius, 
@@ -422,8 +422,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
         }
       } 
       png(paste0(dirPath, imgPath, fileFinder, "_plot_traj.png"),
-          height = tempHeight, 
-          width = tempWidth)
+          height = tempHeight, width = tempWidth, type = "cairo")
       yLims <- c(big_sm@header@PHB$`Min Y`, big_sm@header@PHB$`Max Y`)
       xLims <- c(big_sm@header@PHB$`Min X`, big_sm@header@PHB$`Max X`)
       nowTitle <-  paste0(fileFinder, " full plot")
@@ -502,7 +501,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
     ### TRAJECTORY CLIP PNG ####
     png(paste0(dirPath, imgPath, fileFinder, "_traj_clipping.png"),
-        height = diff(hull.traj$yrange)*5, width = diff(hull.traj$xrange)*5)
+        height = diff(hull.traj$yrange)*5, width = diff(hull.traj$xrange)*5, type = "cairo")
     plot(big_sm$Y ~ big_sm$X, cex = 0.0001, asp = 1,
          xlab = "x [m]", ylab = "y [m]", xlim = hull.traj$xrange, ylim = hull.traj$yrange,
          main = paste0(fileFinder, "_traj.txt (+", clip.trajectory.distance, "m) area=", round(area.traj/10000,2), "ha"))
@@ -613,7 +612,8 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
         cat(" saved!\n")
         ndom@data@values[is.na(ndom@data@values)] <- 0
 
-        png(filename = paste0(dirPath, imgPath, fileFinder,"_NDOM_raw.png"), width = 800, height = 800)
+        png(filename = paste0(dirPath, imgPath, fileFinder,"_NDOM_raw.png"), 
+            width = 800, height = 800, type = "cairo")
         par(xpd = F, mar = c(2,0,5,0), oma = c(0,0,0,0), xaxs='i', yaxs='i')
         if(clip.radius != 0){
           plot(0, type = "n",
@@ -1089,7 +1089,8 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       ndom@data@values[is.na(ndom@data@values)] <- 0
 
 
-      png(filename = paste0(dirPath, imgPath, fileFinder,"_NDOM_raw.png"), width = 800, height = 800)
+      png(filename = paste0(dirPath, imgPath, fileFinder,"_NDOM_raw.png"), 
+          width = 800, height = 800, type = "cairo")
       par(xpd = F, mar = c(2,0,5,0), oma = c(0,0,0,0), xaxs='i', yaxs='i')
       if(clip.radius != 0){
         plot(0, type = "n",
