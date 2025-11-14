@@ -735,19 +735,13 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     cat("   (on windows system using doParallel)\n")
   } else {
     library(doMC)
+    library(utils)
+    
     registerDoMC(cores = nr_cores_plots)
     cat("   (on Unix-like system using doMC)\n")
     
+    pb <- txtProgressBar(min = 0, max = length(fileFinders), style = 3)
     
-    pbTracker <- function(pb,i,nr_cores_plots) {
-      if (i %% nr_cores_plots == 0) {
-        pb$tick()
-      }
-    }
-    
-    pb <- progress_bar$new(
-      format <- " progress [:bar] :percent eta: :eta",
-      total <- length(fileFinders) / nr_cores_plots, clear = FALSE, width= 60)
   }
   cat("\n")
   
@@ -756,8 +750,8 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   
   foreach(i=1:length(fileFinders),  .errorhandling = 'remove', 
           .packages = c("treeX"))%dopar% {
-            pbTracker(pb,i,nr_cores_plots)
             t1 <- Sys.time()
+            setTxtProgressBar(pb, i)
             
             nowLAZ <- inputFiles[i]
             fileFinder <- fileFinders[i]
