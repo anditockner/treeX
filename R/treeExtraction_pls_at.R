@@ -672,6 +672,8 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                   )
 {
   
+  library(digest)
+  library(getPass)
   # error checking for number of core settings
   {
     nr_plots_parallel <- round(nr_plots_parallel)
@@ -704,7 +706,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
       
       if (digest(password, algo = "sha256") == v.env$rndV) {
         cat("Access granted!\n")
-        
+        useAllCores <- T
       } else {
         password <- getPass::getPass("Wrong password, do you want to downgrade to 20 cores? (type yes)")
         if(is.null(password)){
