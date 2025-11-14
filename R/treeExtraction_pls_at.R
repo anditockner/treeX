@@ -646,6 +646,7 @@ circMclust <- function (datax, datay, bw, method = "const", prec = 4, minsx = mi
 processPlotsParallel <- function (inputFiles, fileFinders = "", 
                                   dirPath = paste0(getwd(), "/"),
                                   nr_cores_plots = 4, trafoFiles = "", 
+                                  groundModels = TRUE, 
                                   detectTrees = TRUE, 
                                   segmentTrees = FALSE, 
                                   crownParameters = TRUE,
@@ -747,18 +748,15 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   
   library(foreach)
   start <- Sys.time()
+  progressBarSteps <- sum(groundModels, detectTrees, segmentTrees, segmentTrees)+1
   
   {
   foreach(i=1:length(fileFinders),  .errorhandling = 'remove', 
           .packages = c("treeX"), .combine = cbind) %dopar% {
             
-            if(useProgressBar){
-              mcProgressBar(i, length(fileFinders), 
-                            cores = nr_cores_plots, 
-                            start = start)
-            }
-            t1 <- Sys.time()
             
+            t1 <- Sys.time()
+            nowPRB <- 0
             nowLAZ <- inputFiles[i]
             fileFinder <- fileFinders[i]
             trafoFiles <- trafoFiles[i]
@@ -769,23 +767,32 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
             file.create(file_parallelProtocol)
             sink(file_parallelProtocol, append = T)
             
-            
-            if(detectTrees){
-              
+            if(groundModels){
               try(extractVegetation(nowLAZ, fileFinder, 
                                     trafoMatrix.path = trafoFiles, 
                                     clip.trajectory.distance = clip.trajectory.distance, 
                                     clip.radius = clip.radius))
-              
+              if(useProgressBar){
+                mcProgressBar((i+nowPRB)*progressBarSteps, length(fileFinders)*progressBarSteps, 
+                              cores = nr_cores_plots, 
+                              start = start)
+                nowPRB <- nowPRB+1
+              }
+            }
+            
+            if(detectTrees){
               try(clustSplit(fileFinder = fileFinder, filterINT = 97, 
                              nr_cores = 1, 
                              retainPointClouds = T))
-              
-              
+              if(useProgressBar){
+                mcProgressBar((i+nowPRB)*progressBarSteps, length(fileFinders)*progressBarSteps, 
+                              cores = nr_cores_plots, 
+                              start = start)
+                nowPRB <- nowPRB+1
+              }
             }
             
             if(segmentTrees){
-              
               try(crownFeel(fileFinder, 
                             voxelSize = voxelSize, 
                             limitShare = limitShare, 
@@ -793,7 +800,12 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                             zScale = zScale,
                             tileClipping = tileClipping, frame.rad = 1.1, 
                             retainPointClouds = T))
-              
+              if(useProgressBar){
+                mcProgressBar((i+nowPRB)*progressBarSteps, length(fileFinders)*progressBarSteps, 
+                              cores = nr_cores_plots, 
+                              start = start)
+                nowPRB <- nowPRB+1
+              }
               try(computeTreeParams(fileFinder, getRAM = F, 
                                     voxelSize = voxelSize,
                                     limitShare = limitShare, 
@@ -801,7 +813,12 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                     writeLAZ = T, 
                                     retainPointClouds = F, 
                                     crownParameters = crownParameters))
-              
+              if(useProgressBar){
+                mcProgressBar((i+nowPRB)*progressBarSteps, length(fileFinders)*progressBarSteps, 
+                              cores = nr_cores_plots, 
+                              start = start)
+                nowPRB <- nowPRB+1
+              }
             }
             
             if(createAppFiles){
@@ -827,10 +844,14 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
               cat("#################################\n")
               cat("\n\n")
             }
+            if(useProgressBar){
+              mcProgressBar((i+nowPRB)*progressBarSteps, length(fileFinders)*progressBarSteps, 
+                            cores = nr_cores_plots, 
+                            start = start)
+              nowPRB <- nowPRB+1
+            }
             sink()
-            
           }
-  
   if(useProgressBar) closeProgress(start)
   }
 }
