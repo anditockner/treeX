@@ -725,7 +725,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   }
   
   
-  cat("Going parallel on", nr_cores_plots, "cores.\n")
+  cat("Going parallel on", nr_cores_plots, "cores for", length(fileFinders),"plots.\n")
   
   useProgressBar <- FALSE # works only for windows so far
   if (.Platform$OS.type == "windows") {
@@ -735,25 +735,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     cat("   (on windows system using doParallel)\n")
   } else {
     library(doMC)
-    library(progress)
-    
-    # Create a progress bar
-    pb <- progress_bar$new(
-      format = "  Progress [:bar] :percent in :elapsed",
-      total = length(fileFinders),
-      clear = FALSE,
-      width = 60
-    )
-    
-    # Create a shared environment to track progress
-    progress_env <- new.env()
-    progress_env$counter <- 0
-    
-    # Function to update the progress bar
-    update_progress <- function() {
-      progress_env$counter <- progress_env$counter + 1
-      pb$tick()
-    }
+    library(mcprogress)
     
     useProgressBar <- TRUE
     registerDoMC(cores = nr_cores_plots)
@@ -764,11 +746,17 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   
   
   library(foreach)
+  start <- Sys.time()
   
   foreach(i=1:length(fileFinders),  .errorhandling = 'remove', 
-          .packages = c("treeX"))%dopar% {
+          .packages = c("treeX"), combine = cbind) %dopar% {
+            
+            if(useProgressBar){
+              mcProgressBar(i, length(fileFinders), 
+                            cores = nr_cores_plots, 
+                            start = start)
+            }
             t1 <- Sys.time()
-            update_progress() # Update progress bar
             
             nowLAZ <- inputFiles[i]
             fileFinder <- fileFinders[i]
@@ -788,7 +776,6 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                     clip.trajectory.distance = clip.trajectory.distance, 
                                     clip.radius = clip.radius))
               
-              update_progress() # Update progress bar
               try(clustSplit(fileFinder = fileFinder, filterINT = 97, 
                              nr_cores = 1, 
                              retainPointClouds = T))
@@ -843,5 +830,6 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
             
           }
   
+  if(useProgressBar) closeProgress(start)
   
 }
