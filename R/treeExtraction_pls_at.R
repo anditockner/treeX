@@ -645,6 +645,7 @@ circMclust <- function (datax, datay, bw, method = "const", prec = 4, minsx = mi
 #' @param segmentTrees runs functions crownFeel and computeTreeParams
 #' @param crownParameters also performs stem analysis and extracts crown basal height, projection area and hull volume 
 #' @param createAppFiles runs function createAppFiles with new background images
+#' @param circleRadius draw additional circle in the background files
 #' #' @export
 processPlotsParallel <- function (inputFiles, fileFinders = "", 
                                   dirPath = paste0(getwd(), "/"),
@@ -661,6 +662,10 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                   clip.trajectory.distance = 0, 
                                   clip.radius = 0, 
                                   
+                                  pixelUnit_cm = 2, 
+                                  circleRadius = 0, 
+                                  drawTraj = F, 
+                                  createBGR_pic = T, 
                                   
                                   voxelSize = 3, 
                                   limitShare = 0.003, 
@@ -815,7 +820,13 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   
   library(foreach)
   start <- Sys.time()
-  progressBarSteps <- sum(groundModels, detectTrees, segmentTrees, segmentTrees)+1
+  
+  weightDetectTrees <- 30 # how much longer than compared to ground models
+  weightSegmentTrees <- 8
+  weightComputeTrees <- 13
+  progressBarSteps <- sum(groundModels*1, detectTrees*weightDetectTrees, 
+                          segmentTrees*(weightSegmentTrees+weightComputeTrees), 
+                          createAppFiles*1)
   
   {
   foreach(i=1:length(fileFinders),  .errorhandling = 'remove', 
@@ -823,7 +834,13 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
             
             
             t1 <- Sys.time()
-            nowStep <- 1
+            nowStep <- 0
+            if(useProgressBar){
+              mcProgressBar(i, length(fileFinders), 
+                            cores = nr_plots_parallel, 
+                            subval = nowStep/progressBarSteps,
+                            start = start)
+            }
             nowLAZ <- inputFiles[i]
             fileFinder <- fileFinders[i]
             trafoFiles <- trafoFiles[i]
@@ -840,11 +857,11 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                     clip.trajectory.distance = clip.trajectory.distance, 
                                     clip.radius = clip.radius))
               if(useProgressBar){
+                nowStep <- nowStep+1
                 mcProgressBar(i, length(fileFinders), 
                               cores = nr_plots_parallel, 
                               subval = nowStep/progressBarSteps,
                               start = start)
-                nowStep <- nowStep+1
               }
             }
             
@@ -853,11 +870,11 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                              nr_cores = nr_cores_per_plot, 
                              retainPointClouds = T))
               if(useProgressBar){
+                nowStep <- nowStep+weightDetectTrees
                 mcProgressBar(i, length(fileFinders), 
                               cores = nr_plots_parallel, 
                               subval = nowStep/progressBarSteps,
                               start = start)
-                nowStep <- nowStep+1
               }
             }
             
@@ -870,11 +887,11 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                             tileClipping = tileClipping, frame.rad = 1.1, 
                             retainPointClouds = T))
               if(useProgressBar){
+                nowStep <- nowStep+weightSegmentTrees
                 mcProgressBar(i, length(fileFinders), 
                               cores = nr_plots_parallel, 
                               subval = nowStep/progressBarSteps,
                               start = start)
-                nowStep <- nowStep+1
               }
               try(computeTreeParams(fileFinder, getRAM = F, 
                                     voxelSize = voxelSize,
@@ -884,22 +901,30 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                     retainPointClouds = F, 
                                     crownParameters = crownParameters))
               if(useProgressBar){
+                nowStep <- nowStep+weightComputeTrees
                 mcProgressBar(i, length(fileFinders), 
                               cores = nr_plots_parallel, 
                               subval = nowStep/progressBarSteps,
                               start = start)
-                nowStep <- nowStep+1
               }
             }
             
             if(createAppFiles){
               try(createAppFiles(fileFinder,
-                                 pixelUnit_cm = 2, eraseSpecies = T, drawTraj = F, 
+                                 pixelUnit_cm = pixelUnit_cm, eraseSpecies = T, drawTraj = drawTraj, 
                                  #drawLines = drawLines, slices = nowSlices,
                                  #isoLines = 1,
-                                 writeColoredLAZ = F, createBGR_pic = T, createJPG = T,
+                                 createBGR_pic = createBGR_pic, 
+                                 circleRadius = circleRadius, 
                                  drawGround = T, 
                                  drawRedSlice = T))
+              if(useProgressBar){
+                nowStep <- nowStep+1
+                mcProgressBar(i, length(fileFinders), 
+                              cores = nr_plots_parallel, 
+                              subval = nowStep/progressBarSteps,
+                              start = start)
+              }
             }
             
             {
@@ -914,12 +939,6 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
               cat("#\n")
               cat("#################################\n")
               cat("\n\n")
-            }
-            if(useProgressBar){
-              mcProgressBar(i, length(fileFinders), 
-                            cores = nr_plots_parallel, 
-                            subval = nowStep/progressBarSteps,
-                            start = start)
             }
             sink()
           }
