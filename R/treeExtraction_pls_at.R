@@ -843,17 +843,57 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
             }
             nowLAZ <- inputFiles[i]
             fileFinder <- fileFinders[i]
-            trafoFiles <- trafoFiles[i]
+            nowTrafo <- trafoFiles[i]
             
-            consolePath <- paste0(dirPath, "/parallel_console/")
-            if(!dir.exists(consolePath)) dir.create(consolePath)
-            file_parallelProtocol <- paste0(consolePath, fileFinder, "_par_",format(Sys.time(), "%Y%m%d_%H%M"),"_Rcons.txt")
+            consolePath <- paste0(dirPath, "/parallel_console/", "par_", format(Sys.time(), "%y%m%d_%H%M"), "/")
+            if(!dir.exists(consolePath)) dir.create(consolePath, recursive = T)
+            file_parallelProtocol <- paste0(consolePath, "/", fileFinder, "_par_Rcons.txt")
             file.create(file_parallelProtocol)
             sink(file_parallelProtocol, append = T)
             
+            {
+              #LASfile <- NA
+              cat("\n#########################################\n",
+                  "#\n",
+                  "#  STARTING PARALLEL PROCESSING \n",
+                  "#           FOR PLOT ", fileFinder,
+                  "#           IN \"", getwd(), "\"\n", sep = "")
+              cat("#  \n")
+              cat("#    ", nr_plots_parallel, " PLOTS PARALLEL\n", sep = "")
+              cat("#    ", nr_cores_per_plot, " CORES PER PLOT\n", sep = "")
+              cat("#  TODAY IS", paste(Sys.time()),"\n")
+              cat("#  \n")
+              
+              
+              if(detectTrees){
+                if(clip.trajectory.distance > 0){
+                  cat("#  trajectory clip at", clip.trajectory.distance, "m - ")
+                }
+                if(clip.radius > 0){
+                  cat("#  circle clip with radius of", clip.radius, "m - ")
+                }
+              } else {
+                cat("#  ")
+              }
+              if(segmentTrees){
+                cat("using", tileClipping*tileClipping, "tiles in", tileClipping, "x", tileClipping, "\n")
+                cat("#  limitShare = ", limitShare, "  limitStems = ", limitStems, "%\n")
+                cat("#      zScale = ", zScale, "x     voxelSize = ", voxelSize, " cm\n")
+              }
+              cat("#\n")
+              
+              if(nowTrafo != ""){
+                cat("#  GLOBAL TRANSFORMATION MATRICE PROVIDED\n")
+                cat("#\n")
+              }
+              cat("#########################################\n")
+              cat("\n\n")
+            }
+            
+            
             if(groundModels){
               try(extractVegetation(nowLAZ, fileFinder, 
-                                    trafoMatrix.path = trafoFiles, 
+                                    trafoMatrix.path = nowTrafo, 
                                     clip.trajectory.distance = clip.trajectory.distance, 
                                     clip.radius = clip.radius))
               if(useProgressBar){
