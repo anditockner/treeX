@@ -665,9 +665,10 @@ createAppFiles <- function(fileFinder = NA,
   
   
   
-  if(!dir.exists(paste0(dirPath,"app/"))) dir.create(paste0(dirPath,"app/"))
-  picPath.bgr <- paste0(groundPath, "bgr/")
-  if(!dir.exists(picPath.bgr)) dir.create(picPath.bgr, recursive = T)
+  appPath <- paste0(dirPath, "app/")
+  if(!dir.exists(appPath)) dir.create(appPath)
+  picPath.app.temp <- paste0(appPath, "temp/")
+  if(!dir.exists(picPath.app.temp)) dir.create(picPath.app.temp, recursive = T)
   
   
   
@@ -695,7 +696,7 @@ createAppFiles <- function(fileFinder = NA,
   if(createBGR_pic){
     
     if(!is.na(fileFinder[1])){
-      ## ...FROM FILEFINDER ####
+      ## a) FROM FILEFINDER ####
       for(i in 1:length(slices)){
         #cat("reading in file", paste0(groundPath, fileFinder, slices[i]), "\n")
         cat(paste0("Reading in ", slices[i], "... "))
@@ -841,7 +842,7 @@ createAppFiles <- function(fileFinder = NA,
               prevYUp <- 5
               slicePrev <- filter_poi(slice, X < prevXRight, X > prevXLeft, Y > prevYDown, Y < prevYUp)
               #plot(slicePrev)
-              png(paste0(picPath.bgr, fileFinder, slices[i],"_prev_",pixelUnit_cm,"px_cm.png"),
+              png(paste0(picPath.app.temp, fileFinder, slices[i],"_prev_",pixelUnit_cm,"px_cm.png"),
                   width = (prevXRight - prevXLeft)*100*pixelUnit_cm, height = (prevYUp - prevYDown)*100*pixelUnit_cm, type = "cairo")
               par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i')
               plot(1, type = "n", xlim = c(prevXLeft, prevXRight), ylim = c(prevYDown, prevYUp),
@@ -909,7 +910,7 @@ createAppFiles <- function(fileFinder = NA,
         
         
         
-        # plotting slices[i] ####
+        ## plotting background image of fileFinders ####
         {
           bgrTime <- Sys.time()
           cat("EXHAUSTIVE: plot background image",spanX_cm_drawn*pixelUnit_cm,"x",spanY_cm_drawn*pixelUnit_cm,"pixel (area =", round(spanX_cm_drawn*pixelUnit_cm * spanY_cm_drawn*pixelUnit_cm / 1000000), "Mio)...\n")
@@ -920,14 +921,14 @@ createAppFiles <- function(fileFinder = NA,
         }
         tryCatch(
           {
-            #png(paste0(picPath.bgr, fileFinder, "_", clip.radius,slices[i],".png"), width = 8000, height = 8000, type = "cairo")
+            #png(paste0(picPath.app.temp, fileFinder, "_", clip.radius,slices[i],".png"), width = 8000, height = 8000, type = "cairo")
             
             if(createTIFF){
-              tiff(paste0(picPath.bgr, outName, slices[i],".png"), 
+              tiff(paste0(picPath.app.temp, outName, slices[i],".png"), 
                   width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
               
             } else {
-              png(paste0(picPath.bgr, outName, slices[i],".png"),
+              png(paste0(picPath.app.temp, outName, slices[i],".png"),
                   width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
             }
             par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i')
@@ -1230,24 +1231,22 @@ createAppFiles <- function(fileFinder = NA,
               lines(corners$x, corners$y, lty = 2, lwd = 2, col = "red")
             }
             
-            
-            treeListFile <- paste0(dirPath,fileFinder,"_ALLGO_100to300_dbh/trees_dbh.txt")
-            for(j in 1:length(fileFinder)){
-              if(file.exists(treeListFile[i])){
-                trees <- read.table(treeListFile[i], header = TRUE)
-                #trees$dCol <- trees$dbh/max(trees$dbh)
-                trees$dCol <- rgb(50,250,50, maxColorValue = 255)
-                trees$dCol[trees$id >= 9000] <- rgb(255,200,0, maxColorValue = 255)
-                
-                dbh.scaler <- 5
-                if (greenTreeLocations) {
+            if (greenTreeLocations) {
+              treeListFile <- paste0(dirPath,fileFinder,"_ALLGO_100to300_dbh/trees_dbh.txt")
+              for(j in 1:length(fileFinder)){
+                if(file.exists(treeListFile[i])){
+                  trees <- read.table(treeListFile[i], header = TRUE)
+                  #trees$dCol <- trees$dbh/max(trees$dbh)
+                  trees$dCol <- rgb(50,250,50, maxColorValue = 255)
+                  trees$dCol[trees$id >= 9000] <- rgb(255,200,0, maxColorValue = 255)
+                  
+                  dbh.scaler <- 5
+                  
                   points(trees$x, trees$y, pch = 16, cex = log(trees$dbh)/log(dbh.scaler)/1.5, col = trees$dCol)
+                  
                 }
               }
             }
-            
-            
-            
             
             if(circleRadius > 0){
               draw.circle(0, 0, radius = circleRadius, lwd = 5, border = "blue")
@@ -1264,43 +1263,10 @@ createAppFiles <- function(fileFinder = NA,
           })
       }
       
-      
-      ## closing and setStringApp generation ####
       dev.off()
-      cat("done - converting to .jpg of quality", round(jpgQuality*100,1), "%...\n")
-      
-      setStringApp <- paste0("_ct00_", -topLeftX*pixelUnit_cm, 
-                             "_", topLeftY*pixelUnit_cm, 
-                             "_", pixelUnit_cm*100, 
-                             "_", modeApp)
-      
-      
-      
-      
-      # copy app bgr pic to folder
-      fromFile <- paste0(picPath.bgr, outName, slices[1], ".png")
-      
-      # file.copy(fromFile, toFile, overwrite = T)
-      if(createJPG){
-        toFile <- paste0(dirPath,"app/bgr_", tolower(outName), setStringApp, ".jpg")
-        img <- readPNG(fromFile)
-        writeJPEG(img, target = toFile, quality = jpgQuality)
-        rm(img)
-        gc()
-      } else {
-        if(createTIFF){
-          toFile <- paste0(dirPath,"app/bgr_", tolower(outName), setStringApp, ".tif")
-        } else {
-          toFile <- paste0(dirPath,"app/bgr_", tolower(outName), setStringApp, ".png")
-        }
-        file.copy(fromFile, toFile, overwrite = T)
-      }
-      cat("Done in a ")
-      print.difftime(round(Sys.time() - bgrTime, 1))
-      cat("\n")
-    } else {
-      
-      ## ...FROM LAS FILE ####
+    }
+    else {
+      ## b) FROM LAS FILE ####
       # reading in many las files, merging to one
       cat("Reading in file ")
       slice <- ""
@@ -1380,7 +1346,7 @@ createAppFiles <- function(fileFinder = NA,
             prevYUp <- 5
             slicePrev <- filter_poi(slice, X < prevXRight, X > prevXLeft, Y > prevYDown, Y < prevYUp)
             #plot(slicePrev)
-            png(paste0(picPath.bgr, basename(laz.path), slices[i],"_prev_",pixelUnit_cm,"px_cm.png"),
+            png(paste0(picPath.app.temp, basename(laz.path), slices[i],"_prev_",pixelUnit_cm,"px_cm.png"),
                 width = (prevXRight - prevXLeft)*100*pixelUnit_cm, height = (prevYUp - prevYDown)*100*pixelUnit_cm, type = "cairo")
             par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i')
             plot(1, type = "n", xlim = c(prevXLeft, prevXRight), ylim = c(prevYDown, prevYUp),
@@ -1401,25 +1367,25 @@ createAppFiles <- function(fileFinder = NA,
       }
       
       
-      # plotting merged .las file ####
+      ### plotting background image of merged las ####
       bgrTime <- Sys.time()
       cat("EXHAUSTIVE: plot background image",spanX_cm_drawn*pixelUnit_cm,"x",spanY_cm_drawn*pixelUnit_cm,"pixel (takes time)...\n")
       cat("            center point 0 | 0 will be drawn at: \n")
       cat(rep(" ", 26 - nchar(-topLeftX*pixelUnit_cm)), (-topLeftX)*pixelUnit_cm," | ",topLeftY*pixelUnit_cm," pixel count in the image.\n", sep = "")
       tryCatch(
         {
-          #png(paste0(picPath.bgr, fileFinder, "_", clip.radius,slices[i],".png"), width = 8000, height = 8000, type = "cairo")
+          #png(paste0(picPath.app.temp, fileFinder, "_", clip.radius,slices[i],".png"), width = 8000, height = 8000, type = "cairo")
           
           
           tryCatch({
-            png(paste0(picPath.bgr, basename(laz.path), slices[i],".png"),
+            png(paste0(picPath.app.temp, basename(laz.path), slices[i],".png"),
                 width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
             
           }, error = function(error_condition) {
             cat("Error with that big resolution, halving it!\n")
             pixelUnit_cm <- pixelUnit_cm/2
             cat("New pixelUnit is", pixelUnit_cm, "cm\n")
-            png(paste0(picPath.bgr, basename(laz.path), slices[i],".png"),
+            png(paste0(picPath.app.temp, basename(laz.path), slices[i],".png"),
                 width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
           })
           
@@ -1633,36 +1599,48 @@ createAppFiles <- function(fileFinder = NA,
           next()
         })
       
-      # closing and setStringApp generation ####
       dev.off()
-      cat("done with plotting for", fileFinder, "in a ")
-      print.difftime(round(Sys.time() - bgrTime, 1))
-      setStringApp <- paste0("_ct00_", -topLeftX*pixelUnit_cm, 
-                             "_", topLeftY*pixelUnit_cm, 
-                             "_", pixelUnit_cm*100, 
-                             "_", modeApp)
-      
-      
-      fromFile <- paste0(paste0(picPath.bgr, basename(laz.path), slices[i],".png"))
-      toFile <- paste0(dirPath,"app/bgr_", tolower(outName), setStringApp, ".jpg")
-      cbind(fromFile, toFile)
-      
-      # file.copy(fromFile, toFile, overwrite = T)
+    }
+    cat("done")
+    
+    ### renaming and converting background image ####
+    
+    setStringApp <- paste0("_ct00_", -topLeftX*pixelUnit_cm, 
+                           "_", topLeftY*pixelUnit_cm, 
+                           "_", pixelUnit_cm*100, 
+                           "_", modeApp)
+    
+    fromFile <- paste0(paste0(picPath.app.temp, 
+                              basename(laz.path), slices[i],".png"))
+    cbind(fromFile, toFile)
+    
+    # file.copy(fromFile, toFile, overwrite = T)
+    if(createJPG){
+      cat(" - converting .png to .jpg of quality", round(jpgQuality*100,1), "%...\n")
+      toFile <- paste0(appPath,"bgr_", tolower(outName), setStringApp, ".jpg")
       img <- readPNG(fromFile)
       writeJPEG(img, target = toFile, quality = jpgQuality)
       rm(img)
       gc()
-      
-      
-      
-      
+    } else {
+      if(createTIFF){
+        cat(" - renaming .png to .tif file...\n")
+        toFile <- paste0(appPath,"/bgr_", tolower(outName), setStringApp, ".tif")
+      } else {
+        cat(" - renaming .png file...\n")
+        toFile <- paste0(appPath,"/bgr_", tolower(outName), setStringApp, ".png")
+      }
+      file.copy(fromFile, toFile, overwrite = T)
     }
-    
-    
+    cat("Done in a ")
+    print.difftime(round(Sys.time() - bgrTime, 1))
+    cat("\n")
+    unlink(fromFile)
+    gc()
   }
   
   
-  # write Colored LAZ section ####
+  # WRITE COLORED LAZ SECTION ####
   if(writeColoredLAZ){
     
     
@@ -1832,7 +1810,7 @@ createAppFiles <- function(fileFinder = NA,
   }
   
   
-  # CREATING TXT FILE TREES WITH ESTIMATED VOLUME ####
+  # CREATE TREE VOLUME TXT LIST SECTION ####
   {
     
     
