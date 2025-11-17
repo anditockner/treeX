@@ -701,11 +701,12 @@ createAppFiles <- function(fileFinder = NA,
         cat(paste0("Reading in ", slices[i], "... "))
         for(j in 1:length(fileFinder)){
           if(j == 1){
-            slice <- readLAS(paste0(groundPath, fileFinder[j], slices[i]), 
-                             select = selector)
+            co <- capture.output(slice <- readLAS(paste0(groundPath, fileFinder[j], slices[i]), 
+                             select = selector))
           } else {
-            slice <- rbind(slice, readLAS(paste0(groundPath, fileFinder[j], slices[i]), 
-                                          select = selector))
+            co <- capture.output(newSlice <- readLAS(paste0(groundPath, fileFinder[j], slices[i]), 
+                                                     select = selector))
+            slice <- rbind(slice, newSlice)
           }
         }
         if(!colorVersion){
@@ -714,11 +715,14 @@ createAppFiles <- function(fileFinder = NA,
             #cat("reading in redSlice", paste0(groundPath, fileFinder, "_clusterSlice_120to140.laz"), "\n")
             for(j in 1:length(fileFinder)){
               if(j == 1){
-                redSlice <- readLAS(paste0(groundPath, fileFinder[j], "_clusterSlice_120to140.laz"), 
-                                    select = selector)
+                co <- capture.output(redSlice <- 
+                                       readLAS(paste0(groundPath, 
+                                                      fileFinder[j], "_clusterSlice_120to140.laz"), 
+                                               select = selector))
               } else {
-                redSlice <- rbind(redSlice, readLAS(paste0(groundPath, fileFinder[j], "_clusterSlice_120to140.laz"), 
-                                                    select = selector))
+                co <- capture.output(newRedSlice <- readLAS(paste0(groundPath, fileFinder[j], "_clusterSlice_120to140.laz"), 
+                                                             select = selector))
+                redSlice <- rbind(redSlice, newRedSlice)
               }
             }
           }
@@ -730,8 +734,9 @@ createAppFiles <- function(fileFinder = NA,
                 ground <- readLAS(paste0(groundPath, fileFinder[j], slices_gr), 
                                   select = selector)
               } else {
-                ground <- rbind(ground, readLAS(paste0(groundPath, fileFinder[j], slices_gr), 
-                                                select = selector))
+                co <- capture.output(newGroundSlice <- readLAS(paste0(groundPath, fileFinder[j], slices_gr), 
+                                                               select = selector))
+                ground <- rbind(ground, newGroundSlice)
               }
             }
           }
@@ -743,8 +748,9 @@ createAppFiles <- function(fileFinder = NA,
                 trajLAZ <- readLAS(paste0(groundPath, fileFinder[j], slices_grTRAJ), 
                                    select = selector)
               } else {
-                trajLAZ <- rbind(trajLAZ, readLAS(paste0(groundPath, fileFinder[j], slices_grTRAJ), 
-                                                  select = selector))
+                co <- capture.output(newTrajLAZ <- readLAS(paste0(groundPath, fileFinder[j], slices_grTRAJ), 
+                                      select = selector))
+                trajLAZ <- rbind(trajLAZ, newTrajLAZ)
               }
             }
           }
@@ -939,7 +945,7 @@ createAppFiles <- function(fileFinder = NA,
               #groundAllPath <- paste0(groundPath, fileFinder, "_clusterSlice_50to200.laz")
               groundAllPath <- paste0(groundPath, fileFinder, "_ground.laz")
               cat("Reading in complete ground", groundAllPath, "\n")
-              groundAll <- readLAS(groundAllPath, select = selector)
+              co <- capture.output(groundAll <- readLAS(groundAllPath, select = selector))
               cat("Merging ground and slice...")
               bothLAS <- rbind(groundAll, slice)
               cat(" and filter duplicates...\n")
@@ -975,7 +981,7 @@ createAppFiles <- function(fileFinder = NA,
               
               slicePath.red <- paste0(groundPath, fileFinder, "_xSlice_BHD_red.laz")
               if(file.exists(slicePath.red)){
-                sliceRed <- readLAS(slicePath.red, select = selector)
+                co <- capture.output(sliceRed <- readLAS(slicePath.red, select = selector))
                 cat("Red slice read.\n")
               } else {
                 if(thin){
@@ -992,7 +998,7 @@ createAppFiles <- function(fileFinder = NA,
               
               slicePath.brown <- paste0(groundPath, fileFinder, "_xSlice_100to110_brown.laz")
               if(file.exists(slicePath.brown)){
-                sliceBrown <- readLAS(slicePath.brown, select = selector)
+                co <- capture.output(sliceBrown <- readLAS(slicePath.brown, select = selector))
                 cat("Brown slice read.\n")
               } else {
                 sliceBrown <- filter_poi(bothLAS, Z <= 1.1, Z > 1.0)
@@ -1003,7 +1009,7 @@ createAppFiles <- function(fileFinder = NA,
               
               slicePath.blue <- paste0(groundPath, fileFinder, "_xSlice_190to200_blue.laz")
               if(file.exists(slicePath.blue)){
-                sliceBlue <- readLAS(slicePath.blue, select = selector)
+                co <- capture.output(sliceBlue <- readLAS(slicePath.blue, select = selector))
                 cat("Blue slice read.\n")
               } else {
                 sliceBlue <- filter_poi(bothLAS, Z <= 2, Z > 1.9)
@@ -1014,7 +1020,7 @@ createAppFiles <- function(fileFinder = NA,
               
               slicePath.grey <- paste0(groundPath, fileFinder, "_xSlice_200to300_grey.laz")
               if(file.exists(slicePath.grey)){
-                sliceGrey <- readLAS(slicePath.grey, select = selector)
+                co <- capture.output(sliceGrey <- readLAS(slicePath.grey, select = selector))
                 cat("Grey slice read.\n")
               } else {
                 sliceGrey <- filter_poi(bothLAS, Z > 2, Z <= 3)
@@ -1025,7 +1031,7 @@ createAppFiles <- function(fileFinder = NA,
               
               slicePath.black <- paste0(groundPath, fileFinder, "_xSlice_110to190_black.laz")
               if(file.exists(slicePath.black)){
-                sliceBlack <- readLAS(slicePath.black, select = selector)
+                co <- capture.output(sliceBlack <- readLAS(slicePath.black, select = selector))
                 cat("Black slice read.\n")
               } else {
                 sliceBlack <- filter_poi(bothLAS, Z > 1.1, Z <= 1.9)
@@ -1036,7 +1042,7 @@ createAppFiles <- function(fileFinder = NA,
               
               slicePath.green <- paste0(groundPath, fileFinder, "_xSlice_050to100_green.laz")
               if(file.exists(slicePath.green)){
-                sliceGreen <- readLAS(slicePath.green, select = selector)
+                co <- capture.output(sliceGreen <- readLAS(slicePath.green, select = selector))
                 cat("Green slice read.\n")
               } else {
                 sliceGreen <- filter_poi(bothLAS, Z > 0.5, Z <= 1)
@@ -1300,7 +1306,7 @@ createAppFiles <- function(fileFinder = NA,
       slice <- ""
       for(i in 1:length(laz.path)){
         cat(i, "- ")
-        tempLAS <- readLAS(laz.path[i], select = selector)
+        co <- capture.output(tempLAS <- readLAS(laz.path[i], select = selector))
         #tempLAS <- lasaddextrabytes(tempLAS, i, name = "Part Name", desc = "Segmented part number, Ra = 1 south, Rf = 6 north")
         
         if(i == 1){
@@ -1436,7 +1442,7 @@ createAppFiles <- function(fileFinder = NA,
             
             slicePath.red <- paste0(groundPath, basename(laz.path), "_xSlice_BHD_red.laz")
             if(file.exists(slicePath.red)){
-              sliceRed <- readLAS(slicePath.red, select = selector)
+              co <- capture.output(sliceRed <- readLAS(slicePath.red, select = selector))
               cat("Red slice read.\n")
             } else {
               if(thin){
@@ -1453,7 +1459,7 @@ createAppFiles <- function(fileFinder = NA,
             
             slicePath.brown <- paste0(groundPath, basename(laz.path), "_xSlice_100to110_brown.laz")
             if(file.exists(slicePath.brown)){
-              sliceBrown <- readLAS(slicePath.brown, select = selector)
+              co <- capture.output(sliceBrown <- readLAS(slicePath.brown, select = selector))
               cat("Brown slice read.\n")
             } else {
               sliceBrown <- filter_poi(bothLAS, Z <= 1.1, Z > 1.0)
@@ -1464,7 +1470,7 @@ createAppFiles <- function(fileFinder = NA,
             
             slicePath.blue <- paste0(groundPath, basename(laz.path), "_xSlice_190to200_blue.laz")
             if(file.exists(slicePath.blue)){
-              sliceBlue <- readLAS(slicePath.blue, select = selector)
+              co <- capture.output(sliceBlue <- readLAS(slicePath.blue, select = selector))
               cat("Blue slice read.\n")
             } else {
               sliceBlue <- filter_poi(bothLAS, Z <= 2, Z > 1.9)
@@ -1475,7 +1481,7 @@ createAppFiles <- function(fileFinder = NA,
             
             slicePath.grey <- paste0(groundPath, basename(laz.path), "_xSlice_200to300_grey.laz")
             if(file.exists(slicePath.grey)){
-              sliceGrey <- readLAS(slicePath.grey, select = selector)
+              co <- capture.output(sliceGrey <- readLAS(slicePath.grey, select = selector))
               cat("Grey slice read.\n")
             } else {
               sliceGrey <- filter_poi(bothLAS, Z > 2, Z <= 3)
@@ -1486,7 +1492,7 @@ createAppFiles <- function(fileFinder = NA,
             
             slicePath.black <- paste0(groundPath, basename(laz.path), "_xSlice_110to190_black.laz")
             if(file.exists(slicePath.black)){
-              sliceBlack <- readLAS(slicePath.black, select = selector)
+              co <- capture.output(sliceBlack <- readLAS(slicePath.black, select = selector))
               cat("Black slice read.\n")
             } else {
               sliceBlack <- filter_poi(bothLAS, Z > 1.1, Z <= 1.9)
@@ -1497,7 +1503,7 @@ createAppFiles <- function(fileFinder = NA,
             
             slicePath.green <- paste0(groundPath, basename(laz.path), "_xSlice_050to100_green.laz")
             if(file.exists(slicePath.green)){
-              sliceGreen <- readLAS(slicePath.green, select = selector)
+              co <- capture.output(sliceGreen <- readLAS(slicePath.green, select = selector))
               cat("Green slice read.\n")
             } else {
               sliceGreen <- filter_poi(bothLAS, Z > 0.5, Z <= 1)
@@ -1700,7 +1706,7 @@ createAppFiles <- function(fileFinder = NA,
       
       ta <- Sys.time()
       laz.slice <- paste0(groundPath, fileFinder, slices[i])
-      sliceLAS <- readLAS(laz.slice, select = selector)
+      co <- capture.output(sliceLAS <- readLAS(laz.slice, select = selector))
       if(i == 1){
         allMaxInt <- max(sliceLAS@data$Intensity)
         minX <- sliceLAS@header@PHB$`Min X`
