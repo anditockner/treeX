@@ -435,10 +435,12 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     } else if(clip.radius > 10){
       draw.circle(clip.x, clip.y, 10, lwd = 1, lty = 2, border = "red")
     }
-    points(traj$y ~ traj$x, col = traj$col, cex = 0.5, pch = 16)
-    legend("topright", col = c("blue", "red"), lwd = 3,
-           legend = c("start", paste0(round(duration_sec/60,1), " min")),
-           bty = "n")
+    if(length(traj) > 1){
+      points(traj$y ~ traj$x, col = traj$col, cex = 0.5, pch = 16)
+      legend("topright", col = c("blue", "red"), lwd = 3,
+             legend = c("start", paste0(round(duration_sec/60,1), " min")),
+             bty = "n")
+    }
     #legend("bottomleft", legend = c("1", "2", "3"), cex = 0.5)
     legend("bottomleft", legend = c(paste0(" ", thMk(pointsBefore), " pts"),
                                     paste0("-",thMk(pointsAfter), " pts"),
