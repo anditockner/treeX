@@ -396,7 +396,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
   
   ## TRAJECTORY PNG IF CIRCLE OR FULL AREA ####
-  if(!is.na(traj) && clip.trajectory.distance == 0){
+  if(clip.trajectory.distance == 0){
     if(clip.radius > 0){
       big_sm <- decimate_points(big, random(10))
       tempHeight <- clip.radius*20
