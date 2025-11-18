@@ -1618,7 +1618,6 @@ createAppFiles <- function(fileFinder = NA,
 
     # copy first slice to main directory
     fromFile <- paste0(picPath.app.temp, outName, slices[1], ".png")
-    cbind(fromFile, toFile)
     
     # file.copy(fromFile, toFile, overwrite = T)
     if(createJPG){
