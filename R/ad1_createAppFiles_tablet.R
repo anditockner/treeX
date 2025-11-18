@@ -698,6 +698,7 @@ createAppFiles <- function(fileFinder = NA,
     if(!is.na(fileFinder[1])){
       ## a) FROM FILEFINDER ####
       for(i in 1:length(slices)){
+        
         #cat("reading in file", paste0(groundPath, fileFinder, slices[i]), "\n")
         cat(paste0("Reading in ", slices[i], "... "))
         for(j in 1:length(fileFinder)){
@@ -914,7 +915,7 @@ createAppFiles <- function(fileFinder = NA,
         {
           bgrTime <- Sys.time()
           cat("EXHAUSTIVE: plot background image",spanX_cm_drawn*pixelUnit_cm,"x",spanY_cm_drawn*pixelUnit_cm,"pixel (area =", round(spanX_cm_drawn*pixelUnit_cm * spanY_cm_drawn*pixelUnit_cm / 1000000), "Mio)...\n")
-          cat("            resolution is", pixelUnit_cm, "pixel per cm\n")
+          cat("            resolution is", pixelUnit_cm, "pixel per cm - using slice", gsub(".laz", "", slices[i]), "\n")
           cat("            center point 0 | 0 will be drawn at: \n")
           cat(rep(" ", 26 - nchar(-topLeftX*pixelUnit_cm)), (-topLeftX)*pixelUnit_cm," | ",topLeftY*pixelUnit_cm," pixel count in the image.\n", sep = "")
           cat("(takes time...) ")
@@ -1261,9 +1262,10 @@ createAppFiles <- function(fileFinder = NA,
             cat("Error in creating this image, next loop!\n")
             next
           })
-      }
       
-      dev.off()
+        dev.off()
+        }
+      
     }
     else {
       ## b) FROM LAS FILE ####
@@ -1346,7 +1348,7 @@ createAppFiles <- function(fileFinder = NA,
             prevYUp <- 5
             slicePrev <- filter_poi(slice, X < prevXRight, X > prevXLeft, Y > prevYDown, Y < prevYUp)
             #plot(slicePrev)
-            png(paste0(picPath.app.temp, basename(laz.path), slices[i],"_prev_",pixelUnit_cm,"px_cm.png"),
+            png(paste0(picPath.app.temp, basename(laz.path), slices[1],"_prev_",pixelUnit_cm,"px_cm.png"),
                 width = (prevXRight - prevXLeft)*100*pixelUnit_cm, height = (prevYUp - prevYDown)*100*pixelUnit_cm, type = "cairo")
             par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i')
             plot(1, type = "n", xlim = c(prevXLeft, prevXRight), ylim = c(prevYDown, prevYUp),
@@ -1366,240 +1368,242 @@ createAppFiles <- function(fileFinder = NA,
         
       }
       
-      
-      ### plotting background image of merged las ####
       bgrTime <- Sys.time()
-      cat("EXHAUSTIVE: plot background image",spanX_cm_drawn*pixelUnit_cm,"x",spanY_cm_drawn*pixelUnit_cm,"pixel (takes time)...\n")
-      cat("            center point 0 | 0 will be drawn at: \n")
-      cat(rep(" ", 26 - nchar(-topLeftX*pixelUnit_cm)), (-topLeftX)*pixelUnit_cm," | ",topLeftY*pixelUnit_cm," pixel count in the image.\n", sep = "")
-      tryCatch(
-        {
-          #png(paste0(picPath.app.temp, fileFinder, "_", clip.radius,slices[i],".png"), width = 8000, height = 8000, type = "cairo")
-          
-          
-          tryCatch({
-            png(paste0(picPath.app.temp, basename(laz.path), slices[i],".png"),
-                width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
-            
-          }, error = function(error_condition) {
-            cat("Error with that big resolution, halving it!\n")
-            pixelUnit_cm <- pixelUnit_cm/2
-            cat("New pixelUnit is", pixelUnit_cm, "cm\n")
-            png(paste0(picPath.app.temp, basename(laz.path), slices[i],".png"),
-                width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
-          })
-          
-          par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i')
-          plot(1, type = "n", xlim = c(topLeftX/100,bottomRightX/100), ylim = c(bottomRightY/100, topLeftY/100),
-               asp = 1, axes = T)
-          
-          
-          if(colorVersion){
+      for(i in 1:length(slices)){
+        ### plotting background image of merged las ####
+        cat("EXHAUSTIVE: plot background image",spanX_cm_drawn*pixelUnit_cm,"x",spanY_cm_drawn*pixelUnit_cm,"pixel (area =", round(spanX_cm_drawn*pixelUnit_cm * spanY_cm_drawn*pixelUnit_cm / 1000000), "Mio)...\n")
+        cat("            resolution is", pixelUnit_cm, "pixel per cm - using slice", gsub(".laz", "", slices[i]), "\n")
+        cat("            center point 0 | 0 will be drawn at: \n")
+        cat(rep(" ", 26 - nchar(-topLeftX*pixelUnit_cm)), (-topLeftX)*pixelUnit_cm," | ",topLeftY*pixelUnit_cm," pixel count in the image.\n", sep = "")
+        tryCatch(
+          {
+            #png(paste0(picPath.app.temp, fileFinder, "_", clip.radius,slices[i],".png"), width = 8000, height = 8000, type = "cairo")
             
             
-            #better, but didnt work for JA7
-            #groundAllPath <- paste0(groundPath, fileFinder, "_clusterSlice_50to200.laz")
+            tryCatch({
+              png(paste0(picPath.app.temp, basename(laz.path), slices[i],".png"),
+                  width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
+              
+            }, error = function(error_condition) {
+              cat("Error with that big resolution, halving it!\n")
+              pixelUnit_cm <- pixelUnit_cm/2
+              cat("New pixelUnit is", pixelUnit_cm, "cm\n")
+              png(paste0(picPath.app.temp, basename(laz.path), slices[i],".png"),
+                  width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
+            })
             
-            cat("In this version we use the input file for the color!\n")
-            bothLAS <- (slice)
+            par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i')
+            plot(1, type = "n", xlim = c(topLeftX/100,bottomRightX/100), ylim = c(bottomRightY/100, topLeftY/100),
+                 asp = 1, axes = T)
             
             
-            # To-Do: if all slices are present, then dont do normalisation (takes a lot of time)
-            
-            slicePath.red <- paste0(groundPath, basename(laz.path), "_xSlice_BHD_red.laz")
-            if(file.exists(slicePath.red)){
-              co <- capture.output(sliceRed <- readLAS(slicePath.red, select = selector))
-              cat("Red slice read.\n")
-            } else {
-              if(thin){
-                sliceRed <- filter_poi(bothLAS, Z < 1.33, Z > 1.27)
+            if(colorVersion){
+              
+              
+              #better, but didnt work for JA7
+              #groundAllPath <- paste0(groundPath, fileFinder, "_clusterSlice_50to200.laz")
+              
+              cat("In this version we use the input file for the color!\n")
+              bothLAS <- (slice)
+              
+              
+              # To-Do: if all slices are present, then dont do normalisation (takes a lot of time)
+              
+              slicePath.red <- paste0(groundPath, basename(laz.path), "_xSlice_BHD_red.laz")
+              if(file.exists(slicePath.red)){
+                co <- capture.output(sliceRed <- readLAS(slicePath.red, select = selector))
+                cat("Red slice read.\n")
               } else {
-                sliceRed <- filter_poi(bothLAS, Z < 1.4, Z > 1.2)
-              }
-              sliceRed <- unnormalize_height(sliceRed)
-              writeLAS(sliceRed, slicePath.red)
-              cat("Red slice created.\n")
-            }
-            
-            
-            
-            slicePath.brown <- paste0(groundPath, basename(laz.path), "_xSlice_100to110_brown.laz")
-            if(file.exists(slicePath.brown)){
-              co <- capture.output(sliceBrown <- readLAS(slicePath.brown, select = selector))
-              cat("Brown slice read.\n")
-            } else {
-              sliceBrown <- filter_poi(bothLAS, Z <= 1.1, Z > 1.0)
-              sliceBrown <- unnormalize_height(sliceBrown)
-              writeLAS(sliceBrown, slicePath.brown)
-              cat("Brown slice created.\n")
-            }
-            
-            slicePath.blue <- paste0(groundPath, basename(laz.path), "_xSlice_190to200_blue.laz")
-            if(file.exists(slicePath.blue)){
-              co <- capture.output(sliceBlue <- readLAS(slicePath.blue, select = selector))
-              cat("Blue slice read.\n")
-            } else {
-              sliceBlue <- filter_poi(bothLAS, Z <= 2, Z > 1.9)
-              sliceBlue <- unnormalize_height(sliceBlue)
-              writeLAS(sliceBlue, slicePath.blue)
-              cat("Blue slice created.\n")
-            }
-            
-            slicePath.grey <- paste0(groundPath, basename(laz.path), "_xSlice_200to300_grey.laz")
-            if(file.exists(slicePath.grey)){
-              co <- capture.output(sliceGrey <- readLAS(slicePath.grey, select = selector))
-              cat("Grey slice read.\n")
-            } else {
-              sliceGrey <- filter_poi(bothLAS, Z > 2, Z <= 3)
-              sliceGrey <- unnormalize_height(sliceGrey)
-              writeLAS(sliceGrey, slicePath.grey)
-              cat("Grey slice created.\n")
-            }
-            
-            slicePath.black <- paste0(groundPath, basename(laz.path), "_xSlice_110to190_black.laz")
-            if(file.exists(slicePath.black)){
-              co <- capture.output(sliceBlack <- readLAS(slicePath.black, select = selector))
-              cat("Black slice read.\n")
-            } else {
-              sliceBlack <- filter_poi(bothLAS, Z > 1.1, Z <= 1.9)
-              sliceBlack <- unnormalize_height(sliceBlack)
-              writeLAS(sliceBlack, slicePath.black)
-              cat("Black slice created.\n")
-            }
-            
-            slicePath.green <- paste0(groundPath, basename(laz.path), "_xSlice_050to100_green.laz")
-            if(file.exists(slicePath.green)){
-              co <- capture.output(sliceGreen <- readLAS(slicePath.green, select = selector))
-              cat("Green slice read.\n")
-            } else {
-              sliceGreen <- filter_poi(bothLAS, Z > 0.5, Z <= 1)
-              sliceGreen <- unnormalize_height(sliceGreen)
-              writeLAS(sliceGreen, slicePath.green)
-              cat("Green slice created.\n")
-            }
-            
-            
-            cat("\nMixing on our color palette: \n")
-            maxInt <- max(sliceGreen@data$Intensity)
-            points(sliceGreen@data$X, sliceGreen@data$Y, cex = 0.00001,
-                   col = rgb(0,maxInt,0, alpha = sliceGreen@data$Intensity, maxColorValue = maxInt))
-            cat("green")
-            
-            maxInt <- max(sliceGrey@data$Intensity)
-            points(sliceGrey@data$X, sliceGrey@data$Y, cex = 0.00001,
-                   col = rgb(maxInt/2, maxInt/2, maxInt/2, alpha = sliceGrey@data$Intensity, maxColorValue = maxInt))
-            cat(" - grey")
-            
-            maxInt <- max(sliceBlack@data$Intensity)/1.5
-            sliceBlack@data$Intensity[sliceBlack@data$Intensity > maxInt] <- as.integer(maxInt)
-            points(sliceBlack@data$X, sliceBlack@data$Y, cex = 0.00001,
-                   col = rgb(0,0,0, alpha = sliceBlack@data$Intensity, maxColorValue = maxInt))
-            cat(" - black")
-            
-            
-            maxInt <- max(sliceBrown@data$Intensity)
-            points(sliceBrown@data$X, sliceBrown@data$Y, cex = 0.00001,
-                   col = rgb(maxInt/3,maxInt/4,0, alpha = sliceBrown@data$Intensity, maxColorValue = maxInt))
-            cat(" - brown")
-            
-            
-            maxInt <- max(sliceBlue@data$Intensity)
-            points(sliceBlue@data$X, sliceBlue@data$Y, cex = 0.00001,
-                   col = rgb(0, 0, maxInt, alpha = sliceBlue@data$Intensity, maxColorValue = maxInt))
-            cat(" - blue")
-            
-            maxInt <- max(sliceRed@data$Intensity)
-            points(sliceRed@data$X, sliceRed@data$Y, cex = 0.00001,
-                   col = rgb(maxInt, 0, 0, alpha = sliceRed@data$Intensity, maxColorValue = maxInt))
-            cat(" - and red!\n")
-            
-            
-          } else {
-            maxInt <- max(slice@data$Intensity)/1.5
-            slice@data$Intensity[slice@data$Intensity > maxInt] <- as.integer(maxInt)
-            
-            # Traditionally with only the red band at DBH
-            if(drawGround){
-              maxIntGr <- max(ground@data$Intensity)
-              points(ground@data$X, ground@data$Y, cex = 0.00001, col = rgb(0,0,0, alpha = ground@data$Intensity, maxColorValue = maxIntGr))
-            }
-            if(addTrajLAZ){
-              cat("+TRAJLAZ")
-              maxIntTraj <- max(trajLAZ@data$Intensity, na.rm = T)
-              points(trajLAZ@data$X, trajLAZ@data$Y, cex = pixelUnit_cm, #pch = 16,
-                     col = rgb(0, 0, maxIntTraj, alpha = trajLAZ@data$Intensity, maxColorValue = maxIntTraj))
-            }
-            if(drawTraj){
-              cat("+TRAJ")
-              points(allTraj$y ~ allTraj$x, col = allTraj$col, cex = pixelUnit_cm, pch = 16)
-            }
-            if(nrow(greySpots) > 0){
-              cat(paste0("+",nrow(greySpots),"spots"))
-              if(ncol(greySpots) > 2){
-                if(ncol(greySpots) == 3){
-                  greySpots[,4] <- rgb(200,200,200, alpha = 100, maxColorValue = 255)
+                if(thin){
+                  sliceRed <- filter_poi(bothLAS, Z < 1.33, Z > 1.27)
+                } else {
+                  sliceRed <- filter_poi(bothLAS, Z < 1.4, Z > 1.2)
                 }
-                points(greySpots[,1], greySpots[,2], pch = 19, 
-                       cex = greySpots[,3]*pixelUnit_cm*20, col = greySpots[,4])
+                sliceRed <- unnormalize_height(sliceRed)
+                writeLAS(sliceRed, slicePath.red)
+                cat("Red slice created.\n")
+              }
+              
+              
+              
+              slicePath.brown <- paste0(groundPath, basename(laz.path), "_xSlice_100to110_brown.laz")
+              if(file.exists(slicePath.brown)){
+                co <- capture.output(sliceBrown <- readLAS(slicePath.brown, select = selector))
+                cat("Brown slice read.\n")
+              } else {
+                sliceBrown <- filter_poi(bothLAS, Z <= 1.1, Z > 1.0)
+                sliceBrown <- unnormalize_height(sliceBrown)
+                writeLAS(sliceBrown, slicePath.brown)
+                cat("Brown slice created.\n")
+              }
+              
+              slicePath.blue <- paste0(groundPath, basename(laz.path), "_xSlice_190to200_blue.laz")
+              if(file.exists(slicePath.blue)){
+                co <- capture.output(sliceBlue <- readLAS(slicePath.blue, select = selector))
+                cat("Blue slice read.\n")
+              } else {
+                sliceBlue <- filter_poi(bothLAS, Z <= 2, Z > 1.9)
+                sliceBlue <- unnormalize_height(sliceBlue)
+                writeLAS(sliceBlue, slicePath.blue)
+                cat("Blue slice created.\n")
+              }
+              
+              slicePath.grey <- paste0(groundPath, basename(laz.path), "_xSlice_200to300_grey.laz")
+              if(file.exists(slicePath.grey)){
+                co <- capture.output(sliceGrey <- readLAS(slicePath.grey, select = selector))
+                cat("Grey slice read.\n")
+              } else {
+                sliceGrey <- filter_poi(bothLAS, Z > 2, Z <= 3)
+                sliceGrey <- unnormalize_height(sliceGrey)
+                writeLAS(sliceGrey, slicePath.grey)
+                cat("Grey slice created.\n")
+              }
+              
+              slicePath.black <- paste0(groundPath, basename(laz.path), "_xSlice_110to190_black.laz")
+              if(file.exists(slicePath.black)){
+                co <- capture.output(sliceBlack <- readLAS(slicePath.black, select = selector))
+                cat("Black slice read.\n")
+              } else {
+                sliceBlack <- filter_poi(bothLAS, Z > 1.1, Z <= 1.9)
+                sliceBlack <- unnormalize_height(sliceBlack)
+                writeLAS(sliceBlack, slicePath.black)
+                cat("Black slice created.\n")
+              }
+              
+              slicePath.green <- paste0(groundPath, basename(laz.path), "_xSlice_050to100_green.laz")
+              if(file.exists(slicePath.green)){
+                co <- capture.output(sliceGreen <- readLAS(slicePath.green, select = selector))
+                cat("Green slice read.\n")
+              } else {
+                sliceGreen <- filter_poi(bothLAS, Z > 0.5, Z <= 1)
+                sliceGreen <- unnormalize_height(sliceGreen)
+                writeLAS(sliceGreen, slicePath.green)
+                cat("Green slice created.\n")
+              }
+              
+              
+              cat("\nMixing on our color palette: \n")
+              maxInt <- max(sliceGreen@data$Intensity)
+              points(sliceGreen@data$X, sliceGreen@data$Y, cex = 0.00001,
+                     col = rgb(0,maxInt,0, alpha = sliceGreen@data$Intensity, maxColorValue = maxInt))
+              cat("green")
+              
+              maxInt <- max(sliceGrey@data$Intensity)
+              points(sliceGrey@data$X, sliceGrey@data$Y, cex = 0.00001,
+                     col = rgb(maxInt/2, maxInt/2, maxInt/2, alpha = sliceGrey@data$Intensity, maxColorValue = maxInt))
+              cat(" - grey")
+              
+              maxInt <- max(sliceBlack@data$Intensity)/1.5
+              sliceBlack@data$Intensity[sliceBlack@data$Intensity > maxInt] <- as.integer(maxInt)
+              points(sliceBlack@data$X, sliceBlack@data$Y, cex = 0.00001,
+                     col = rgb(0,0,0, alpha = sliceBlack@data$Intensity, maxColorValue = maxInt))
+              cat(" - black")
+              
+              
+              maxInt <- max(sliceBrown@data$Intensity)
+              points(sliceBrown@data$X, sliceBrown@data$Y, cex = 0.00001,
+                     col = rgb(maxInt/3,maxInt/4,0, alpha = sliceBrown@data$Intensity, maxColorValue = maxInt))
+              cat(" - brown")
+              
+              
+              maxInt <- max(sliceBlue@data$Intensity)
+              points(sliceBlue@data$X, sliceBlue@data$Y, cex = 0.00001,
+                     col = rgb(0, 0, maxInt, alpha = sliceBlue@data$Intensity, maxColorValue = maxInt))
+              cat(" - blue")
+              
+              maxInt <- max(sliceRed@data$Intensity)
+              points(sliceRed@data$X, sliceRed@data$Y, cex = 0.00001,
+                     col = rgb(maxInt, 0, 0, alpha = sliceRed@data$Intensity, maxColorValue = maxInt))
+              cat(" - and red!\n")
+              
+              
+            } else {
+              maxInt <- max(slice@data$Intensity)/1.5
+              slice@data$Intensity[slice@data$Intensity > maxInt] <- as.integer(maxInt)
+              
+              # Traditionally with only the red band at DBH
+              if(drawGround){
+                maxIntGr <- max(ground@data$Intensity)
+                points(ground@data$X, ground@data$Y, cex = 0.00001, col = rgb(0,0,0, alpha = ground@data$Intensity, maxColorValue = maxIntGr))
+              }
+              if(addTrajLAZ){
+                cat("+TRAJLAZ")
+                maxIntTraj <- max(trajLAZ@data$Intensity, na.rm = T)
+                points(trajLAZ@data$X, trajLAZ@data$Y, cex = pixelUnit_cm, #pch = 16,
+                       col = rgb(0, 0, maxIntTraj, alpha = trajLAZ@data$Intensity, maxColorValue = maxIntTraj))
+              }
+              if(drawTraj){
+                cat("+TRAJ")
+                points(allTraj$y ~ allTraj$x, col = allTraj$col, cex = pixelUnit_cm, pch = 16)
+              }
+              if(nrow(greySpots) > 0){
+                cat(paste0("+",nrow(greySpots),"spots"))
+                if(ncol(greySpots) > 2){
+                  if(ncol(greySpots) == 3){
+                    greySpots[,4] <- rgb(200,200,200, alpha = 100, maxColorValue = 255)
+                  }
+                  points(greySpots[,1], greySpots[,2], pch = 19, 
+                         cex = greySpots[,3]*pixelUnit_cm*20, col = greySpots[,4])
+                  
+                }
                 
               }
               
+              if(quickPreview){
+                points(slice_sm@data$X, slice_sm@data$Y, cex = 0.00001, col = rgb(0,0,0, alpha = slice_sm@data$Intensity, maxColorValue = maxInt))
+              } else {
+                points(slice@data$X, slice@data$Y, cex = 0.00001, col = rgb(0,0,0, alpha = slice@data$Intensity, maxColorValue = maxInt))
+              }
+              
+              if(drawRedSlice){
+                maxInt <- max(redSlice@data$Intensity)
+                points(redSlice@data$X, redSlice@data$Y, cex = 0.00001, col = rgb(maxInt,0,0, alpha = redSlice@data$Intensity, maxColorValue = maxInt))
+              }
             }
             
-            if(quickPreview){
-              points(slice_sm@data$X, slice_sm@data$Y, cex = 0.00001, col = rgb(0,0,0, alpha = slice_sm@data$Intensity, maxColorValue = maxInt))
-            } else {
-              points(slice@data$X, slice@data$Y, cex = 0.00001, col = rgb(0,0,0, alpha = slice@data$Intensity, maxColorValue = maxInt))
+            
+            
+            
+            
+            #draw.circle(0,0,40)
+            
+            
+            
+            # PLOT ROSALIA RIVONA BORDERS
+            if(circleRadius == 0 && exists("borderLines")){
+              #corners <- data.frame("x" = c(1.13413, -3.56123, 157.593, 111.246, 1.13413), "y" = c(-0.0310049, 76.4206, -16.573, -63.6488, -0.0310049))
+              corners <- data.frame("x" = c(borderLines$x,borderLines$x[1]) , "y" = c(borderLines$y,borderLines$y[1]))
+              points(corners$x, corners$y, pch = 16, cex = 5, col = "red")
+              lines(corners$x, corners$y, lty = 2, lwd = 2, col = "red")
             }
             
-            if(drawRedSlice){
-              maxInt <- max(redSlice@data$Intensity)
-              points(redSlice@data$X, redSlice@data$Y, cex = 0.00001, col = rgb(maxInt,0,0, alpha = redSlice@data$Intensity, maxColorValue = maxInt))
-            }
-          }
-          
-          
-          
-          
-          
-          #draw.circle(0,0,40)
-          
-          
-          
-          # PLOT ROSALIA RIVONA BORDERS
-          if(circleRadius == 0 && exists("borderLines")){
-            #corners <- data.frame("x" = c(1.13413, -3.56123, 157.593, 111.246, 1.13413), "y" = c(-0.0310049, 76.4206, -16.573, -63.6488, -0.0310049))
-            corners <- data.frame("x" = c(borderLines$x,borderLines$x[1]) , "y" = c(borderLines$y,borderLines$y[1]))
-            points(corners$x, corners$y, pch = 16, cex = 5, col = "red")
-            lines(corners$x, corners$y, lty = 2, lwd = 2, col = "red")
-          }
-          
-          
-          treeListFile <- paste0(dirPath,basename(laz.path),"_trees_dbh.txt")
-          if(file.exists(treeListFile)){
-            trees <- read.table(treeListFile, header = TRUE)
-            #trees$dCol <- trees$dbh/max(trees$dbh)
-            trees$dCol <- rgb(50,250,50, maxColorValue = 255)
-            trees$dCol[trees$id >= 9000] <- rgb(255,200,0, maxColorValue = 255)
             
-            dbh.scaler <- 5
-            if (greenTreeLocations) {
-              points(trees$x, trees$y, pch = 16, cex = log(trees$dbh)/log(dbh.scaler)/1.5, col = trees$dCol)
+            treeListFile <- paste0(dirPath,basename(laz.path),"_trees_dbh.txt")
+            if(file.exists(treeListFile)){
+              trees <- read.table(treeListFile, header = TRUE)
+              #trees$dCol <- trees$dbh/max(trees$dbh)
+              trees$dCol <- rgb(50,250,50, maxColorValue = 255)
+              trees$dCol[trees$id >= 9000] <- rgb(255,200,0, maxColorValue = 255)
+              
+              dbh.scaler <- 5
+              if (greenTreeLocations) {
+                points(trees$x, trees$y, pch = 16, cex = log(trees$dbh)/log(dbh.scaler)/1.5, col = trees$dCol)
+              }
             }
-          }
-          
-          # central cross
-          clip(x1 = -1, x2 = 1,
-               y1 = -2, y2 = 3)
-          abline(v=0, h=0, lwd = 2)
-          
-        }, error = function(error_condition) 
-        {
-          cat("Error in creating this image, next loop!\n")
-          next()
-        })
-      
-      dev.off()
+            
+            # central cross
+            clip(x1 = -1, x2 = 1,
+                 y1 = -2, y2 = 3)
+            abline(v=0, h=0, lwd = 2)
+            
+          }, error = function(error_condition) 
+          {
+            cat("Error in creating this image, next loop!\n")
+            next()
+          })
+        cat("\n")
+        dev.off()
+      }
     }
     cat("done")
     
@@ -1610,8 +1614,10 @@ createAppFiles <- function(fileFinder = NA,
                            "_", pixelUnit_cm*100, 
                            "_", modeApp)
     
-    fromFile <- paste0(paste0(picPath.app.temp, 
-                              basename(laz.path), slices[i],".png"))
+    
+
+    # copy first slice to main directory
+    fromFile <- paste0(picPath.app.temp, outName, slices[1], ".png")
     cbind(fromFile, toFile)
     
     # file.copy(fromFile, toFile, overwrite = T)
