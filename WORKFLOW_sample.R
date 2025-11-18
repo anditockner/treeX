@@ -1,3 +1,4 @@
+#devtools::install_github("anditockner/treeX")  
 library(treeX)
 
 dirPath <- "D:/try/" # files and folder structure will be saved here
