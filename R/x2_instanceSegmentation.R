@@ -793,11 +793,11 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
       allocationCloud <- totalCloud
 
-      groundCloud <- voxelize_points(groundCloud, voxelSize / 100)
+      co <- capture.output(groundCloud <- voxelize_points(groundCloud, voxelSize / 100))
       groundCloud@data$Classification <- 2L
       cat(thMk(groundCloud@header@PHB$`Number of point records`), "ground points and ")
 
-      vegCloud <- voxelize_points(vegCloud, voxelSize / 100)
+      co <- capture.output(vegCloud <- voxelize_points(vegCloud, voxelSize / 100))
       vegCloud@data$Classification <- 0L
       cat(thMk(vegCloud@header@PHB$`Number of point records`), "vegetation points remain.\n")
       cat("Joining them with proper Classification (2=ground 0=veg)... ")
