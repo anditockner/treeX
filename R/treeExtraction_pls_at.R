@@ -775,13 +775,15 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     }
     cat("#\n")
     
-    if(trafoFiles[1] == ""){
+    trafoNums <- sum(trafoFiles == "")
+    trafoNums <- length(trafoFiles) - trafoNums
+    if(trafoNums == 0){
       trafoFiles <- rep("", length(inputFiles))
     } else {
       if(length(trafoFiles)!=length(inputFiles)){
         stop("Transformation files not provided for all input files.\nPlease double check trafo files and provide one for each plot!")
       }
-      cat("#  GLOBAL TRANSFORMATION MATRICES PROVIDED\n")
+      cat("# ", trafoNums, "GLOBAL TRANSFORMATION MATRICES PROVIDED\n")
       cat("#\n")
     }
     cat("#########################################\n")
@@ -856,7 +858,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
               cat("\n#########################################\n",
                   "#\n",
                   "#  STARTING PARALLEL PROCESSING \n",
-                  "#           FOR PLOT ", fileFinder,
+                  "#           FOR PLOT ", fileFinder, "\n",
                   "#           IN \"", getwd(), "\"\n", sep = "")
               cat("#  \n")
               cat("#    ", nr_plots_parallel, " PLOTS PARALLEL\n", sep = "")
@@ -873,7 +875,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                   cat("#  circle clip with radius of", clip.radius, "m - ")
                 }
               } else {
-                cat("#  ")
+                cat("#  \n")
               }
               if(segmentTrees){
                 cat("using", tileClipping*tileClipping, "tiles in", tileClipping, "x", tileClipping, "\n")
