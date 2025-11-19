@@ -50,6 +50,18 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
                               dirPath = paste0(getwd(), "/")){
 
 
+  if(length(LASfile) > 1){
+    stop("More than one LASfile provided!\n")
+  }
+  if(length(fileFinder) > 1){
+    stop("More than one fileFinder provided!\n")
+  }
+  if(length(trafoMatrix.path) > 1){
+    stop("More than one transformation file provided!\n")
+  }
+  if(!file.exists(trafoMatrix.path)){
+    stop("Transformation file", trafoMatrix.path, "not found!\n")
+  }
   allStart <- Sys.time()
   fileFinder <- removeUmlaut(fileFinder)
   if(ipad){
@@ -110,7 +122,8 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
 
   sink(paste0(dirPath, groundPath, fileFinder, "_extractVegetation_", format(Sys.time(), "%Y%m%d_%H%M"), "_Rcons.txt"), append = TRUE, split = TRUE)
-  cat("Starting to create a ground and vegetation model in set", fileFinder, "\n")
+  cat("Creating a ground and vegetation files for set", fileFinder, "\n")
+  if(trafoMatrix.path != "") cat("Using transformation file", basename(trafoMatrix.path), "\n")
   cat("Today is", format(Sys.time()), "\n")
   if(clip.trajectory.distance){
     cat(paste0("Clipping input file to trajectory +", clip.trajectory.distance, "m.\n"))
