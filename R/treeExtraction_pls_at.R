@@ -726,10 +726,10 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
           stop("User terminated script.")
         }
       }
-    }
-    if(!useAllCores){
-      nr_plots_parallel <- 4
-      nr_cores_per_plot <- 5
+      if(!useAllCores){
+        nr_plots_parallel <- 4
+        nr_cores_per_plot <- 5
+      }
     }
   }
   
@@ -766,7 +766,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
         cat("#  circle clip with radius of", clip.radius, "m - ")
       }
     } else {
-      cat("#  ")
+      cat("#  \n")
     }
     if(segmentTrees){
       cat("using", tileClipping*tileClipping, "tiles in", tileClipping, "x", tileClipping, "\n")
