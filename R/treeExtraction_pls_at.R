@@ -651,8 +651,8 @@ circMclust <- function (datax, datay, bw, method = "const", prec = 4, minsx = mi
 processPlotsParallel <- function (inputFiles, fileFinders = "", 
                                   dirPath = paste0(getwd(), "/"),
                                   maximum_cores = 0,
-                                  nr_plots_parallel = 4, 
-                                  nr_cores_per_plot = 5,
+                                  nr_plots_parallel = 20, 
+                                  nr_cores_per_plot = 1,
                                   trafoFiles = "", 
                                   groundModels = TRUE, 
                                   detectTrees = TRUE, 
@@ -687,18 +687,18 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     nr_plots_parallel <- round(nr_plots_parallel)
     nr_cores_per_plot <- round(nr_cores_per_plot)
     if(nr_plots_parallel < 0){
-      nr_plots_parallel <- 4
+      nr_plots_parallel <- 20
     }
     if(nr_cores_per_plot < 0){
-      nr_cores_per_plot <- 5
+      nr_cores_per_plot <- 1 # nested parallelization haut noch nicht so ganz hin...
     }
     if(maximum_cores == 1){
-      nr_plots_parallel <- 50
-      nr_cores_per_plot <- 4
-      if(detectTrees == FALSE && segmentTrees == FALSE){
-        nr_plots_parallel <- 200
-        nr_cores_per_plot <- 1
-      }
+      nr_plots_parallel <- min(length(inputFiles), 200)
+      nr_cores_per_plot <- 1
+      # if(detectTrees == FALSE && segmentTrees == FALSE){
+      #   nr_plots_parallel <- 200
+      #   nr_cores_per_plot <- 1
+      # }
     }
     cores_used <- nr_plots_parallel * nr_cores_per_plot
     if(detectTrees == FALSE && segmentTrees == FALSE){
@@ -730,8 +730,8 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
         }
       }
       if(!useAllCores){
-        nr_plots_parallel <- 4
-        nr_cores_per_plot <- 5
+        nr_plots_parallel <- 20
+        nr_cores_per_plot <- 1
       }
     }
   }
