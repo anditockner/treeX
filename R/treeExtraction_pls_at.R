@@ -646,6 +646,7 @@ circMclust <- function (datax, datay, bw, method = "const", prec = 4, minsx = mi
 #' @param crownParameters also performs stem analysis and extracts crown basal height, projection area and hull volume 
 #' @param createAppFiles runs function createAppFiles with new background images
 #' @param circleRadius draw additional circle in the background files
+#' @param setting quick preset for 0=ground, 1=trees, 2=segment, a=app, 9=all
 #' #' @export
 processPlotsParallel <- function (inputFiles, fileFinders = "", 
                                   dirPath = paste0(getwd(), "/"),
@@ -658,6 +659,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                   segmentTrees = FALSE, 
                                   crownParameters = TRUE,
                                   createAppFiles = TRUE,
+                                  setting = "",
                                   
                                   clip.trajectory.distance = 0, 
                                   clip.radius = 0, 
@@ -677,6 +679,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                                   )
 {
   
+  if(setting != "") cat("\n\nWARNING - SETTING NOT IMPLEMENTED YET, HAS NO EFFECT!!\n\n")
   library(digest)
   library(getPass)
   # error checking for number of core settings
@@ -758,15 +761,13 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     cat("#  \n")
     
     
-    if(detectTrees){
+    if(groundModels){
       if(clip.trajectory.distance > 0){
         cat("#  trajectory clip at", clip.trajectory.distance, "m - ")
       }
       if(clip.radius > 0){
         cat("#  circle clip with radius of", clip.radius, "m - ")
       }
-    } else {
-      cat("#  \n")
     }
     if(segmentTrees){
       cat("using", tileClipping*tileClipping, "tiles in", tileClipping, "x", tileClipping, "\n")
@@ -866,8 +867,21 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
               cat("#  TODAY IS", paste(Sys.time()),"\n")
               cat("#  \n")
               
+              tasksScheduled <- paste0("#  ", 
+                                       paste0(
+                                         c(ifelse(groundModels, "GRD", "   "),
+                                         ifelse(detectTrees, "DTC", "   "),
+                                         ifelse(segmentTrees, "SEG", "   "),
+                                         ifelse(crownParameters, "CRO", "   "),
+                                         ifelse(createAppFiles, "APP", "   ")), 
+                                         collapse = " + "
+                                         ), 
+                                       "\n")
+              cat(tasksScheduled)
+              cat("#  \n")
               
-              if(detectTrees){
+              
+              if(groundModels){
                 if(clip.trajectory.distance > 0){
                   cat("#  trajectory clip at", clip.trajectory.distance, "m - ")
                 }
@@ -949,6 +963,12 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
                               subval = nowStep/progressBarSteps,
                               start = start)
               }
+            } else if(crownParameters){
+              try(computeCrownParams(fileFinder, 
+                                    voxelSize = voxelSize,
+                                    limitShare = limitShare, 
+                                    zScale = zScale, nr_cores = nr_cores_per_plot, 
+                                    retainPointClouds = F))
             }
             
             if(createAppFiles){
