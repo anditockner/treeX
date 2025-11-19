@@ -1620,12 +1620,26 @@ createAppFiles <- function(fileFinder = NA,
     fromFile <- paste0(picPath.app.temp, outName, slices[1], ".png")
     
     # file.copy(fromFile, toFile, overwrite = T)
+    
     if(createJPG){
-      cat(" - converting .png to .jpg of quality", round(jpgQuality*100,1), "%...\n")
-      toFile <- paste0(appPath,"bgr_", tolower(outName), setStringApp, ".jpg")
-      img <- readPNG(fromFile)
-      writeJPEG(img, target = toFile, quality = jpgQuality)
-      rm(img)
+      if(round(spanX_cm_drawn*pixelUnit_cm * spanY_cm_drawn*pixelUnit_cm / 1000000) > 600){
+        # if image larger than 600 Mio pixel R fails to convert to jpg, better leave png manually!
+        # this failure breaks down R session, so better be careful!
+        cat(" - exceeding image limit, only renaming .png to .jpg (convert it yourself!)\n")
+        toFile <- paste0(appPath,"/bgr_", tolower(outName), setStringApp, ".jpg")
+        file.copy(fromFile, toFile, overwrite = T)
+      } else {
+        # read png and convert to jpg
+        
+        cat(" - converting .png to .jpg of quality", round(jpgQuality*100,1), "%...\n")
+        toFile <- paste0(appPath,"bgr_", tolower(outName), setStringApp, ".jpg")
+        img <- readPNG(fromFile)
+        writeJPEG(img, target = toFile, quality = jpgQuality)
+        rm(img)
+        
+      }
+      
+      
       gc()
     } else {
       if(createTIFF){
