@@ -253,18 +253,6 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     traj <- traj2
     traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
     rm(traj2)
-    
-    #dups <- duplicated.data.frame(data.frame("x" = traj$x, "y" = traj$y))
-    shiftX <- min(traj$x)
-    shiftY <- min(traj$y)
-    if(shiftX > 1000){
-      cat("Shifting x by", shiftX, "m...\n")
-      traj$x <- traj$x - shiftX
-    }
-    if(shiftY > 1000){
-      cat("Shifting y by", shiftY, "m...\n")
-      traj$y <- traj$y - shiftY
-    }
   }
   
   #if(tooBig){
@@ -396,6 +384,12 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
       cat("done in a ")
       print.difftime(round(Sys.time() - ttf1, 1))
+      
+      traj2 <- traj[seq(from = 1, to = nrow(traj), by = 50),]
+      traj <- traj2
+      traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
+      rm(traj2)
+      
       cat("")
     }, error = function(error_condition) {
       cat("NO TRANSFORMATION WAS DONE!!!\n\n\n")
@@ -479,6 +473,20 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
   if(clip.trajectory.distance > 0 && txtExists){
     cat("Clipping total cloud to trajectory +", clip.trajectory.distance, "m radius (a=25m)...")
+    
+    # shifting trajectory for the sake of polygon hulling, goes wrong with gps coordinates!
+    #dups <- duplicated.data.frame(data.frame("x" = traj$x, "y" = traj$y))
+    shiftX <- min(traj$x)
+    shiftY <- min(traj$y)
+    if(shiftX > 1000){
+      cat(" shft x", shiftX, "m")
+      traj$x <- traj$x - shiftX
+    }
+    if(shiftY > 1000){
+      cat(" shft y", shiftY, "m")
+      traj$y <- traj$y - shiftY
+    }
+    
     borderHull <- ashape(traj$x, traj$y, alpha = 25)
     owin.window <-owin(xrange=range(traj$x), yrange=range(traj$y))
     trees_edges_ppp <- psp(borderHull$edges[,3], borderHull$edges[,4], borderHull$edges[,5], borderHull$edges[,6], window=owin.window)
@@ -489,7 +497,6 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     big_sm <- decimate_points(big, random(1))
 
     outer <- Polygon(hull.traj$bdry[[1]]) # for clipping LAS point cloud
-
 
     if(shiftX > 1000){
       traj$x <- traj$x + shiftX
