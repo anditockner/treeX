@@ -123,11 +123,11 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
   sink(paste0(dirPath, groundPath, fileFinder, "_extractVegetation_", format(Sys.time(), "%Y%m%d_%H%M"), "_Rcons.txt"), append = TRUE, split = TRUE)
   cat("Creating a ground and vegetation files for set", fileFinder, "\n")
-  if(trafoMatrix.path != "") cat("Using transformation file", basename(trafoMatrix.path), "\n")
   cat("Today is", format(Sys.time()), "\n")
   if(clip.trajectory.distance){
     cat(paste0("Clipping input file to trajectory +", clip.trajectory.distance, "m.\n"))
   }
+  if(trafoMatrix.path != "") cat("Using transformation file", paste0("\"", basename(trafoMatrix.path), "\""),"\n")
   cat("Working at", dirPath, "\n\n")
   #if(!dir.exists(dirPath)) dir.create(dirPath)
 
