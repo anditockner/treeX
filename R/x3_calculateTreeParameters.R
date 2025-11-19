@@ -918,7 +918,12 @@ computeTree_i <- function(treeLAS.path,
         altCrownLAS <- filter_duplicates(altCrownLAS)
 
 
-
+        
+        if(altCrownLAS@header@PHB$`Number of point records`< 10){
+          warning(paste0("Tree ",treeName, " has only ", altCrownLAS@header@PHB$`Number of point records`,
+                         " points - no crown analysis...\n"))
+          return()
+          }
         #crownOutlineXYALT <- ahull(xysetALT$x, xysetALT$y, alpha = area.alpha)
         crownOutlineXYALT <- ahull(altCrownLAS@data$X, altCrownLAS@data$Y, alpha = area.alpha)
         t2 <- Sys.time()
