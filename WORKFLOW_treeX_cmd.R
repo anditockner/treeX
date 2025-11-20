@@ -8,8 +8,9 @@
 
 # sample line to run it on cmd: 
 # (use R 4.3.2 or 4.3.3)
-# "C:/Programme/R/R-4.3.2/bin/x64/Rscript" "D:/WORKFLOW_treeX_cmd.R" "D:/input.laz" "D:/output/" "firstSet"
-#  path to R                                  [1]                       [2]            [3]          [4]
+# "C:/Programme/R/R-4.5.2/bin/x64/Rscript" 
+#        "D:/WORKFLOW_treeX_cmd.R" "D:/input.laz" "D:/config_benchmark.R" "D:/output/" "firstSet"
+# path to R + script workflow           [1]               [2]                [3]          [4]
 
 time1 <- Sys.time()
 args <- commandArgs(trailingOnly = TRUE)
@@ -42,7 +43,8 @@ if (length(args) >= 3) {
 }
 
 # [3] name
-fileFinder <- basename(LASfile)
+fileFinder <- gsub(".laz", "", basename(LASfile))
+fileFinder <- gsub(".las", "", fileFinder)
 if (length(args) >= 4) {
   fileFinder <- args[4]
 }
@@ -57,7 +59,7 @@ so <- tryCatch(find.package("treeX"),
     )
   }
 )
-suppressPackageStartupMessages(library("treeX"))
+library("treeX")
 cat("done!\n")
 
 if (!dir.exists(dirPath)) dir.create(dirPath)
