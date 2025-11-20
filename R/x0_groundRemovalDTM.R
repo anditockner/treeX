@@ -55,12 +55,16 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   }
   if(length(fileFinder) > 1){
     stop("More than one fileFinder provided!\n")
+  }if(trafoMatrix.path != ""){
+    
   }
   if(length(trafoMatrix.path) > 1){
     stop("More than one transformation file provided!\n")
   }
-  if(!file.exists(trafoMatrix.path)){
-    stop("Transformation file", trafoMatrix.path, "not found!\n")
+  if(trafoMatrix.path != ""){
+    if(!file.exists(trafoMatrix.path)){
+      stop("Transformation file", trafoMatrix.path, "not found!\n")
+    }
   }
   allStart <- Sys.time()
   fileFinder <- removeUmlaut(fileFinder)
