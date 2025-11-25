@@ -73,7 +73,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
     }
     uniqueFiles <- uniqueFiles_total[
       is.element(toupper(uniqueFiles_total$fileFinders), 
-                 toupper(basename(existingFileFinders))), ]
+                 toupper(basename(fileFinders_existing))), ]
     
     
     if(nrow(uniqueFiles) != length(fileFinders_existing)){
