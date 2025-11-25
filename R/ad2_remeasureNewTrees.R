@@ -672,7 +672,7 @@ grabDBH <- function(fileFinder, treeList.path = NA,
     
     par(mfrow = c(1, 1))
     {
-      png(filename = paste0(circlePath, nowId, "_circles.png"), width = 1400, height = 800)
+      png(filename = paste0(circlePath, nowId, "_circles.png"), width = 1400, height = 800, type = "cairo")
       par(mfrow = c(3, 4), oma = c(1,1,4,1))
       circles <- NULL
       
