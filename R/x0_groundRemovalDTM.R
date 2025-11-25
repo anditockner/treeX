@@ -61,9 +61,16 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   }
   if(trafoMatrix.path != ""){
     if(!file.exists(trafoMatrix.path)){
-      stop("Transformation file", trafoMatrix.path, "not found!\n")
+      stop(paste0("Transformation file", trafoMatrix.path, "not found!\n"))
     }
   }
+  if(dtm.path != ""){
+    
+    if(!file.exists(dtm.path)){
+    stop(paste0("DTM file in", dtm.path, "not found!\n"))
+      }
+    }
+  
   allStart <- Sys.time()
   fileFinder <- removeUmlaut(fileFinder)
   if(ipad){
@@ -128,6 +135,9 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   cat("Today is", format(Sys.time()), "\n")
   if(clip.trajectory.distance){
     cat(paste0("Clipping input file to trajectory +", clip.trajectory.distance, "m.\n"))
+  }
+  if(dtm.path != ""){
+    cat("Normalizing with ground model from", basename(dtm.path),"\n")
   }
   if(trafoMatrix.path != "") cat("Using transformation file", paste0("\"", basename(trafoMatrix.path), "\""),"\n")
   cat("Working at", dirPath, "\n\n")
