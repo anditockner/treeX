@@ -830,6 +830,7 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   progressBarSteps <- sum(groundModels*1, detectTrees*weightDetectTrees, 
                           segmentTrees*(weightSegmentTrees+weightComputeTrees), 
                           createAppFiles*1)
+  consoleStartPath <- paste0(dirPath, "/parallel_console/", "par_", format(Sys.time(), "%y%m%d_%H%M"), "/")
   
   {
   foreach(i=1:length(fileFinders),  .errorhandling = 'remove', 
@@ -848,7 +849,8 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
             fileFinder <- fileFinders[i]
             nowTrafo <- trafoFiles[i]
             
-            consolePath <- paste0(dirPath, "/parallel_console/", "par_", format(Sys.time(), "%y%m%d_%H%M"), "/")
+            #consolePath <- paste0(dirPath, "/parallel_console/", "par_", format(Sys.time(), "%y%m%d_%H%M"), "/")
+            consolePath <- consoleStartPath
             if(!dir.exists(consolePath)) dir.create(consolePath, recursive = T)
             file_parallelProtocol <- paste0(consolePath, "/", fileFinder, "_par_Rcons.txt")
             file.create(file_parallelProtocol)
