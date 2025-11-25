@@ -6,8 +6,8 @@
 #' @param dirPath path to all processed files after function extractVegetation( )
 #' @param tileClipping global setting for all tiles (standard setting 2x2 for small points, if large forest scan, set to 4x4 or 5x5 tiles)
 #' @export
-remeasureNewTrees <- function(dir_completedInputLists, 
-                              dirPath = getwd(), tileClipping = 2){
+remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinders_selected = "",
+                              dirPath = paste0(getwd(), "/"), tileClipping = 2){
   
   {
     library(dplyr)
@@ -20,13 +20,13 @@ remeasureNewTrees <- function(dir_completedInputLists,
     cat("BATCH REMEASURING NEW TREES\n")
     cat("Analyzing directory with completed lists:\n     ", dir_completedInputLists)
     
-    fileFinders <- sub("_.*", "", basename(lists))
+    fileFinders_list <- sub("_.*", "", basename(lists))
     
     date_time <- sub(".*_.*_.*_([0-9]{8}_[0-9]{6}).*", "\\1", 
                      basename(lists))
     
     inputFiles <- data.frame(
-      fileFinders = fileFinders,
+      fileFinders_list = fileFinders_list,
       date_time = date_time,
       listPath = lists,
       stringsAsFactors = FALSE
@@ -36,7 +36,7 @@ remeasureNewTrees <- function(dir_completedInputLists,
                                        format = "%Y%m%d_%H%M%S")
     
     uniqueFiles_total <- inputFiles %>%
-      group_by(fileFinders) %>%
+      group_by(fileFinders_list) %>%
       slice_max(order_by = date_time, n = 1) %>%
       ungroup()
     
@@ -44,26 +44,50 @@ remeasureNewTrees <- function(dir_completedInputLists,
     cat("\ncontaining", nrow(uniqueFiles_total), "unique fileFinders")
     cat(" (of total", length(lists), "lists)\n")
     
-    existingFileFinders <- list.dirs(dirPath, recursive = F)
-    existingFileFinders <- 
-      existingFileFinders[grep("_ALLGO", basename(existingFileFinders))]
     
-    existingFileFinders <- sub("_ALLGO.*", "", basename(existingFileFinders))
-    cat("Working directory", dirPath, "\ncontaining", length(existingFileFinders), "fileFinders.\n")
+    if(fileFinders_selected == ""){
+      fileFinders_existing <- basename(list.dirs(dirPath, recursive = F))
+      fileFinders_existing <- fileFinders_existing[grep("_ALLGO", 
+                                                        basename(fileFinders_existing))]
+      
+      if(length(fileFinders_existing) == 0){
+          fileFinders_existing <- basename(list.dirs(dirPath, recursive = F))
+          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "_images") ]
+          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "_in_laz") ]
+          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "_total_ground_veg") ]
+          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "app") ]
+          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "appOld") ]
+          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "parallel_console") ]
+          fileFinders_existing
+      }
+      cat("Working directory", dirPath, "\ncontaining", length(fileFinders_existing), "fileFinders.\n")
+      
+    } else {
+      fileFinders_existing <- fileFinders_selected
+      cat("Working in", dirPath, "\nselecting", length(fileFinders_existing), "fileFinders.\n")
+    }
     
     
+    if(appendix != ""){
+      uniqueFiles_total$fileFinders <- paste0(uniqueFiles_total$fileFinders, "_", appendix)
+    }
     uniqueFiles <- uniqueFiles_total[
       is.element(toupper(uniqueFiles_total$fileFinders), 
-                 toupper(existingFileFinders)),]
+                 toupper(basename(existingFileFinders))), ]
+    
+    
+    if(nrow(uniqueFiles) != length(fileFinders_existing)){
+      cat("WARNING - not all lists have a set in the directory!\n")
+    }
     
     cat("\n\nProcessing now", nrow(uniqueFiles), "fileFinders:\n")
-    cat("Ranging from", uniqueFiles$fileFinders[1], "to", 
-        uniqueFiles$fileFinders[length(uniqueFiles$fileFinders)], "\n")
+    cat("Ranging from", uniqueFiles$fileFinders_list[1], "to", 
+        uniqueFiles$fileFinders_list[length(uniqueFiles$fileFinders_list)], "\n")
     
   }
   
   for(i in 1:nrow(uniqueFiles)){
-    nowFileFinder <- uniqueFiles$fileFinders[i]
+    nowFileFinder <- uniqueFiles$fileFinders_list[i]
     nowTreeList <- uniqueFiles$listPath[i]
     
     {
@@ -596,7 +620,17 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   
   if(!allTrees & max(clustList$id) < 9000){
     warning("This set has no trees to be measured. Specify them by id 9000+!")
+    if(overWriteDBHlist){
+      
+      metaList.name <- paste0(dbhPath, "trees_dbh.txt")
+      write.table(metaList, file = metaList.name,
+                  row.names = FALSE, sep = "\t")
+      warning("Only input file list copied as trees.txt!")
+    }
+    
     sink()
+    
+    
     return()
   }
   if(allTrees){
