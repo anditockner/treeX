@@ -73,7 +73,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
     }
     uniqueFiles <- uniqueFiles_total[
       is.element(toupper(uniqueFiles_total$fileFinders_list), 
-                 toupper(basename(fileFinders_existing))), ]
+                 toupper(fileFinders_existing)), ]
     
     
     if(nrow(uniqueFiles) != length(fileFinders_existing)){
@@ -214,6 +214,9 @@ grabDBH <- function(fileFinder, treeList.path = NA,
     metaList <<- read.csv(treeList.path)
   })
   
+  
+
+  
   if(is.element("Xlm", colnames(metaList))){
     # parsing Maissau lists into our format
     metaList$x <- metaList$Xlm
@@ -330,6 +333,19 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   # frame.rad <- 1.6
   # frame.rad.impr <- 3 # if tree is smaller than 5 cm, radius factor is x2
   
+  
+  if(!allTrees & max(metaList$id) < 9000){
+    cat("\nThis set has no trees to be measured. Specify them by id 9000+!")
+    if(overWriteDBHlist){
+      
+      metaList.name <- paste0(dbhPath, "trees_dbh.txt")
+      write.table(metaList, file = metaList.name,
+                  row.names = FALSE, sep = "\t")
+      warning(paste0("Only input file list copied to trees_dbh.txt for set",fileFinder,"!"))
+    }
+    sink()
+    return()
+  }
   
   
   if(!remeasure && file.exists(paste0(dbhPath, "seedLAS_cylinders.las"))){
@@ -619,18 +635,9 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   
   
   if(!allTrees & max(clustList$id) < 9000){
-    warning("This set has no trees to be measured. Specify them by id 9000+!")
-    if(overWriteDBHlist){
-      
-      metaList.name <- paste0(dbhPath, "trees_dbh.txt")
-      write.table(metaList, file = metaList.name,
-                  row.names = FALSE, sep = "\t")
-      warning("Only input file list copied as trees.txt!")
-    }
-    
+    cat("\n\nAfter processing seed trees no more trees to be remeasured, terminating!\n\n")
     sink()
-    
-    
+    warning(paste0("No trees remeasured in set", fileFinder, "!"))
     return()
   }
   if(allTrees){
