@@ -45,7 +45,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
     cat(" (of total", length(lists), "lists)\n")
     
     
-    if(fileFinders_selected == ""){
+    if(length(fileFinders_selected) < 2 && fileFinders_selected == ""){
       fileFinders_existing <- basename(list.dirs(dirPath, recursive = F))
       fileFinders_existing <- fileFinders_existing[grep("_ALLGO", 
                                                         basename(fileFinders_existing))]
