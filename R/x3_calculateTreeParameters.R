@@ -596,12 +596,16 @@ computeTree_i <- function(treeLAS.path,
   
   if(FALSE) # DEBUGGING
   {
-    treeLAS.path <- "D:/0005.laz"
-    treeName <- "0005"
-    drawImage = F
+    
+    treeLAS.path = nowTreeFile
+    
+    drawImage = drawImages
+    
+    measurePath = crownPath
+    
     
     z_stemBase = NA
-    nowMeta = data.frame("x" = 0, "y" = 0, "z" = -4.573, "dbh" = 42.3)
+    
     detail.level = 0
     decimateTreeForFasterCrowns = FALSE
     
@@ -614,7 +618,6 @@ computeTree_i <- function(treeLAS.path,
     area.alpha = 0.3
     alternativeCrownBase.Ratio = 0.3
     fogFilter.estHeight = FALSE
-    measurePath = dirname(treeLAS.path)
     fileFinder = ""
     
     remeasureDBH = FALSE
@@ -1146,6 +1149,7 @@ computeTree_i <- function(treeLAS.path,
 
 
 
+          
           if(crownBaseMissing || k <= dbhPosition){
             # FILTERING
             referenceCounter <- referenceCounter + 1 # non-empty slice that can be used for reference dbh
@@ -1238,6 +1242,7 @@ computeTree_i <- function(treeLAS.path,
 
 
             flatNess <- (stemCenter$movedCM)/abs(stemCenter$z - previousCenter$z)
+            if(is.na(flatNess)) flatNess <- 0
 
             if(do.Plot) mtext(paste0("  +",stemCenter$movedCM," cm\n",
                                      "  +", round(flatNess, 1),"%\n",
@@ -1261,7 +1266,7 @@ computeTree_i <- function(treeLAS.path,
               #stemCenter$d <- previousCenter$d
               # if suddenly the diameter is shrinked by more than 10 cm,
               # or if suddenly expanded by more than 5 cm,
-              # or moved more than 5 cm (k = 100%) each 5 cm slice
+              # or moved more than 7.5 cm (k = 150%) each 5 cm slice
               # rather stay with the old diameter, seems more stable...
             } else {
               previousCenter <- stemCenter
