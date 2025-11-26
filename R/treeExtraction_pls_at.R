@@ -9,6 +9,8 @@
   }
 }
 
+library("plyr")
+library("dplyr")
 library("lidR")
 library("RANN")
 library("conicfit")
