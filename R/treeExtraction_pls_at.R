@@ -830,7 +830,8 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   weightSegmentTrees <- 8
   weightComputeTrees <- 13
   progressBarSteps <- sum(groundModels*1, detectTrees*weightDetectTrees, 
-                          segmentTrees*(weightSegmentTrees+weightComputeTrees), 
+                          segmentTrees*weightSegmentTrees, 
+                          crownParameters*weightComputeTrees, 
                           createAppFiles*1)
   consoleStartPath <- paste0(dirPath, "/parallel_console/", "par_", format(Sys.time(), "%y%m%d_%H%M"), "/")
   
