@@ -2308,7 +2308,7 @@ statsCompletedTrees <- function(dir_completedInputLists){
   
   head(uniqueFiles_total)
   cat("\ncontaining", nrow(uniqueFiles_total), "unique fileFinders")
-  cat(" (of total", length(lists), "lists)\n")
+  cat(" (of total", length(treeLists), "lists)\n")
   
   
   fileFinders <- uniqueFiles_total$fileFinders_list
