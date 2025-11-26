@@ -2280,6 +2280,7 @@ openColoredLAZ <- function(fileFinder,
 #' @export
 statsCompletedTrees <- function(dir_completedInputLists){
   
+  library(dplyr)
   timeAn1 <- Sys.time()
   cat("Analyzing statistics of completed trees in directory ",dir_completedInputLists,"\n")
   
