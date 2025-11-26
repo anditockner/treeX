@@ -2270,4 +2270,83 @@ openColoredLAZ <- function(fileFinder,
 }
 
 
+
+
+#' 
+#' Creates a list of how many new trees were added ( id > 9000 )
+#' and also gives the mean, max and median of new and old DBH
+#' 
+#' @param dir_completedInputLists path to the list of exported trees (new trees > 9000)
+#' @export
+statsCompletedTrees <- function(dir_completedInputLists){
+  
+  timeAn1 <- Sys.time()
+  cat("Analyzing statistics of completed trees in directory ",dir_completedInputLists,"\n")
+  
+  treeLists <- list.files(dir_completedInputLists, pattern = "_db.txt", full.names = T)
+  fileFinders <- gsub("_trees_all.*", "", basename(treeLists))
+  cat("There were", length(fileFinders), "fileFinders found.\n\n")
+  
+  completedTrees <- data.frame("fileFinder" = fileFinders, 
+                               "newTrees" = 0L, 
+                               "meanDBH" = 0, "maxDBH" = 0, "medianDBH" = 0, 
+                               "oldTrees" = 0L, 
+                               "meanDBHOlds" = 0, "maxDBHOlds" = 0, "medianDBHOlds" = 0)
+  
+  
+  for(i in seq_along(treeLists)){
+    nowTrees <- read.table(treeLists[i], header = T, sep = "\t")
+    
+    newTrees <- nowTrees[nowTrees$id >= 9000,]
+    oldTrees <- nowTrees[nowTrees$id < 9000,]
+    
+    
+    if(nrow(newTrees) > 0){
+      completedTrees$newTrees[i] <- nrow(newTrees)
+      completedTrees$meanDBH[i] <- mean(newTrees$dbh)
+      completedTrees$medianDBH[i] <- median(newTrees$dbh)
+      completedTrees$maxDBH[i] <- max(newTrees$dbh)
+    } else {
+      cat(paste0("No new trees in set ", fileFinders[i], "!\n", sep = ""))
+    }
+    
+    if(nrow(oldTrees) > 0){
+      completedTrees$oldTrees[i] <- nrow(oldTrees)
+      completedTrees$meanDBHOlds[i] <- mean(oldTrees$dbh)
+      completedTrees$medianDBHOlds[i] <- median(oldTrees$dbh)
+      completedTrees$maxDBHOlds[i] <- max(oldTrees$dbh)
+    } else {
+      cat(paste0("No OLD trees automatically found in ", fileFinders[i], "!\n", sep = ""))
+    }
+  }
+  
+  meanLine <- colMeans(completedTrees[, c(2:ncol(completedTrees))])
+  sumLine <- colSums(completedTrees[, c(2:ncol(completedTrees))])
+  headerLines <- rbind(c(123, sumLine),
+                       c(123, meanLine))
+  headerLines <- data.frame(headerLines)
+  colnames(headerLines)[1] <- "fileFinder"
+  headerLines$fileFinder <- c("sum", "mean")
+  headerLines[1, c(3:5, 7:9)] <- NA
+  dout <-rbind(headerLines, completedTrees)
+  
+  cat("\n\nAll sets analyzed.\n")
+  cat("In total there were", sum(completedTrees$newTrees), "new trees added\n")
+  cat(paste0("   (", round(sum(completedTrees$newTrees) / nrow(completedTrees), 1), " per plot)\n\n"))
+  
+  write.csv2(dout, paste0(dir_completedInputLists, 
+                          "../completed_tree_statistics_", 
+                          format(Sys.time(), "%Y%m%d_%H%M"), ".csv"), 
+             row.names = F
+  )
+  
+  timeAn2 <- Sys.time()
+  cat("Analysis done in a ")
+  print.difftime(round(timeAn2 - timeAn1), 1)
+  cat("\n\n")
+  
+}
+
+
+
 #cat("Succesfully updated function createAppFiles() V25.01 with clip window!\n")
