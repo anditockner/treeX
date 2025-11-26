@@ -2291,7 +2291,7 @@ statsCompletedTrees <- function(dir_completedInputLists){
                    basename(treeLists))
   
   inputFiles <- data.frame(
-    fileFinders_list = fileFinders_list,
+    fileFinders_list = fileFinders,
     date_time = date_time,
     listPath = treeLists,
     stringsAsFactors = FALSE
