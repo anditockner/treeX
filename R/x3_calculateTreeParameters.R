@@ -592,7 +592,7 @@ computeTree_i <- function(treeLAS.path,
   # cat("Single Tree Measurements in folder\n   ", measurePath,"\n")
   gstart <- Sys.time()
   
-  library("plyr")
+  #library("plyr")
   
   if(FALSE) # DEBUGGING
   {
@@ -1023,7 +1023,8 @@ computeTree_i <- function(treeLAS.path,
         refList <- vector()
         j <- 1
 
-        png(paste0(stemAnalysisPath,"",treeName,"_stem_diameters.png"), height = 6000, width = 6000, type = "cairo")
+        png(paste0(stemAnalysisPath,"",treeName,"_stem_diameters.png"), 
+            height = 200 * ceiling(length(heightGrip)/20), width = 6000, type = "cairo")
         par(mfrow=c(ceiling(length(heightGrip)/20),20),oma = c(0, 0, 3, 0))
         plot(1, type = "n", bty = "n", xlab = "", ylab = "", xaxt = "n", yaxt = "n")
         panelToRow <- function(panel){
@@ -1208,9 +1209,18 @@ computeTree_i <- function(treeLAS.path,
           if(stemLAS@header@PHB$`Number of point records`> 10){
             #cat("Too few points in this stem circle at", (minZ + heightGrip[j]), "m - next!...\n")
 
-            c3stem <- CircleFitByLandau(cbind(stemLAS@data$X, stemLAS@data$Y),
-                                        ParIni = c(previousCenter$x, previousCenter$y, previousCenter$d/2))
-
+            tryCatch(
+              {
+                c3stem <- CircleFitByLandau(cbind(stemLAS@data$X, stemLAS@data$Y), 
+                                            ParIni = c(previousCenter$x, previousCenter$y, previousCenter$d/2))
+              },
+              error = function(e) {
+                message("Landau failed: ", e$message)
+                message("Falling back to Landau without priors...")
+                c3stem <- CircleFitByLandau(cbind(stemLAS@data$X, stemLAS@data$Y))
+              }
+            )
+            
             stemCenter <- data.frame("x" = c3stem[1], "y" = c3stem[2], "z" = (minZ + heightGrip[j]),
                                      "d" = c3stem[3]*2, "movedCM" = 0,
                                      "angle" = 0, "lower" = heightGrip[j])
