@@ -2284,8 +2284,34 @@ statsCompletedTrees <- function(dir_completedInputLists){
   cat("Analyzing statistics of completed trees in directory ",dir_completedInputLists,"\n")
   
   treeLists <- list.files(dir_completedInputLists, pattern = "_db.txt", full.names = T)
-  fileFinders <- gsub("_trees_all.*", "", basename(treeLists))
-  cat("There were", length(fileFinders), "fileFinders found.\n\n")
+
+  fileFinders <- sub("_.*", "", basename(treeLists))
+  
+  date_time <- sub(".*_.*_.*_([0-9]{8}_[0-9]{6}).*", "\\1", 
+                   basename(treeLists))
+  
+  inputFiles <- data.frame(
+    fileFinders_list = fileFinders_list,
+    date_time = date_time,
+    listPath = treeLists,
+    stringsAsFactors = FALSE
+  )
+  
+  inputFiles$date_time <- as.POSIXct(inputFiles$date_time, 
+                                     format = "%Y%m%d_%H%M%S")
+  
+  uniqueFiles_total <- inputFiles %>%
+    group_by(fileFinders_list) %>%
+    slice_max(order_by = date_time, n = 1) %>%
+    ungroup()
+  
+  head(uniqueFiles_total)
+  cat("\ncontaining", nrow(uniqueFiles_total), "unique fileFinders")
+  cat(" (of total", length(lists), "lists)\n")
+  
+  
+  fileFinders <- uniqueFiles_total$fileFinders_list
+  treeLists <- uniqueFiles_total$listPath
   
   completedTrees <- data.frame("fileFinder" = fileFinders, 
                                "newTrees" = 0L, 
