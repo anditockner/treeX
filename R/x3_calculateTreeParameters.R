@@ -2518,7 +2518,15 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
     #afterLength <- las@header@PHB$`Number of point records`
     #cat(" Now left are",thMk(afterLength),"points (removed",thMk(beforeLength - afterLength),"points =",round((beforeLength - afterLength)/beforeLength*100,2),"%).\n")
 
-    stemCoord <- read.table(paste0(dbhPath,"trees_dbh.txt"), header = TRUE)
+    
+    stemCoord_path <- paste0(dbhPath,"trees_dbh_species.txt")
+    if(!file.exists(stemCoord_path)){
+      stemCoord_path <- paste0(dbhPath,"trees_dbh.txt")
+    }
+    if(!file.exists(stemCoord_path)){
+      stop(paste0("Input file for stem positions", basename(stemCoord_path), "not found!\n"))
+    }
+    stemCoord <- read.table(stemCoord_path, header = TRUE)
     stemCoord$dist <- sqrt(stemCoord$x^2 + stemCoord$y^2)
 
 
