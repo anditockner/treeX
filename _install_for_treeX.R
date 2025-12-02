@@ -19,7 +19,7 @@ packs_to_install <- c("lidR", "RANN", "conicfit", "alphashape3d", "alphahull",
                       "flexclust", "matrixStats", "Distance", "lmfor",
                       "geosphere", "recexcavAAR", "DescTools", "foreach", "PBSmodelling",
                       "benchmarkme", "stringi", "raster", "plyr", "dplyr", "png", "jpeg", 
-                      "Rvcg")
+                      "Rvcg", "rgl")
 
 
 
