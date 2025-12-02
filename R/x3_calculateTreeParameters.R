@@ -1544,7 +1544,7 @@ computeTree_i <- function(treeLAS.path,
       # generates a alphahull3d over the crown (crownHull3D)
       #           a alphahull over crown xy view (crownOutlineXY)
 
-      cat("CV Crown hull volume ")
+      cat("CHV Crown Hull Volume  ")
       {
         start <- Sys.time()
 
@@ -1588,15 +1588,35 @@ computeTree_i <- function(treeLAS.path,
         #metaVars$est.crownHullVolume <- trunc(crownLAS@data$X[1])
         crownHull3D <- ashape3d(matrix, alpha = vol.alpha)
         # volume_ashape3d(crownHull3D)
-        metaVars$est.crownHullVolume <- round(volume_ashape3d(crownHull3D),
-                                          1)
-        cat("is", metaVars$est.crownHullVolume, "m3 - plot ")
+        metaVars$est.crownHullVolume <- round(volume_ashape3d(crownHull3D), 1)
+        if(is.na(metaVars$est.crownHullVolume)){
+          metaVars$est.crownHullVolume <- -1
+        }
+        cat("is", metaVars$est.crownHullVolume, "m3\n")
         
         # convert to triangular mesh for surface area
         mesh <- as.mesh3d(crownHull3D)
         
         # Crown Surface Area in m2 
         metaVars$est.crownSurfaceArea <- round(vcgArea(mesh), 1)
+        if(is.na(metaVars$est.crownSurfaceArea)){
+          metaVars$est.crownSurfaceArea <- -1
+        }
+        
+        # Kugel mit Volumen = CHV
+        if(metaVars$est.crownHullVolume > 0){
+          rSphere <- (3 * metaVars$est.crownHullVolume / (4 * pi))^(1/3)
+          surfaceAreaSphere <- 4 * pi * rSphere^2
+          if(metaVars$est.crownSurfaceArea > 0){
+            metaVars$est.crownComplexity <- metaVars$est.crownSurfaceArea / surfaceAreaSphere
+          } else {
+            metaVars$est.crownComplexity <- -1
+          }
+        }
+        
+        
+        cat("CSA Crown Surface Area is", metaVars$est.crownSurfaceArea, "m2 - plot ")
+        
         
         
         
@@ -1632,8 +1652,9 @@ computeTree_i <- function(treeLAS.path,
         rm(x_axis, y_axis, p1, p2, p3, newPoints, matrix)
         rm(triangs)
         gc()
-        mtext(paste0("Crown volume: \n",round(volume_ashape3d(crownHull3D),1)," m3."), side = 4, adj = 1)
-
+        mtext(paste0("Crown Hull Volume: \n",metaVars$est.crownHullVolume," m3."), side = 4, adj = 1)
+        mtext(paste0("Crown Surface Area: \n=",metaVars$est.crownSurfaceArea, "m2"), side = 4, adj = 0)
+        
 
         #polygon(borderPoints$x, borderPoints$y)
         #colnames(shapeHullPoints) <- c("x", "y")
@@ -1649,7 +1670,7 @@ computeTree_i <- function(treeLAS.path,
 
 
 
-        cat("CA Crown projection area ")
+        cat("CPA Crown projection area ")
         {
           plot.now <- TRUE
           t1 <- Sys.time()
@@ -1662,14 +1683,14 @@ computeTree_i <- function(treeLAS.path,
 
           crownOutlineXY <- ahull(crownLAS@data$X, crownLAS@data$Y, alpha = area.alpha)
           metaVars$est.crownProjArea <- round(areaahulleval(crownOutlineXY),1)
-          cat("is", metaVars$est.crownProjArea, "m2 - plot ")
+          cat(metaVars$est.crownProjArea, "m2 - plot ")
           t2 <- Sys.time()
           #print.difftime(t2-t1)
 
           if(do.Plot)  plot(tempTree@data$Y ~ tempTree@data$X, cex = 0.0001, asp = 1)
           if(do.Plot)  points(crownLAS@data$Y ~ crownLAS@data$X, cex = 0.5, pch = "+", asp = 1, col = "red")
           if(do.Plot)  plot(crownOutlineXY, add = T, col = "red", wpoints = F)
-          if(do.Plot) mtext(paste0("Crown area: \n",metaVars$est.crownProjArea," m2."),
+          if(do.Plot) mtext(paste0("Crown Pojection Area: \n",metaVars$est.crownProjArea," m2."),
                             side = 4, adj = 1)
 
         }
@@ -1721,8 +1742,8 @@ computeTree_i <- function(treeLAS.path,
           mtext(paste0("min=",round(diag.min,1),"m ",round(diag.min.angle),"deg"), side = 3, adj = 1, col = "orange")
 
 
-          mtext(paste0("Crown area: \n",round(areaahulleval(crownOutlineXY),1)," m2.\n"), side = 1, adj = 1)
-          mtext(paste0("Crown volume: \n",round(volume_ashape3d(crownHull3D),1)," m3.\n"), side = 1, adj = 0)
+          mtext(paste0("Crown Projection Area: \n",round(areaahulleval(crownOutlineXY),1)," m2.\n"), side = 1, adj = 1)
+          mtext(paste0("Crown Hull Volume: \n",round(volume_ashape3d(crownHull3D),1)," m3.\n"), side = 1, adj = 0)
 
           #points(centers[20:50,1:2], col = "green", pch = 4)
         }
@@ -1739,6 +1760,7 @@ computeTree_i <- function(treeLAS.path,
 
 
         metaVars$est.crownHullVolume <- round(volume_ashape3d(crownHull3D),1)
+        
 
         metaVars$est.DiamCrownMax <- round(diag.max,1)
         metaVars$est.DiamCrownMax.Angle <- round(diag.max.angle,0)
@@ -1763,7 +1785,8 @@ computeTree_i <- function(treeLAS.path,
 
     gstop <- Sys.time()
     timeNB <- as.difftime(gstop - gstart)
-    mtext(paste0("Time ",round(timeNB,1),units(timeNB),"\n\n\n\n"), side = 1, adj = 1)
+    mtext(paste0(" Time ",round(timeNB,1), " ", units(timeNB),"\n\n\n"), side = 1, adj = 0)
+    mtext(paste0("Crown\nComplexity\nIndex\nCCI = ",  metaVars$est.crownComplexity, "\n\n\n"), side = 1, adj = 1)
     dev.off()
     cat("This single tree took:",round(timeNB,1),units(timeNB),"\n\n")
 
@@ -1828,7 +1851,9 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
 
     fileFinder <- removeUmlaut(fileFinder)
 
-
+    
+    library("rgl")
+    library("Rvcg")
 
     if(!exists("outLAS")){
       outLAS <<- NA # all crowns together in one las file after crownFeeling()
@@ -2086,7 +2111,7 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
     timePar1 <- Sys.time()
 
     fdc <<- foreach(i = loopStart:loopEnd, .errorhandling = 'remove',
-                    .packages = c("treeX", "mgcv"), .verbose = FALSE, 
+                    .packages = c("treeX", "mgcv", "rgl", "Rvcg"), .verbose = FALSE, 
                     .export = c("computeTree_i")) %dopar% {
 
                       # cat("Serial measuring of", (loopEnd-loopStart+1), "trees:\n\n")
@@ -2340,6 +2365,8 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
 
 
   if(crownParameters){
+    library("rgl")
+    library("Rvcg")
     writeLAZ <- TRUE # else will get an error
   }
 
