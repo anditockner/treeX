@@ -1608,7 +1608,7 @@ computeTree_i <- function(treeLAS.path,
           rSphere <- (3 * metaVars$est.crownHullVolume / (4 * pi))^(1/3)
           surfaceAreaSphere <- 4 * pi * rSphere^2
           if(metaVars$est.crownSurfaceArea > 0){
-            metaVars$est.crownComplexity <- metaVars$est.crownSurfaceArea / surfaceAreaSphere
+            metaVars$est.crownComplexity <- round(metaVars$est.crownSurfaceArea / surfaceAreaSphere,3)
           } else {
             metaVars$est.crownComplexity <- -1
           }
@@ -1652,8 +1652,8 @@ computeTree_i <- function(treeLAS.path,
         rm(x_axis, y_axis, p1, p2, p3, newPoints, matrix)
         rm(triangs)
         gc()
-        mtext(paste0("Crown Hull Volume: \n",metaVars$est.crownHullVolume," m3."), side = 4, adj = 1)
-        mtext(paste0("Crown Surface Area: \n=",metaVars$est.crownSurfaceArea, "m2"), side = 4, adj = 0)
+        mtext(paste0("Crown Hull Volume: \n",metaVars$est.crownHullVolume," m3 "), side = 4, adj = 1)
+        mtext(paste0(" Crown Surface Area: \n ",metaVars$est.crownSurfaceArea, "m2"), side = 4, adj = 0)
         
 
         #polygon(borderPoints$x, borderPoints$y)
@@ -1670,7 +1670,7 @@ computeTree_i <- function(treeLAS.path,
 
 
 
-        cat("CPA Crown projection area ")
+        cat("CPA Crown Projection Area ")
         {
           plot.now <- TRUE
           t1 <- Sys.time()
@@ -1690,7 +1690,7 @@ computeTree_i <- function(treeLAS.path,
           if(do.Plot)  plot(tempTree@data$Y ~ tempTree@data$X, cex = 0.0001, asp = 1)
           if(do.Plot)  points(crownLAS@data$Y ~ crownLAS@data$X, cex = 0.5, pch = "+", asp = 1, col = "red")
           if(do.Plot)  plot(crownOutlineXY, add = T, col = "red", wpoints = F)
-          if(do.Plot) mtext(paste0("Crown Pojection Area: \n",metaVars$est.crownProjArea," m2."),
+          if(do.Plot) mtext(paste0("Crown Pojection Area: \n",metaVars$est.crownProjArea," m2 "),
                             side = 4, adj = 1)
 
         }
@@ -1785,8 +1785,8 @@ computeTree_i <- function(treeLAS.path,
 
     gstop <- Sys.time()
     timeNB <- as.difftime(gstop - gstart)
-    mtext(paste0(" Time ",round(timeNB,1), " ", units(timeNB),"\n\n\n"), side = 1, adj = 0)
-    mtext(paste0("Crown\nComplexity\nIndex\nCCI = ",  metaVars$est.crownComplexity, "\n\n\n"), side = 1, adj = 1)
+    mtext(paste0(" Crown\n Complexity\n Index\n CCI = ",  metaVars$est.crownComplexity, " \n\n\n"), side = 1, adj = 0)
+    mtext(paste0(" Time ",round(timeNB,1), " ", units(timeNB),"\n\n\n"), side = 1, adj = 1)
     dev.off()
     cat("This single tree took:",round(timeNB,1),units(timeNB),"\n\n")
 
