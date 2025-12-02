@@ -664,8 +664,9 @@ computeTree_i <- function(treeLAS.path,
                            "est.z.StemBase" = nowMeta$z-1.3,
                            "est.DBH"=0, "est.height"=0,
                            "est.crownLength"=0, "est.crownBase"=0,
-                           "est.crownProjArea"=0, "est.treeProjArea"=0,
-                           "est.crownSurface"=0, "est.crownVolume"=0, 
+                           "est.treeProjArea"=0, "est.crownProjArea"=0, 
+                           "est.crownSurfaceArea"=0, "est.crownHullVolume"=0, 
+                           "est.crownComplexity"=0, "est.fz"=0, "est.vol"=0, 
                            #"est.crownDiameter"=0, "est.DiamCrownMax"=0, "est.DiamCrownMax.Angle"=0,
                            #"est.DiamCrownMin"=0, "est.DiamCrownMin.Angle"=0,
                            "est.x.DBH"=0, "est.y.DBH"=0, "est.z.DBH"=0,
@@ -940,7 +941,7 @@ computeTree_i <- function(treeLAS.path,
 
 
       # crownOutlineXYALT <- ahull(xysetALT$x, xysetALT$y, alpha = 0.3)
-      metaVars$est.crownAreaAlt <- round(areaahulleval(crownOutlineXYALT),1)
+      metaVars$est.treeProjArea <- round(areaahulleval(crownOutlineXYALT),1)
 
 
 
@@ -1439,7 +1440,7 @@ computeTree_i <- function(treeLAS.path,
           cat("not detected! Estimate", alternativeCrownBase.Ratio*100, "% to z=", crownBase,"m.\n")
           crownLength <- treeLAS@header@PHB$`Max Z` - crownBase
 
-          metaVars$est.crownAreaAlt <- -1
+          metaVars$est.treeProjArea <- -1
           #metaVars$est.height <- round(crownLength+crownStart+groundCutHeight,2)
           metaVars$est.crownLength <- round(crownLength,2)
           metaVars$est.crownBase <- round(crownBase,2)
@@ -1547,7 +1548,7 @@ computeTree_i <- function(treeLAS.path,
       {
         start <- Sys.time()
 
-        #metaVars$est.crownVolume <- 1
+        #metaVars$est.crownHullVolume <- 1
 
         crownLAS <- filter_poi(treeLAS, Z >= crownBase)
         distVect <- sqrt((crownLAS@data$X - nowMeta$x)^2 + (crownLAS@data$Y - nowMeta$x)^2)
@@ -1578,23 +1579,32 @@ computeTree_i <- function(treeLAS.path,
         }
 
 
-        #metaVars$est.crownVolume <- 2
+        #metaVars$est.crownHullVolume <- 2
         #plot(crownLAS)
         matrix <- cbind("X" = crownLAS@data$X,
                         "Y" = crownLAS@data$Y,
                         "Z" = crownLAS@data$Z)
 
-        #metaVars$est.crownVolume <- trunc(crownLAS@data$X[1])
+        #metaVars$est.crownHullVolume <- trunc(crownLAS@data$X[1])
         crownHull3D <- ashape3d(matrix, alpha = vol.alpha)
         # volume_ashape3d(crownHull3D)
-        metaVars$est.crownVolume <- round(volume_ashape3d(crownHull3D),
+        metaVars$est.crownHullVolume <- round(volume_ashape3d(crownHull3D),
                                           1)
-        cat("is", metaVars$est.crownVolume, "m3 - plot ")
+        cat("is", metaVars$est.crownHullVolume, "m3 - plot ")
+        
+        # convert to triangular mesh for surface area
+        mesh <- as.mesh3d(crownHull3D)
+        
+        # Crown Surface Area in m2 
+        metaVars$est.crownSurfaceArea <- round(vcgArea(mesh), 1)
+        
+        
+        
         #plot(crownHull3D)
 
         triangs <- crownHull3D$triang[crownHull3D$triang[,9]==2,] #got this line by accident, says only outer lines of net
 
-        #metaVars$est.crownVolume <- length(triangs)
+        #metaVars$est.crownHullVolume <- length(triangs)
 
         mainNow <- treeName
 
@@ -1651,15 +1661,15 @@ computeTree_i <- function(treeLAS.path,
           crownLAS <- filter_duplicates(crownLAS)
 
           crownOutlineXY <- ahull(crownLAS@data$X, crownLAS@data$Y, alpha = area.alpha)
-          metaVars$est.crownArea <- round(areaahulleval(crownOutlineXY),1)
-          cat("is", metaVars$est.crownArea, "m2 - plot ")
+          metaVars$est.crownProjArea <- round(areaahulleval(crownOutlineXY),1)
+          cat("is", metaVars$est.crownProjArea, "m2 - plot ")
           t2 <- Sys.time()
           #print.difftime(t2-t1)
 
           if(do.Plot)  plot(tempTree@data$Y ~ tempTree@data$X, cex = 0.0001, asp = 1)
           if(do.Plot)  points(crownLAS@data$Y ~ crownLAS@data$X, cex = 0.5, pch = "+", asp = 1, col = "red")
           if(do.Plot)  plot(crownOutlineXY, add = T, col = "red", wpoints = F)
-          if(do.Plot) mtext(paste0("Crown area: \n",metaVars$est.crownArea," m2."),
+          if(do.Plot) mtext(paste0("Crown area: \n",metaVars$est.crownProjArea," m2."),
                             side = 4, adj = 1)
 
         }
@@ -1728,7 +1738,7 @@ computeTree_i <- function(treeLAS.path,
 
 
 
-        metaVars$est.crownVolume <- round(volume_ashape3d(crownHull3D),1)
+        metaVars$est.crownHullVolume <- round(volume_ashape3d(crownHull3D),1)
 
         metaVars$est.DiamCrownMax <- round(diag.max,1)
         metaVars$est.DiamCrownMax.Angle <- round(diag.max.angle,0)
@@ -2248,9 +2258,13 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                             which(colnames(checkList) == "est.height"),
                             which(colnames(checkList) == "est.crownBase"),
                             which(colnames(checkList) == "est.crownLength"),
-                            which(colnames(checkList) == "est.crownArea"),
-                            which(colnames(checkList) == "est.crownAreaAlt"),
-                            which(colnames(checkList) == "est.crownVolume"),
+                            which(colnames(checkList) == "est.treeProjArea"),
+                            which(colnames(checkList) == "est.crownProjArea"),
+                            which(colnames(checkList) == "est.crownSurfaceArea"),
+                            which(colnames(checkList) == "est.crownHullVolume"),
+                            which(colnames(checkList) == "est.crownComplexity"),
+                            which(colnames(checkList) == "est.fz"),
+                            which(colnames(checkList) == "est.vol"),
                             #which(colnames(checkList) == "est.crownDiameter"),
                             #which(colnames(checkList) == "ld100circ"),
                             #which(colnames(checkList) == "ld200circ"),
@@ -2540,7 +2554,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
   }
 
   metaVars <- data.frame("file"=0L, "nPoints"=0,"est.DBH"=0, "est.height"=0, "est.crownLength"=0,
-                         "est.crownArea"=0, "est.crownVolume"=0, "est.crownDiameter"=0,
+                         "est.crownProjArea"=0, "est.crownHullVolume"=0, "est.crownDiameter"=0,
                          "est.DiamCrownMax"=0, "est.DiamCrownMax.Angle"=0,
                          "est.DiamCrownMin"=0, "est.DiamCrownMin.Angle"=0,
                          "est.x.DBH"=0, "est.y.DBH"=0, "est.z.DBH"=0,
@@ -2659,8 +2673,10 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                       tstart <- Sys.time()
                       metaVars <- data.frame("file"=0L, "nPoints" = 0, "est.DBH"=0, "est.height"=0,
                                              "est.crownLength"=0, "est.crownBase"=0,
-                                             "est.crownArea"=0, "est.crownAreaAlt"=0,
-                                             "est.crownVolume"=0, "est.crownDiameter"=0,
+                                             "est.treeProjArea"=0, "est.crownProjArea"=0, 
+                                             "est.crownSurfaceArea"=0, "est.crownHullVolume"=0, 
+                                             "est.crownComplexity"=0, "est.fz"=0, "est.vol"=0, 
+                                             "est.crownDiameter"=0,
                                              "est.DiamCrownMax"=0, "est.DiamCrownMax.Angle"=0,
                                              "est.DiamCrownMin"=0, "est.DiamCrownMin.Angle"=0,
                                              "est.x.DBH"=0, "est.y.DBH"=0, "est.z.DBH"=0,
@@ -2863,8 +2879,10 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                       tstart <- Sys.time()
                       metaVars <- data.frame("file"=0L, "nPoints" = 0, "est.DBH"=0, "est.height"=0,
                                              "est.crownLength"=0, "est.crownBase"=0,
-                                             "est.crownArea"=0, "est.crownAreaAlt"=0,
-                                             "est.crownVolume"=0, "est.crownDiameter"=0,
+                                             "est.treeProjArea"=0, "est.crownProjArea"=0, 
+                                             "est.crownSurfaceArea"=0, "est.crownHullVolume"=0, 
+                                             "est.crownComplexity"=0, "est.fz"=0, "est.vol"=0, 
+                                             "est.crownDiameter"=0,
                                              "est.DiamCrownMax"=0, "est.DiamCrownMax.Angle"=0,
                                              "est.DiamCrownMin"=0, "est.DiamCrownMin.Angle"=0,
                                              "est.x.DBH"=0, "est.y.DBH"=0, "est.z.DBH"=0,
@@ -3093,9 +3111,9 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
   #                           which(colnames(checkList) == "est.height"),
   #                           which(colnames(checkList) == "est.crownBase"),
   #                           which(colnames(checkList) == "est.crownLength"),
-  #                           which(colnames(checkList) == "est.crownArea"),
-  #                           which(colnames(checkList) == "est.crownAreaAlt"),
-  #                           which(colnames(checkList) == "est.crownVolume"),
+  #                           which(colnames(checkList) == "est.crownProjArea"),
+  #                           which(colnames(checkList) == "est.treeProjArea"),
+  #                           which(colnames(checkList) == "est.crownHullVolume"),
   #                           which(colnames(checkList) == "est.crownDiameter"),
   #                           which(colnames(checkList) == "ld100circ"),
   #                           which(colnames(checkList) == "ld200circ"),
@@ -3104,12 +3122,14 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
   #                           which(colnames(checkList) == "time_secs"))
   # ]
 
+  # output for trees_height.txt
     checkList <- checkList[,c(which(colnames(checkList) == "x"),
                               which(colnames(checkList) == "y"),
                               which(colnames(checkList) == "z"),
                               which(colnames(checkList) == "id"),
                               which(colnames(checkList) == "cluster"),
                               which(colnames(checkList) == "randomCol"),
+                              which(colnames(checkList) == "comment"),
                               which(colnames(checkList) == "nPoints"),
                               which(colnames(checkList) == "dbh"),
                               which(colnames(checkList) == "d.circ"),
