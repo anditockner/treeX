@@ -666,11 +666,13 @@ createAppFiles <- function(fileFinder = NA,
   
   
   appPath <- paste0(dirPath, "app/")
+  
   if(!dir.exists(appPath)) dir.create(appPath)
   picPath.app.temp <- paste0(appPath, "temp/")
-  if(!dir.exists(picPath.app.temp)) dir.create(picPath.app.temp, recursive = T)
-  
-  
+  if(createBGR_pic){
+    if(!dir.exists(picPath.app.temp)) dir.create(picPath.app.temp, recursive = T)
+    }
+
   
   
   if(exists("borderLines")){
@@ -2154,15 +2156,16 @@ createAppFiles <- function(fileFinder = NA,
     write.table(appList, file = paste0(dirPath,"app/trees_",tolower(outName),".txt"),
                 row.names = FALSE, sep = "\t")
     cat("  -> set", outName, "done!")
-    
+   
+    if(length(list.files(picPath.app.temp)) == 0) {
+      unlink(picPath.app.temp, recursive = T)
+    } 
     if(wait5s){
-      
-      #Sys.sleep(2)
+      Sys.sleep(2)
       cat("\n")
-      #Sys.sleep(2)
+      Sys.sleep(2)
       cat("\n")
-      #Sys.sleep(1)
-      
+      Sys.sleep(1)
     }
     ############################################
   }
