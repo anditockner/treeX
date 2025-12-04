@@ -350,7 +350,7 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   
   if(!remeasure && file.exists(paste0(dbhPath, "seedLAS_cylinders.las"))){
     cat("Reading old seedLAS_cylinders.las file... ")
-    seedLAS <- readLAS(paste0(dbhPath, "seedLAS_cylinders.las"), select = "xyzcit0")
+    co <- capture.output(seedLAS <- readLAS(paste0(dbhPath, "seedLAS_cylinders.las"), select = "xyzcit0"))
     cat("done!\n")
     
   } 
@@ -369,7 +369,7 @@ grabDBH <- function(fileFinder, treeList.path = NA,
         totalCloud <- LAS_veg
       } else {
         cat("Reading in totalCloud from", totalCloud.name, "\n")
-        totalCloud <- readLAS(totalCloud.name, select = "xyzcit0")
+        co <- capture.output(totalCloud <- readLAS(totalCloud.name, select = "xyzcit0"))
       }
       if (exists("LAS_ground") && !is.na(LAS_ground)) {
         cat("Also using old groundCloud!\n")
@@ -377,13 +377,13 @@ grabDBH <- function(fileFinder, treeList.path = NA,
       } else {
         cat("Reading in groundCloud from", groundCloud.name, 
             "\n")
-        groundCloud <- readLAS(groundCloud.name, select = "xyzcit0")
+        co <- capture.output(groundCloud <- readLAS(groundCloud.name, select = "xyzcit0"))
       }
     } else {
       cat("Reading in totalCloud from", totalCloud.name, "\n")
-      totalCloud <- readLAS(totalCloud.name, select = "xyzcit0")
+      co <- capture.output(totalCloud <- readLAS(totalCloud.name, select = "xyzcit0"))
       cat("Reading in groundCloud from", groundCloud.name, "\n")
-      groundCloud <- readLAS(groundCloud.name, select = "xyzcit0")
+      co <- capture.output(groundCloud <- readLAS(groundCloud.name, select = "xyzcit0"))
       
       totalCloud <- rbind(totalCloud, groundCloud)
       
