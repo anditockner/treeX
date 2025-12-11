@@ -139,11 +139,13 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 #' @param frame.minD minimum distance (in meter) to fetch the circle around for re-locating, set to 1 m for a tolerant fit (mis-matching systems)
 #' @export
 grabDBH <- function(fileFinder, treeList.path = NA, 
-                    outFolder = getwd(),
+                    dirPath = paste0(getwd(), "/"),
                     tileClipping = 3, 
                     overWriteDBHlist = TRUE, # shall old trees_dbh.txt be replaced for segmenting new volumes
                     keepBorderTrees = F, # set TRUE if there are many trees outside of DTM (check if thats a good idea)
                     remeasure = T, 
+                    
+                    
                     allTrees = F, new.numbers = F, 
                     frame.up = 0.3, frame.down = 0.3, 
                     frame.rad = 1.3, frame.minD = 0.05){
@@ -1251,6 +1253,8 @@ grabDBH <- function(fileFinder, treeList.path = NA,
     
     appList <- appList[order(appList$id, decreasing = F),]
     
+    outFolder <- paste0(dirPath, "/app/remeasured/")
+    if(!dir.exists(outFolder)) dir.create(outFolder, recursive = T)
     write.table(appList, 
                 file = paste0(outFolder, "/", 
                               tolower(strRep(fileFinder, "_", "+")), 
