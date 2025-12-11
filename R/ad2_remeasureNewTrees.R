@@ -244,7 +244,7 @@ grabDBH <- function(fileFinder,
     }
   }
   
-  
+  cat("Reading tree list from", treeList.path, ".\n\n")
   tryCatch({
     metaList <- read.table(treeList.path, header = T, sep = "\t")
   }, error=function(cond) {
@@ -262,7 +262,7 @@ grabDBH <- function(fileFinder,
       stop(paste0("Could not transform, old slice file is missing in", 
                   path_oldSlice, "\n"))
     }
-    cat("Reading slice at old tree list from", basename(path_oldSlice), "\n")
+    cat(" - reading slice at old tree list from", basename(path_oldSlice), "\n")
     oldSlice <- readLAS(path_oldSlice)
     #oldSlice <- voxelize_points(oldSlice, 0.05)
     # keep the full old slice to match few points of new slice into it
@@ -273,7 +273,7 @@ grabDBH <- function(fileFinder,
       stop(paste0("Could not transform, current slice file is missing in", 
                   path_newSlice, "\n"))
     }
-    cat("Reading current slice from", basename(path_newSlice), "\n")
+    cat(" - reading current slice from", basename(path_newSlice), "\n")
     newSlice <- readLAS(path_newSlice)
     newSlice <- voxelize_points(newSlice, 0.05)
     newSlice@data$Z <- 0
@@ -284,15 +284,15 @@ grabDBH <- function(fileFinder,
     
     #plot3d(old_mat)
   
-    cat("Merging lists via ICP - iterative closest point algorithm (Morpho)...\n")
+    cat(" - Merging lists via ICP - iterative closest point algorithm (Morpho)...\n")
     timeICP1 <- Sys.time()
     icp_result <- icpmat(new_mat, old_mat, iterations = 100, type = "rigid")
     # moving = first, new_mat
     # fix = second, old_mat  
     timeICP2 <- Sys.time()
-    cat("Done in a ")
+    cat("      Done in a ")
     print.difftime(round(timeICP2 - timeICP1,1))
-    cat("\n")
+    #cat("\n")
     #plot3d(old_mat, col = "blue")
     #plot3d(icp_result, col = "gold", add = T)
     
@@ -303,24 +303,21 @@ grabDBH <- function(fileFinder,
     matr <- computeTransform(new_mat, icp_result)
     
     
-    treeList_path <- paste0(dbhPath, "trees_dbh.txt")
-    cat("Reading old tree list from", treeList_path, "and\n")
-    trees_old <- read.table(treeList_path, sep = "\t", header = T)
-    cat("converting with matrix ")
+    cat(" - converting with matrix ")
     prmatrix(matr, rowlab=rep("  ",4), collab=rep("",4))
     
-    newCoords <- applyTransform(as.matrix(data.frame(trees_old$x, trees_old$y, 1)), matr)
+    newCoords <- applyTransform(as.matrix(data.frame(metaList$x, metaList$y, 1)), matr)
     
-    trees_old$oldX <- trees_old$x
-    trees_old$oldY <- trees_old$y
-    trees_old$oldZ <- trees_old$z
-    trees_old$z <- NULL
-    trees_old$x <- round(newCoords[, 1],3)
-    trees_old$y <- round(newCoords[, 2],3)
+    metaList$oldX <- metaList$x
+    metaList$oldY <- metaList$y
+    metaList$oldZ <- metaList$z
+    metaList$z <- NULL
+    metaList$x <- round(newCoords[, 1],3)
+    metaList$y <- round(newCoords[, 2],3)
     
     cat("\n")
     cat("Writing out to trees_dbh_converted.txt\n")
-    write.table(trees_old, paste0(dbhPath, "trees_dbh_converted.txt"), 
+    write.table(metaList, paste0(dbhPath, "trees_dbh_converted.txt"), 
                 row.names = F, sep = "\t")
     write.table(matr, paste0(dbhPath, "trafo_from_", transformList.fileFinder, "_to_",  fileFinder, ".txt"), 
                 row.names = F, sep = "\t", col.names = F)
