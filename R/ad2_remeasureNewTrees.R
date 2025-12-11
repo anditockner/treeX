@@ -138,12 +138,19 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 #' @param frame.rad re-locating circles: factor of which input DBH will be multiplied to extend circle-fitting
 #' @param frame.minD minimum distance (in meter) to fetch the circle around for re-locating, set to 1 m for a tolerant fit (mis-matching systems)
 #' @export
-grabDBH <- function(fileFinder, treeList.path = NA, 
+grabDBH <- function(fileFinder, 
+                    
+                    treeList.path = NA, 
+                    transformList.fileFinder = "", 
+                    transformList.path = "",
+                    transformSlice = "_clusterSlice_120to140.laz",
+                    
                     dirPath = paste0(getwd(), "/"),
                     tileClipping = 3, 
                     overWriteDBHlist = TRUE, # shall old trees_dbh.txt be replaced for segmenting new volumes
                     keepBorderTrees = F, # set TRUE if there are many trees outside of DTM (check if thats a good idea)
                     remeasure = T, 
+                    
                     
                     
                     allTrees = F, new.numbers = F, 
@@ -153,7 +160,9 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   library(mgcv)
   library(spatstat)
   
-  
+  library(Morpho)
+  library(Rvcg)
+  library(rgl)
   
   
   if(2==1){
@@ -189,6 +198,12 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   circlePath <- paste0(dbhPath, "circleFits/")
   if(!dir.exists(circlePath)) dir.create(circlePath)
   
+  if(transformList.fileFinder != ""){
+    if(transformList.path == ""){
+      transformList.path <- paste0(dirname(dirname(treeList.path)), "/")
+    }
+  }
+  
   sink(paste0(dbhPath,"grabDBH_",format(Sys.time(), "%Y%m%d_%H%M"),"_Rcons.txt"), append = TRUE, split = TRUE)
   
   cat("Starting with dbh re-measurement for set",fileFinder,"\n")
@@ -207,8 +222,28 @@ grabDBH <- function(fileFinder, treeList.path = NA,
   
   
   if(is.na(treeList.path)){
-    treeList.path <- paste0(dbhPath, "trees_dbh.txt")
+    # automatically detect treeList.path
+    if(transformList.fileFinder != "" && transformList.path != ""){
+      treeList.path <- paste0(transformList.path, "/",
+                              transformList.fileFinder, "/trees_dbh.txt")
+      if(!file.exists(treeList.path)){
+        treeList.path <- paste0(transformList.path, "/",
+                                transformList.fileFinder, "_ALLGO_100to300_dbh/trees_dbh.txt")
+      }
+      if(!file.exists(treeList.path)){
+        stop(paste0("The set ", transformList.fileFinder, " for transforming old tree positions\n",
+                     "        in \"", transformList.path, "\" contains no trees_dbh.txt!\n", 
+                    "Please specify \"treeList.path\" or remove transform arguments\n"))
+      }
+    } else {
+      treeList.path <- paste0(dbhPath, "trees_dbh.txt")
+      if(!file.exists(treeList.path)){
+        stop(paste0("Please specify a tree list in \"treeList.path\"\n",
+                    "        No trees_dbh.txt was found in \"", dirPath,"\"  !\n"))
+      }
+    }
   }
+  
   
   tryCatch({
     metaList <- read.table(treeList.path, header = T, sep = "\t")
