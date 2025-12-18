@@ -399,6 +399,7 @@ grabDBH <- function(fileFinder,
       metaList$z <- round(extract(dtm_z, SpatialPoints(data.frame(x = metaList$x, y = metaList$y))) + 1.3, 3)
       rems <- sum(is.na(metaList$z))
       if(rems != 0){
+        pdf(file = paste0(dbhPath, "remeasure_remove.pdf"), width = 6, height = 6)
         plot(metaList$y ~ metaList$x, asp = 1, cex = 0.4, 
              pch = 16, col = "grey", main = paste0(fileFinder, " - rems: ", rems, " trees"))
         points(metaList$y[is.na(metaList$z)] ~ metaList$x[is.na(metaList$z)], 
@@ -410,6 +411,7 @@ grabDBH <- function(fileFinder,
           cat("Removing prohibited - ", rems, "border trees set to z = 0.\n")
           metaList$z[is.na(metaList$z)] <- 0
         }
+        dev.off()
       }
     }, error = function(error_condition) {
       cat("Error in reading the dtm-model!")
@@ -496,10 +498,16 @@ grabDBH <- function(fileFinder,
     return()
   }
   
+
   
-  if(!remeasure && file.exists(paste0(dbhPath, "seedLAS_cylinders.las"))){
-    cat("Reading old seedLAS_cylinders.las file... ")
-    co <- capture.output(seedLAS <- readLAS(paste0(dbhPath, "seedLAS_cylinders.las"), select = "xyzcit0"))
+  seedLAS_file <- paste0(dbhPath, "seedLAS_cylinders.las")
+  if(!file.exists(seedLAS_file)){
+    seedLAS_file <- paste0(dbhPath, "seedLAS_cylinders_remeasure.las")
+  }
+  
+  if(!remeasure && file.exists(seedLAS_file)){
+    cat("Reading old", basename(seedLAS_file), "file... ")
+    co <- capture.output(seedLAS <- readLAS(seedLAS_file, select = "xyzcit0"))
     cat("done!\n")
     
   } 
@@ -746,8 +754,7 @@ grabDBH <- function(fileFinder,
     
     cat("Generating seedLAS_cylinders.las... \n")
     seedLAS <- add_lasattribute(seedLAS, 1L, "comment", "random Col")
-    writeLAS(seedLAS, paste0(dbhPath, "seedLAS_cylinders.las"))
-    warning("seedLAS cylinders was deleted after remeasuring!")
+    writeLAS(seedLAS, paste0(dbhPath, "seedLAS_cylinders_remeasure.las"))
   }
   
   
@@ -1410,13 +1417,6 @@ grabDBH <- function(fileFinder,
                 row.names = FALSE, sep = "\t")
     
     
-    
-    seedLAS_file <- paste0(dbhPath, "seedLAS_cylinders.las")
-    if(remeasure && file.exists(seedLAS_file)){
-      cat("Deleting seedLAS_cylinders.las... ")
-      try(unlink(seedLAS_file))
-      cat("done!\n")
-    }
     
     
     if(overWriteDBHlist){
