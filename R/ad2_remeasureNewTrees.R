@@ -264,7 +264,7 @@ grabDBH <- function(fileFinder,
     }
     cat(" - reading slice at old tree list from", basename(path_oldSlice), "\n")
     oldSlice <- readLAS(path_oldSlice)
-    #oldSlice <- voxelize_points(oldSlice, 0.05)
+    #oldSlice <- voxelize_points(oldSlice, 0.005)
     # keep the full old slice to match few points of new slice into it
     oldSlice@data$Z <- 0
     
@@ -275,18 +275,20 @@ grabDBH <- function(fileFinder,
     }
     cat(" - reading current slice from", basename(path_newSlice), "\n")
     newSlice <- readLAS(path_newSlice)
-    newSlice <- voxelize_points(newSlice, 0.05)
+    newSlice <- voxelize_points(newSlice, 0.01)
     newSlice@data$Z <- 0
     
     old_mat <- as.matrix(oldSlice@data[, c("X", "Y", "Z")])
+    old_mat <- old_mat[!duplicated.array(old_mat),]
     new_mat <- as.matrix(newSlice@data[, c("X", "Y", "Z")])
+    new_mat <- new_mat[!duplicated.array(new_mat),]
     
     
     #plot3d(old_mat)
   
     cat(" - Merging lists via ICP - iterative closest point algorithm (Morpho)...\n")
     timeICP1 <- Sys.time()
-    icp_result <- icpmat(new_mat, old_mat, iterations = 100, type = "rigid")
+    icp_result <- icpmat(new_mat, old_mat, mindist = 1, iterations = 100, type = "similarity")
     # moving = first, new_mat
     # fix = second, old_mat  
     timeICP2 <- Sys.time()
@@ -1376,6 +1378,14 @@ grabDBH <- function(fileFinder,
                               "_remeasured.txt"),
                 row.names = FALSE, sep = "\t")
     
+    
+    
+    seedLAS_file <- paste0(dbhPath, "seedLAS_cylinders.las")
+    if(remeasure && file.exists(seedLAS_file)){
+      cat("Deleting seedLAS_cylinders.las... ")
+      try(unlink(seedLAS_file))
+      cat("done!\n")
+    }
     
     
     if(overWriteDBHlist){
