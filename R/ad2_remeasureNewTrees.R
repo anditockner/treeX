@@ -133,6 +133,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 #' @param remeasure creates new cylinderLAS for measuring diameters, set FALSE only if cylinderLAS is already up to date, otherwise some trees might be missing
 #' @param allTrees set this TRUE to also measure trees with numbers less than 9000
 #' @param new.numbers assign new sequential numbers for circles (1 being the thickest tree)
+#' @param moveOnly set to TRUE to keep old DBHs in the main list (in case there is a lot of movement expected and circles are not perfectly centered)
 #' @param frame.up delta z up from 1.30 m for circle fitting
 #' @param frame.down delta z down from 1.30 m for circle fitting
 #' @param frame.rad re-locating circles: factor of which input DBH will be multiplied to extend circle-fitting
@@ -145,6 +146,7 @@ grabDBH <- function(fileFinder,
                     transformList.path = "",
                     transformList.matrix = "",
                     transformSlice = "_clusterSlice_120to140.laz",
+                    moveOnly = F,
                     
                     dirPath = paste0(getwd(), "/"),
                     tileClipping = 3, 
@@ -817,7 +819,7 @@ grabDBH <- function(fileFinder,
   #nowId <- 9208
   #i <- which(clustList$id == nowId)
   
-  selectorius <- c(1:4, 9, 11, 13, 15)
+  selectorius <- c(1,2,4,3, 9, 11, 13, 15)
   cat("\t")
   cat(paste(colnames(clustList)[selectorius]), sep = "\t")
   cat("\n")
@@ -1328,15 +1330,17 @@ grabDBH <- function(fileFinder,
     cat("\nCombining into new trees_dbh.txt...\n")
     trees_out <- merge.data.frame(metaList, mergeImprove, by = "id", all.x = T)
     
-    onlyShift <- TRUE
-    if(!onlyShift){
-      trees_out$dbh.old <- trees_out$dbh
-      trees_out$dbh[!is.na(trees_out$dbh.sugg)] <- trees_out$dbh.sugg[!is.na(trees_out$dbh.sugg)]
-      table(trees_out$dbh.check)
+    
+    if(moveOnly){
+      cat("Keeping the old DBH values (remeasured is found in dbh.sugg)\n")
+      trees_out$dbh <- trees_out$dbh.ref
+      #table(trees_out$dbh.check)
       trees_out$dbh.check[is.na(trees_out$dbh.check)] <- "Ei" # old kept dbh of CG found trees
       trees_out$shift.col[is.na(trees_out$shift.col)] <- "Ei" # old not shifted of CG found trees
-      trees_out <- trees_out[,-2]
+    } else {
+      trees_out$dbh[!is.na(trees_out$dbh.sugg)] <- round(trees_out$dbh.sugg[!is.na(trees_out$dbh.sugg)],1)
     }
+    
     shift.those <- !is.na(trees_out$shift.x)
     table(shift.those)
     
@@ -1346,7 +1350,6 @@ grabDBH <- function(fileFinder,
     trees_out$x[shift.those] <- trees_out$shift.x[shift.those]
     trees_out$y[shift.those] <- trees_out$shift.y[shift.those]
     
-    trees_out$dbh[!is.na(trees_out$dbh.sugg)] <- round(trees_out$dbh.sugg[!is.na(trees_out$dbh.sugg)],1)
     
     
     
@@ -1388,7 +1391,6 @@ grabDBH <- function(fileFinder,
                             which(colnames(trees_out) == "fz"),
                             which(colnames(trees_out) == "inside"),
                             which(colnames(trees_out) == "selected"))]
-    
     
     appList.dropped <- dropoutList[,c(which(colnames(dropoutList) == "x"),
                                       which(colnames(dropoutList) == "y"),
