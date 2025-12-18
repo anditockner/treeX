@@ -335,6 +335,26 @@ grabDBH <- function(fileFinder,
     write.table(matr, paste0(dbhPath, "trafo_from_", transformList.fileFinder, "_to_",  fileFinder, ".txt"), 
                 row.names = F, sep = "\t", col.names = F)
     
+    
+    cat("Drawing image to check for right transformation... ")
+    
+    drawSlice <- decimate_points(newSlice, random(300))
+    imagePath <- paste0(dirPath, "_images/transformed_tree_lists/")
+    if(!dir.exists(imagePath)) dir.create(imagePath, recursive = T)
+    png(paste0(imagePath, fileFinders[i], "_tree_centers.png"), type = "cairo", 
+        height = 4000, width = 4000)
+    plot(drawSlice@data$X, drawSlice@data$Y, cex = 0.001, asp = 1)
+    points(metaList$x, metaList$y, col = "green", cex = 3, pch = 16)
+    dev.off()
+    
+    
+    
+    
+    
+    
+    
+    
+    
     movingTrees2 <- Sys.time()
     cat("Moving old tree list completed in a ")
     print.difftime(round(movingTrees2 - movingTrees1,1))
