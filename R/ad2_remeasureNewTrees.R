@@ -346,7 +346,7 @@ grabDBH <- function(fileFinder,
     plot(drawSlice@data$X, drawSlice@data$Y, cex = 0.001, asp = 1)
     points(metaList$x, metaList$y, col = "green", cex = 3, pch = 16)
     dev.off()
-    
+    cat("done!\n")
     
     
     
@@ -655,7 +655,7 @@ grabDBH <- function(fileFinder,
     cat("\nProcessing seeds:\n")
     for(a in 1:length(tiles)){
       if(a %% tileClipping == 0){
-        rm(tilesLAS)
+        if(exists("tilesLAS")) rm(tilesLAS)
         gc()
       }
       cat("-- tile", tiles[a])
@@ -747,7 +747,7 @@ grabDBH <- function(fileFinder,
     cat("Generating seedLAS_cylinders.las... \n")
     seedLAS <- add_lasattribute(seedLAS, 1L, "comment", "random Col")
     writeLAS(seedLAS, paste0(dbhPath, "seedLAS_cylinders.las"))
-    warning("TODO 04-28-2022: generate seedLAS with new and updated numbers for further segmentation!!!\n")
+    warning("seedLAS cylinders was deleted after remeasuring!")
   }
   
   
@@ -1443,12 +1443,15 @@ grabDBH <- function(fileFinder,
       
       metaList.name <- paste0(dbhPath, "trees_dbh.txt")
       metaList.name.old <- paste0(dbhPath, "trees_dbh_uncorrected_", format(Sys.time(), "%Y%m%d_%H%M"), ".txt")
-      if(file.rename(from = metaList.name, to = metaList.name.old)){
-        cat("Old file renamed to", basename(metaList.name.old), "!\n")
-      } else {
-        cat("Something went wrong with renaming sophisticated trees_dbh.txt (file was not present)...\n")
-      }
       
+      if(file.exists(metaList.name)){
+        if(file.rename(from = metaList.name, to = metaList.name.old)){
+          cat("Old file renamed to", basename(metaList.name.old), "!\n")
+        } else {
+          cat("Something went wrong with renaming sophisticated trees_dbh.txt (file was not present)...\n")
+        }
+      }
+
       cat("File", (metaList.name), "succesfully created.\n")
       write.table(outList, file = metaList.name,
                   row.names = FALSE, sep = "\t")
