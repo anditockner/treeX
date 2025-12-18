@@ -143,6 +143,7 @@ grabDBH <- function(fileFinder,
                     treeList.path = NA, 
                     transformList.fileFinder = "", 
                     transformList.path = "",
+                    transformList.matrix = "",
                     transformSlice = "_clusterSlice_120to140.laz",
                     
                     dirPath = paste0(getwd(), "/"),
@@ -253,57 +254,67 @@ grabDBH <- function(fileFinder,
   
   
   
-  if(transformList.fileFinder != ""){
+  if(transformList.fileFinder != "" | transformList.matrix != ""){
     cat("TRANSFORMING old tree position list\n")
     movingTrees1 <- Sys.time()
     
-    path_oldSlice <- paste0(transformList.path, "/_total_ground_veg/", transformList.fileFinder, transformSlice)
-    if(!file.exists(path_oldSlice)){
-      stop(paste0("Could not transform, old slice file is missing in", 
-                  path_oldSlice, "\n"))
+    
+    
+    if(transformList.matrix == ""){
+      
+      
+      path_oldSlice <- paste0(transformList.path, "/_total_ground_veg/", transformList.fileFinder, transformSlice)
+      if(!file.exists(path_oldSlice)){
+        stop(paste0("Could not transform, old slice file is missing in", 
+                    path_oldSlice, "\n"))
+      }
+      cat(" - reading slice at old tree list from", basename(path_oldSlice), "\n")
+      co <- capture.output(oldSlice <- readLAS(path_oldSlice))
+      #oldSlice <- voxelize_points(oldSlice, 0.005)
+      # keep the full old slice to match few points of new slice into it
+      oldSlice@data$Z <- 0
+      
+      path_newSlice <- paste0(dirPath, "/_total_ground_veg/", fileFinder, transformSlice)
+      if(!file.exists(path_newSlice)){
+        stop(paste0("Could not transform, current slice file is missing in", 
+                    path_newSlice, "\n"))
+      }
+      cat(" - reading current slice from", basename(path_newSlice), "\n")
+      co <- capture.output(newSlice <- readLAS(path_newSlice))
+      newSlice <- voxelize_points(newSlice, 0.01)
+      newSlice@data$Z <- 0
+      
+      old_mat <- as.matrix(oldSlice@data[, c("X", "Y", "Z")])
+      old_mat <- old_mat[!duplicated.array(old_mat),]
+      new_mat <- as.matrix(newSlice@data[, c("X", "Y", "Z")])
+      new_mat <- new_mat[!duplicated.array(new_mat),]
+      
+      
+      #plot3d(old_mat)
+      
+      cat(" - Merging lists via ICP - iterative closest point algorithm (Morpho)...\n")
+      timeICP1 <- Sys.time()
+      icp_result <- icpmat(new_mat, old_mat, mindist = 1, iterations = 100, type = "similarity")
+      # moving = first, new_mat
+      # fix = second, old_mat  
+      timeICP2 <- Sys.time()
+      cat("      Done in a ")
+      print.difftime(round(timeICP2 - timeICP1,1))
+      #cat("\n")
+      #plot3d(old_mat, col = "blue")
+      #plot3d(icp_result, col = "gold", add = T)
+      
+      #plot3d(old_mat, col = "blue")
+      #plot3d(new_mat, col = "red", add = T)
+      
+      
+      matr <- computeTransform(new_mat, icp_result)
+      
+    } else {
+      cat(" - reading matrix from", basename(transformList.matrix), "\n")
+      suppressWarnings(matr <- as.matrix(read.table(transformList.matrix)))
+      matr <- matr[c(1:4), c(1:4)]
     }
-    cat(" - reading slice at old tree list from", basename(path_oldSlice), "\n")
-    oldSlice <- readLAS(path_oldSlice)
-    #oldSlice <- voxelize_points(oldSlice, 0.005)
-    # keep the full old slice to match few points of new slice into it
-    oldSlice@data$Z <- 0
-    
-    path_newSlice <- paste0(dirPath, "/_total_ground_veg/", fileFinder, transformSlice)
-    if(!file.exists(path_newSlice)){
-      stop(paste0("Could not transform, current slice file is missing in", 
-                  path_newSlice, "\n"))
-    }
-    cat(" - reading current slice from", basename(path_newSlice), "\n")
-    newSlice <- readLAS(path_newSlice)
-    newSlice <- voxelize_points(newSlice, 0.01)
-    newSlice@data$Z <- 0
-    
-    old_mat <- as.matrix(oldSlice@data[, c("X", "Y", "Z")])
-    old_mat <- old_mat[!duplicated.array(old_mat),]
-    new_mat <- as.matrix(newSlice@data[, c("X", "Y", "Z")])
-    new_mat <- new_mat[!duplicated.array(new_mat),]
-    
-    
-    #plot3d(old_mat)
-  
-    cat(" - Merging lists via ICP - iterative closest point algorithm (Morpho)...\n")
-    timeICP1 <- Sys.time()
-    icp_result <- icpmat(new_mat, old_mat, mindist = 1, iterations = 100, type = "similarity")
-    # moving = first, new_mat
-    # fix = second, old_mat  
-    timeICP2 <- Sys.time()
-    cat("      Done in a ")
-    print.difftime(round(timeICP2 - timeICP1,1))
-    #cat("\n")
-    #plot3d(old_mat, col = "blue")
-    #plot3d(icp_result, col = "gold", add = T)
-    
-    #plot3d(old_mat, col = "blue")
-    #plot3d(new_mat, col = "red", add = T)
-    
-    
-    matr <- computeTransform(new_mat, icp_result)
-    
     
     cat(" - converting with matrix ")
     prmatrix(matr, rowlab=rep("  ",4), collab=rep("",4))
