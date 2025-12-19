@@ -159,14 +159,14 @@ transformVegetation <- function(LASfile, fileFinder,
     
     cat("Drawing final image to check for right transformation... ")
     
-    drawSlice1 <- decimate_points(newSlice, random(300))
-    drawSlice2 <- decimate_points(oldSlice, random(300))
+    drawSliceNew <- decimate_points(newSlice, random(300))
+    drawSliceOld <- decimate_points(oldSlice, random(300))
     imagePath <- paste0(dirPath, "_images/transformed_vegetation/")
     if(!dir.exists(imagePath)) dir.create(imagePath, recursive = T)
     png(paste0(imagePath, fileFinder, "_into_", trafo.matchOldSet, ".png"), type = "cairo", 
         height = 4000, width = 4000)
-    plot(drawSlice@data$X, drawSlice@data$Y, cex = 0.001, asp = 1, col = "black")
-    points(drawSlice@data$X, drawSlice@data$Y, cex = 0.001, col = "red")
+    plot(drawSliceOld@data$X, drawSliceOld@data$Y, cex = 0.001, col = "red")
+    points(drawSliceNew@data$X, drawSliceNew@data$Y, cex = 0.001, asp = 1, col = "black")
     dev.off()
     cat("done!\n")
     
