@@ -141,7 +141,8 @@ transformVegetation <- function(LASfile, fileFinder,
     prmatrix(matr, rowlab=rep("  ",4), collab=rep("",4))
     
     
-    matrixSavePath <- paste0(dbhPath, "trafo_from_", trafo.matchOldSet, "_to_",  fileFinder, ".txt")
+    groundPath <- v.env$groundPath
+    matrixSavePath <- paste0(dirPath, groundPath, "trafo_from_", trafo.matchOldSet, "_to_",  fileFinder, ".txt")
     cat(" - saving matrix into", basename(matrixSavePath), "\n\n")
     write.table(matr, matrixSavePath, 
                 row.names = F, sep = "\t", col.names = F)
