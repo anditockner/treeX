@@ -175,7 +175,7 @@ transformVegetation <- function(LASfile, fileFinder,
     png(paste0(imagePath, fileFinder, "_into_", trafo.matchOldSet, ".png"), type = "cairo", 
         height = 4000, width = 4000)
     plot(drawSliceOld@data$X, drawSliceOld@data$Y, cex = 0.001, col = "red")
-    points(drawSliceNew@data$X, drawSliceNew@data$Y, cex = 0.001, asp = 1, col = "black")
+    points(icp_result[, 1], icp_result[, 2], cex = 0.001, asp = 1, col = "black")
     dev.off()
     cat("done!\n")
     
