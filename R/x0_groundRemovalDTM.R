@@ -23,11 +23,16 @@ if(!exists("LAS_veg")){
 #' @param trafo.matchDirPath directory of the old fileFinder which is used for
 #' @param trafo.matchOldSet name of set to try for matching new set into
 #' @param trafo.matchSlice can be set to cut a circle from 0 0 with the given radius of the big input file
+#' @param icp.voxel.both set the voxel size before slice files are matched via ICP
+#' @param icpMinDist to Morpho::icpmat() restrict valid points to be within this distance
+#' @param icpIterations to Morpho::icpmat() number of iterations 
 #' @export
 transformVegetation <- function(LASfile, fileFinder, 
-                                match.voxel.new = 0, 
-                                match.voxel.old = 0, 
-                                match.voxel.both = 0,
+                                icp.voxel.new = 0, 
+                                icp.voxel.old = 0, 
+                                icp.voxel.both = 0,
+                                icpMinDist = 1, 
+                                icpIterations = 100,
                                 runInitialExtractVegetation = T, 
                                 groundMergeCut = 0, ipad = FALSE,
                                 groundCutHeight = 1.0, steepSlope = TRUE, clothSize = 0.10,
@@ -48,9 +53,9 @@ transformVegetation <- function(LASfile, fileFinder,
   
   library(Morpho)
   
-  if(match.voxel.both > 0){
-    match.voxel.new <- match.voxel.both
-    match.voxel.old <- match.voxel.both
+  if(icp.voxel.both > 0){
+    icp.voxel.new <- icp.voxel.both
+    icp.voxel.old <- icp.voxel.both
   }
   if(trafo.matchOldSet != ""){
     if(trafo.matchDirPath == "") trafo.matchDirPath <- dirPath
@@ -99,8 +104,8 @@ transformVegetation <- function(LASfile, fileFinder,
     
     cat(" - reading slice at old tree list from", basename(path_oldSlice), "\n")
     co <- capture.output(oldSlice <- readLAS(path_oldSlice))
-    if(match.voxel.old > 0){
-      oldSlice <- voxelize_points(oldSlice, match.voxel.old)
+    if(icp.voxel.old > 0){
+      oldSlice <- voxelize_points(oldSlice, icp.voxel.old)
     }
     # keep the full old slice to match few points of new slice into it
     oldSlice@data$Z <- 0
@@ -112,8 +117,8 @@ transformVegetation <- function(LASfile, fileFinder,
     }
     cat(" - reading current slice from", basename(path_newSlice), "\n")
     co <- capture.output(newSlice <- readLAS(path_newSlice))
-    if(match.voxel.new > 0){
-      newSlice <- voxelize_points(newSlice, match.voxel.new)
+    if(icp.voxel.new > 0){
+      newSlice <- voxelize_points(newSlice, icp.voxel.new)
     }
     newSlice@data$Z <- 0
     
@@ -127,7 +132,7 @@ transformVegetation <- function(LASfile, fileFinder,
     
     cat(" - Merging lists via ICP - iterative closest point algorithm (Morpho)...\n")
     timeICP1 <- Sys.time()
-    icp_result <- icpmat(new_mat, old_mat, mindist = 1, iterations = 100, type = "similarity")
+    icp_result <- icpmat(new_mat, old_mat, mindist = icpMinDist, iterations = icpIterations, type = "similarity")
     # moving = first, new_mat
     # fix = second, old_mat  
     timeICP2 <- Sys.time()
