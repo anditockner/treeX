@@ -24,23 +24,26 @@ if(!exists("LAS_veg")){
 #' @param trafo.matchOldSet name of set to try for matching new set into
 #' @param trafo.matchSlice can be set to cut a circle from 0 0 with the given radius of the big input file
 #' @export
-transformVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FALSE,
-                              groundCutHeight = 1.0, steepSlope = TRUE, clothSize = 0.10,
-                              doFilter = FALSE, filterRes = 0.05, filterN = 27, 
-                              clip.radius = 0, clip.trajectory.distance = 0,
-                              clip.x = 0, clip.y = 0,
-                              draw.trajectory = TRUE, 
-                              selector = "xyzcit0RGB", dtm.path = "",
-                              preTrafoMatrix.path = "",
-                              trafo.matchOldSet = "", 
-                              trafo.matchDirPath = "",
-                              trafo.matchSlice = "_clusterSlice_120to140.laz",
-                              rainFilter = 0,
-                              additionalSlices = TRUE,
-                              exportSlice.upperLimit = 3, exportSlice.lowerLimit = 1, #m
-                              exportClippedLAS = FALSE,
-                              dirPath = paste0(getwd(), "/")){
+transformVegetation <- function(LASfile, fileFinder, 
+                                runInitialExtractVegetation = T, 
+                                groundMergeCut = 0, ipad = FALSE,
+                                groundCutHeight = 1.0, steepSlope = TRUE, clothSize = 0.10,
+                                doFilter = FALSE, filterRes = 0.05, filterN = 27, 
+                                clip.radius = 0, clip.trajectory.distance = 0,
+                                clip.x = 0, clip.y = 0,
+                                draw.trajectory = TRUE, 
+                                selector = "xyzcit0RGB", dtm.path = "",
+                                preTrafoMatrix.path = "",
+                                trafo.matchOldSet = "", 
+                                trafo.matchDirPath = "",
+                                trafo.matchSlice = "_clusterSlice_120to140.laz",
+                                rainFilter = 0,
+                                additionalSlices = TRUE,
+                                exportSlice.upperLimit = 3, exportSlice.lowerLimit = 1, #m
+                                exportClippedLAS = FALSE,
+                                dirPath = paste0(getwd(), "/")){
   
+  library(Morpho)
   
   
   if(trafo.matchOldSet != ""){
@@ -56,23 +59,24 @@ transformVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = 
   }
   
   
-  
-  extractVegetation(LASfile = LASfile, fileFinder = fileFinder, 
-                    groundMergeCut = groundMergeCut, ipad = ipad,
-                    groundCutHeight = groundCutHeight, steepSlope = steepSlope, clothSize = clothSize,
-                    doFilter = doFilter, filterRes = filterRes, filterN = filterN, 
-                    clip.radius = clip.radius, clip.trajectory.distance = clip.trajectory.distance,
-                    clip.x = clip.x, clip.y = clip.y,
-                    draw.trajectory = draw.trajectory, 
-                    selector = selector, dtm.path = dtm.path,
-                    trafoMatrix.path = preTrafoMatrix.path,
-                    rainFilter = rainFilter,
-                    additionalSlices = additionalSlices,
-                    exportSlice.upperLimit = exportSlice.upperLimit, 
-                    exportSlice.lowerLimit = exportSlice.lowerLimit, #m
-                    exportClippedLAS = exportClippedLAS,
-                    dirPath = dirPath)
-  
+  if(runInitialExtractVegetation){
+    extractVegetation(LASfile = LASfile, fileFinder = fileFinder, 
+                      groundMergeCut = groundMergeCut, ipad = ipad,
+                      groundCutHeight = groundCutHeight, steepSlope = steepSlope, clothSize = clothSize,
+                      doFilter = doFilter, filterRes = filterRes, filterN = filterN, 
+                      clip.radius = clip.radius, clip.trajectory.distance = clip.trajectory.distance,
+                      clip.x = clip.x, clip.y = clip.y,
+                      draw.trajectory = draw.trajectory, 
+                      selector = selector, dtm.path = dtm.path,
+                      trafoMatrix.path = preTrafoMatrix.path,
+                      rainFilter = rainFilter,
+                      additionalSlices = additionalSlices,
+                      exportSlice.upperLimit = exportSlice.upperLimit, 
+                      exportSlice.lowerLimit = exportSlice.lowerLimit, #m
+                      exportClippedLAS = exportClippedLAS,
+                      dirPath = dirPath)
+    
+  }
   
   
   
