@@ -25,6 +25,9 @@ if(!exists("LAS_veg")){
 #' @param trafo.matchSlice can be set to cut a circle from 0 0 with the given radius of the big input file
 #' @export
 transformVegetation <- function(LASfile, fileFinder, 
+                                match.voxel.new = 0, 
+                                match.voxel.old = 0, 
+                                match.voxel.both = 0,
                                 runInitialExtractVegetation = T, 
                                 groundMergeCut = 0, ipad = FALSE,
                                 groundCutHeight = 1.0, steepSlope = TRUE, clothSize = 0.10,
@@ -45,7 +48,10 @@ transformVegetation <- function(LASfile, fileFinder,
   
   library(Morpho)
   
-  
+  if(match.voxel.both > 0){
+    match.voxel.new <- match.voxel.both
+    match.voxel.old <- match.voxel.both
+  }
   if(trafo.matchOldSet != ""){
     if(trafo.matchDirPath == "") trafo.matchDirPath <- dirPath
     
@@ -93,7 +99,9 @@ transformVegetation <- function(LASfile, fileFinder,
     
     cat(" - reading slice at old tree list from", basename(path_oldSlice), "\n")
     co <- capture.output(oldSlice <- readLAS(path_oldSlice))
-    #oldSlice <- voxelize_points(oldSlice, 0.005)
+    if(match.voxel.old > 0){
+      oldSlice <- voxelize_points(oldSlice, match.voxel.old)
+    }
     # keep the full old slice to match few points of new slice into it
     oldSlice@data$Z <- 0
     
@@ -104,7 +112,9 @@ transformVegetation <- function(LASfile, fileFinder,
     }
     cat(" - reading current slice from", basename(path_newSlice), "\n")
     co <- capture.output(newSlice <- readLAS(path_newSlice))
-    newSlice <- voxelize_points(newSlice, 0.01)
+    if(match.voxel.new > 0){
+      newSlice <- voxelize_points(newSlice, match.voxel.new)
+    }
     newSlice@data$Z <- 0
     
     old_mat <- as.matrix(oldSlice@data[, c("X", "Y", "Z")])
@@ -153,7 +163,7 @@ transformVegetation <- function(LASfile, fileFinder,
     drawSlice2 <- decimate_points(oldSlice, random(300))
     imagePath <- paste0(dirPath, "_images/transformed_vegetation/")
     if(!dir.exists(imagePath)) dir.create(imagePath, recursive = T)
-    png(paste0(imagePath, fileFinders[i], "_into_", trafo.matchOldSet, ".png"), type = "cairo", 
+    png(paste0(imagePath, fileFinder, "_into_", trafo.matchOldSet, ".png"), type = "cairo", 
         height = 4000, width = 4000)
     plot(drawSlice@data$X, drawSlice@data$Y, cex = 0.001, asp = 1, col = "black")
     points(drawSlice@data$X, drawSlice@data$Y, cex = 0.001, col = "red")
