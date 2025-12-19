@@ -11,6 +11,193 @@ if(!exists("LAS_veg")){
 
 
 
+#' Ground classification of raw point cloud with transformation into old set
+#' for more help see function extractVegetation, 
+#' which is run twice (local & transformed) within this function
+#'
+#' Reads in a .las or .laz file from disk and extracts the vegetation cloud
+#' using the cloth simulation filter (scf) via lasground from the lidR package
+#' automatically computing transformation matrix 
+#' to merge new set fileFinder into old set trafo.matchOldSet
+#'
+#' @param trafo.matchDirPath directory of the old fileFinder which is used for
+#' @param trafo.matchOldSet name of set to try for matching new set into
+#' @param trafo.matchSlice can be set to cut a circle from 0 0 with the given radius of the big input file
+#' @export
+transformVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FALSE,
+                              groundCutHeight = 1.0, steepSlope = TRUE, clothSize = 0.10,
+                              doFilter = FALSE, filterRes = 0.05, filterN = 27, 
+                              clip.radius = 0, clip.trajectory.distance = 0,
+                              clip.x = 0, clip.y = 0,
+                              draw.trajectory = TRUE, 
+                              selector = "xyzcit0RGB", dtm.path = "",
+                              preTrafoMatrix.path = "",
+                              trafo.matchOldSet = "", 
+                              trafo.matchDirPath = "",
+                              trafo.matchSlice = "_clusterSlice_120to140.laz",
+                              rainFilter = 0,
+                              additionalSlices = TRUE,
+                              exportSlice.upperLimit = 3, exportSlice.lowerLimit = 1, #m
+                              exportClippedLAS = FALSE,
+                              dirPath = paste0(getwd(), "/")){
+  
+  
+  
+  if(trafo.matchOldSet != ""){
+    if(trafo.matchDirPath == "") trafo.matchDirPath <- dirPath
+    
+    path_oldSlice <- paste0(trafo.matchDirPath, "_total_ground_veg/", 
+                            trafo.matchOldSet, trafo.matchSlice)
+    
+    if(!file.exists(path_oldSlice)){
+      stop("Can't transform without file ", path_oldSlice, "!")
+    } 
+    cat("Transforming set", fileFinder, "\n  into set", trafo.matchOldSet, "\n  via file", path_oldSlice, "\n")
+  }
+  
+  
+  
+  extractVegetation(LASfile = LASfile, fileFinder = fileFinder, 
+                    groundMergeCut = groundMergeCut, ipad = ipad,
+                    groundCutHeight = groundCutHeight, steepSlope = steepSlope, clothSize = clothSize,
+                    doFilter = doFilter, filterRes = filterRes, filterN = filterN, 
+                    clip.radius = clip.radius, clip.trajectory.distance = clip.trajectory.distance,
+                    clip.x = clip.x, clip.y = clip.y,
+                    draw.trajectory = draw.trajectory, 
+                    selector = selector, dtm.path = dtm.path,
+                    trafoMatrix.path = preTrafoMatrix.path,
+                    rainFilter = rainFilter,
+                    additionalSlices = additionalSlices,
+                    exportSlice.upperLimit = exportSlice.upperLimit, 
+                    exportSlice.lowerLimit = exportSlice.lowerLimit, #m
+                    exportClippedLAS = exportClippedLAS,
+                    dirPath = dirPath)
+  
+  
+  
+  
+  path_newSlice <- paste0(trafo.matchDirPath, "_total_ground_veg/", 
+                          trafo.matchOldSet, trafo.matchSlice)
+  
+  
+  if(trafo.matchOldSet != ""){
+    cat("Calculating transformation matrix into old set\n")
+    movingTrees1 <- Sys.time()
+    
+    
+      
+    
+    cat(" - reading slice at old tree list from", basename(path_oldSlice), "\n")
+    co <- capture.output(oldSlice <- readLAS(path_oldSlice))
+    #oldSlice <- voxelize_points(oldSlice, 0.005)
+    # keep the full old slice to match few points of new slice into it
+    oldSlice@data$Z <- 0
+    
+    path_newSlice <- paste0(dirPath, "/_total_ground_veg/", fileFinder, trafo.matchSlice)
+    if(!file.exists(path_newSlice)){
+      stop(paste0("Could not transform, current slice file is missing in", 
+                  path_newSlice, "\n"))
+    }
+    cat(" - reading current slice from", basename(path_newSlice), "\n")
+    co <- capture.output(newSlice <- readLAS(path_newSlice))
+    newSlice <- voxelize_points(newSlice, 0.01)
+    newSlice@data$Z <- 0
+    
+    old_mat <- as.matrix(oldSlice@data[, c("X", "Y", "Z")])
+    old_mat <- old_mat[!duplicated.array(old_mat),]
+    new_mat <- as.matrix(newSlice@data[, c("X", "Y", "Z")])
+    new_mat <- new_mat[!duplicated.array(new_mat),]
+    
+    
+    #plot3d(old_mat)
+    
+    cat(" - Merging lists via ICP - iterative closest point algorithm (Morpho)...\n")
+    timeICP1 <- Sys.time()
+    icp_result <- icpmat(new_mat, old_mat, mindist = 1, iterations = 100, type = "similarity")
+    # moving = first, new_mat
+    # fix = second, old_mat  
+    timeICP2 <- Sys.time()
+    cat("      Done in a ")
+    print.difftime(round(timeICP2 - timeICP1,1))
+    #cat("\n")
+    #plot3d(old_mat, col = "blue")
+    #plot3d(icp_result, col = "gold", add = T)
+    
+    #plot3d(old_mat, col = "blue")
+    #plot3d(new_mat, col = "red", add = T)
+    
+    
+    matr <- computeTransform(new_mat, icp_result)
+    
+    
+    
+    
+    
+    cat(" - final conversion matrix ")
+    prmatrix(matr, rowlab=rep("  ",4), collab=rep("",4))
+    
+    
+    matrixSavePath <- paste0(dbhPath, "trafo_from_", trafo.matchOldSet, "_to_",  fileFinder, ".txt")
+    cat(" - saving matrix into", basename(matrixSavePath), "\n\n")
+    write.table(matr, matrixSavePath, 
+                row.names = F, sep = "\t", col.names = F)
+    
+    cat("Drawing final image to check for right transformation... ")
+    
+    drawSlice1 <- decimate_points(newSlice, random(300))
+    drawSlice2 <- decimate_points(oldSlice, random(300))
+    imagePath <- paste0(dirPath, "_images/transformed_vegetation/")
+    if(!dir.exists(imagePath)) dir.create(imagePath, recursive = T)
+    png(paste0(imagePath, fileFinders[i], "_into_", trafo.matchOldSet, ".png"), type = "cairo", 
+        height = 4000, width = 4000)
+    plot(drawSlice@data$X, drawSlice@data$Y, cex = 0.001, asp = 1, col = "black")
+    points(drawSlice@data$X, drawSlice@data$Y, cex = 0.001, col = "red")
+    dev.off()
+    cat("done!\n")
+    
+    
+    
+    
+    
+    
+    
+  } 
+  
+  
+  
+  
+  
+  extractVegetation(LASfile = LASfile, fileFinder = fileFinder, 
+                    groundMergeCut = groundMergeCut, ipad = ipad,
+                    groundCutHeight = groundCutHeight, steepSlope = steepSlope, clothSize = clothSize,
+                    doFilter = doFilter, filterRes = filterRes, filterN = filterN, 
+                    clip.radius = clip.radius, clip.trajectory.distance = clip.trajectory.distance,
+                    clip.x = clip.x, clip.y = clip.y,
+                    draw.trajectory = draw.trajectory, 
+                    selector = selector, dtm.path = dtm.path,
+                    trafoMatrix.path = matrixSavePath,
+                    rainFilter = rainFilter,
+                    additionalSlices = additionalSlices,
+                    exportSlice.upperLimit = exportSlice.upperLimit, 
+                    exportSlice.lowerLimit = exportSlice.lowerLimit, #m
+                    exportClippedLAS = exportClippedLAS,
+                    dirPath = dirPath)
+  
+  
+  
+  
+  
+  movingTrees2 <- Sys.time()
+  cat("Moving old tree list completed in a ")
+  print.difftime(round(movingTrees2 - movingTrees1,1))
+  cat("\n\n")
+  
+  
+}
+
+
+
+
 
 #' Ground classification of raw point cloud
 #'
@@ -49,7 +236,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
                               exportClippedLAS = FALSE,
                               dirPath = paste0(getwd(), "/")){
 
-
+  
   if(length(LASfile) > 1){
     stop("More than one LASfile provided!\n")
   }
@@ -142,9 +329,8 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   if(trafoMatrix.path != "") cat("Using transformation file", paste0("\"", basename(trafoMatrix.path), "\""),"\n")
   cat("Working at", dirPath, "\n\n")
   #if(!dir.exists(dirPath)) dir.create(dirPath)
-
-
-
+  
+  
 
   allStart <- Sys.time()
 
@@ -341,7 +527,6 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
   cat("There were", thMk(big@header@PHB$`Number of point records`), "points found.\n")
   #lidR::plot(big)
-
 
   if(trafoMatrix.path != "" & file.exists(trafoMatrix.path)){
     library("Morpho")
