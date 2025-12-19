@@ -61,7 +61,7 @@ transformVegetation <- function(LASfile, fileFinder,
     if(!file.exists(path_oldSlice)){
       stop("Can't transform without file ", path_oldSlice, "!")
     } 
-    cat("Transforming set", fileFinder, "\n  into set", trafo.matchOldSet, "\n  via file", path_oldSlice, "\n")
+    cat("TRANSFORMING SET", fileFinder, "\n  into set", trafo.matchOldSet, "\n  via file", path_oldSlice, "\n\n\n")
   }
   
   
