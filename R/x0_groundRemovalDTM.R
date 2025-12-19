@@ -26,6 +26,7 @@ if(!exists("LAS_veg")){
 #' @param icp.voxel.both set the voxel size before slice files are matched via ICP
 #' @param icpMinDist to Morpho::icpmat() restrict valid points to be within this distance
 #' @param icpIterations to Morpho::icpmat() number of iterations 
+#' @param icpType to Morpho::icpmat() select the transform to be applied, can be "rigid","similarity" or "affine"
 #' @export
 transformVegetation <- function(LASfile, fileFinder, 
                                 icp.voxel.new = 0, 
@@ -33,6 +34,7 @@ transformVegetation <- function(LASfile, fileFinder,
                                 icp.voxel.both = 0,
                                 icpMinDist = 1, 
                                 icpIterations = 100,
+                                icpType = "rigid",
                                 runInitialExtractVegetation = T, 
                                 groundMergeCut = 0, ipad = FALSE,
                                 groundCutHeight = 1.0, steepSlope = TRUE, clothSize = 0.10,
@@ -132,7 +134,9 @@ transformVegetation <- function(LASfile, fileFinder,
     
     cat(" - Merging lists via ICP - iterative closest point algorithm (Morpho)...\n")
     timeICP1 <- Sys.time()
-    icp_result <- icpmat(new_mat, old_mat, mindist = icpMinDist, iterations = icpIterations, type = "similarity")
+    icp_result <- icpmat(new_mat, old_mat, 
+                         mindist = icpMinDist, 
+                         iterations = icpIterations, type = icpType)
     # moving = first, new_mat
     # fix = second, old_mat  
     timeICP2 <- Sys.time()
