@@ -343,7 +343,7 @@ grabDBH <- function(fileFinder,
     drawSlice <- decimate_points(newSlice, random(300))
     imagePath <- paste0(dirPath, "_images/transformed_tree_lists/")
     if(!dir.exists(imagePath)) dir.create(imagePath, recursive = T)
-    png(paste0(imagePath, fileFinders[i], "_tree_centers.png"), type = "cairo", 
+    png(paste0(imagePath, fileFinder, "_tree_centers.png"), type = "cairo", 
         height = 4000, width = 4000)
     plot(drawSlice@data$X, drawSlice@data$Y, cex = 0.001, asp = 1)
     points(metaList$x, metaList$y, col = "green", cex = 3, pch = 16)
