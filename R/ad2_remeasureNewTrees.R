@@ -1327,7 +1327,8 @@ grabDBH <- function(fileFinder,
     
     # applying new measurements to trees_dbh.txt
     
-    cat("\nCombining into new trees_dbh.txt...\n")
+    cat("\nCombining into new trees_dbh.txt... (dropping old column dbh.ref)\n")
+    metaList$dbh.ref <- NULL
     trees_out <- merge.data.frame(metaList, mergeImprove, by = "id", all.x = T)
     
     
