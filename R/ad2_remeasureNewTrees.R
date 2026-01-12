@@ -716,7 +716,9 @@ grabDBH <- function(fileFinder,
         clustCloud <- filter_poi(clustCloud, Z > nowClust$z - frame.down, Z < nowClust$z + frame.up)
         
         if(clustCloud@header@PHB$`Number of point records` == 0){
-          cat(" DISCARD: no seed points at DBH found (!)")
+          cat("_DEL(!)")
+          #deleting seed, as there were no seed points at breast height found
+          #cat(" DISCARD: no seed points at DBH found (!)")
           dropoutList[length(dropoutList[, 1]) + 1, ] <- nowClust
           next
         }
