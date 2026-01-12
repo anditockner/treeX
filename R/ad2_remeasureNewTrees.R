@@ -773,7 +773,7 @@ grabDBH <- function(fileFinder,
   
   metaList <- merge.data.frame(clustList, metaList, by = "id")
   
-  if(allTrees){
+  if(new.numbers){
     metaList <- metaList[order(metaList$dbh, decreasing = T),]
   }
   
