@@ -749,6 +749,7 @@ grabDBH <- function(fileFinder,
     } else {
       if(length(dropoutList[, 1])!=0){
         cat("\nThese seeds were deleted as false positives, no points present at DBH region:\n")
+        dropoutList <- dropoutList[order(dropoutList$id),]
         print(dropoutList)
       } else {
         cat("\n")
