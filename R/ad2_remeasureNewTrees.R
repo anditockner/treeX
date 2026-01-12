@@ -207,6 +207,10 @@ grabDBH <- function(fileFinder,
     }
   }
   
+  if(tileClipping <= 0){
+    tileClipping <- 1
+  }
+  
   sink(paste0(dbhPath,"grabDBH_",format(Sys.time(), "%Y%m%d_%H%M"),"_Rcons.txt"), append = TRUE, split = TRUE)
   
   cat("Starting with dbh re-measurement for set",fileFinder,"\n")
@@ -573,7 +577,7 @@ grabDBH <- function(fileFinder,
     i <- 1
     
     
-    if(tileClipping == 0){
+    if(tileClipping == 1){
       cat("Efficiency improvement: Cutting slice from", min(metaList$z, na.rm = TRUE), "to",
           max(metaList$z, na.rm = TRUE), "m.\n")
       cat("Reducing total", thMk(totalCloud@header@PHB$`Number of point records`), "points to ")
