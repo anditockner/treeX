@@ -1225,7 +1225,7 @@ computeTree_i <- function(treeLAS.path,
                 c3stem <- CircleFitByLandau(cbind(stemLAS@data$X, stemLAS@data$Y))
               }
             )
-            if(exists(c3stem)){
+            if(exists("c3stem")){
               
               stemCenter <- data.frame("x" = c3stem[1], "y" = c3stem[2], "z" = (minZ + heightGrip[j]),
                                        "d" = c3stem[3]*2, "movedCM" = 0,
