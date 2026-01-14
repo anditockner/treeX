@@ -1220,60 +1220,63 @@ computeTree_i <- function(treeLAS.path,
                                             ParIni = c(previousCenter$x, previousCenter$y, previousCenter$d/2))
               },
               error = function(e) {
-                message("Landau failed: ", e$message)
-                message("Falling back to Landau without priors...")
+                cat("Landau failed: ", e$message)
+                cat("Falling back to Landau without priors...")
                 c3stem <- CircleFitByLandau(cbind(stemLAS@data$X, stemLAS@data$Y))
               }
             )
-            
-            stemCenter <- data.frame("x" = c3stem[1], "y" = c3stem[2], "z" = (minZ + heightGrip[j]),
-                                     "d" = c3stem[3]*2, "movedCM" = 0,
-                                     "angle" = 0, "lower" = heightGrip[j])
-            stemMovedAngle <- atan2((stemCenter$y - previousCenter$y),
-                                    (stemCenter$x - previousCenter$x))/2/pi*360
-            if(stemMovedAngle < -45){
-              stemMovedAngle <- stemMovedAngle + 360
-            }
-            stemMovedDist <- sqrt((stemCenter$y - previousCenter$y)^2 +
-                                    (stemCenter$x - previousCenter$x)^2)
-
-            stemCenter$movedCM <- round(stemMovedDist*100,2)
-            stemCenter$angle <- round(stemMovedAngle,1)
-
-
-
-            flatNess <- (stemCenter$movedCM)/abs(stemCenter$z - previousCenter$z)
-            if(is.na(flatNess)) flatNess <- 0
-
-            if(do.Plot) mtext(paste0("  +",stemCenter$movedCM," cm\n",
-                                     "  +", round(flatNess, 1),"%\n",
-                                     "  ", stemCenter$angle,"°"),
-                              side = 3, adj = 0, line = -4.5, col = "#448711")
-
-            if(do.Plot) draw.circle(stemCenter$x, stemCenter$y,
-                                    radius = stemCenter$d/2, border = "black", lty = 2, lwd = 2)
-
-            if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",
-                                            round(minZ + heightGrip[j],2),"), d=",
-                                            round(stemCenter$d*100,1),"cm"))
-
-
-            stems[j,] <- stemCenter
-
-            if(stemCenter$d < (previousCenter$d - 0.1) |
-               stemCenter$d > (previousCenter$d + 0.05) |
-               flatNess > 150){
-
-              #stemCenter$d <- previousCenter$d
-              # if suddenly the diameter is shrinked by more than 10 cm,
-              # or if suddenly expanded by more than 5 cm,
-              # or moved more than 7.5 cm (k = 150%) each 5 cm slice
-              # rather stay with the old diameter, seems more stable...
+            if(exists(c3stem)){
+              
+              stemCenter <- data.frame("x" = c3stem[1], "y" = c3stem[2], "z" = (minZ + heightGrip[j]),
+                                       "d" = c3stem[3]*2, "movedCM" = 0,
+                                       "angle" = 0, "lower" = heightGrip[j])
+              stemMovedAngle <- atan2((stemCenter$y - previousCenter$y),
+                                      (stemCenter$x - previousCenter$x))/2/pi*360
+              if(stemMovedAngle < -45){
+                stemMovedAngle <- stemMovedAngle + 360
+              }
+              stemMovedDist <- sqrt((stemCenter$y - previousCenter$y)^2 +
+                                      (stemCenter$x - previousCenter$x)^2)
+              
+              stemCenter$movedCM <- round(stemMovedDist*100,2)
+              stemCenter$angle <- round(stemMovedAngle,1)
+              
+              
+              
+              flatNess <- (stemCenter$movedCM)/abs(stemCenter$z - previousCenter$z)
+              if(is.na(flatNess)) flatNess <- 0
+              
+              if(do.Plot) mtext(paste0("  +",stemCenter$movedCM," cm\n",
+                                       "  +", round(flatNess, 1),"%\n",
+                                       "  ", stemCenter$angle,"°"),
+                                side = 3, adj = 0, line = -4.5, col = "#448711")
+              
+              if(do.Plot) draw.circle(stemCenter$x, stemCenter$y,
+                                      radius = stemCenter$d/2, border = "black", lty = 2, lwd = 2)
+              
+              if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",
+                                              round(minZ + heightGrip[j],2),"), d=",
+                                              round(stemCenter$d*100,1),"cm"))
+              
+              
+              stems[j,] <- stemCenter
+              
+              if(stemCenter$d < (previousCenter$d - 0.1) |
+                 stemCenter$d > (previousCenter$d + 0.05) |
+                 flatNess > 150){
+                
+                #stemCenter$d <- previousCenter$d
+                # if suddenly the diameter is shrinked by more than 10 cm,
+                # or if suddenly expanded by more than 5 cm,
+                # or moved more than 7.5 cm (k = 150%) each 5 cm slice
+                # rather stay with the old diameter, seems more stable...
+              } else {
+                previousCenter <- stemCenter
+              }
             } else {
-              previousCenter <- stemCenter
+              if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",
+                                              round(minZ + heightGrip[j],2),"), CIRCLE FIT FAILED"))
             }
-
-
 
           } else {
             if(do.Plot) title(main = paste0("h=",heightGrip[j],"m (z=",
