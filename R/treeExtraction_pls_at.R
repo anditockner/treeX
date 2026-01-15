@@ -1012,3 +1012,91 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
   if(useProgressBar) closeProgress(start)
   }
 }
+
+
+
+
+
+#' 
+#' Copies (or moves) all laz and trajectory files
+#' from the FARO connect directory to a specified path
+#' 
+#' 
+#' @param inConnectPath path to the input folders of all scans
+#' @param outNewFolder path where all laz and trajs will be copied (or moved)
+#' @param move set TRUE to move instead of copy files
+#' @param handleCleanLAZ what to do with files ending in _clean.laz: -1 (default) ignore them, 0 move them as well, 1 only move _clean.laz files
+#' @param cleanConnectPath set TRUE to delete all other files in inConnectPath
+#' @export
+pullFromFaroConnect <- function(inConnectPath, outNewFolder, 
+                                move = F, 
+                                handleCleanLAZ = -1, 
+                                cleanConnectPath = F){
+  
+  
+  # Hier Ordner mit FARO Connect Dateien
+  inConnectPath <- "D:/Zoran/_in_connect/"
+  
+  # Wohin verschieben?
+  outNewFolder <- "D:/Zoran/_in_laz/"
+  
+  if(file.exists(paste0(inConnectPath, "g/sheet/tsc/"))){
+    inConnectPath <- paste0(inConnectPath, "g/sheet/tsc/")
+  }
+  cFiles <- list.files(inConnectPath, recursive = T)
+  cFiles <- cFiles[endsWith(cFiles, "gs-traj") | endsWith(cFiles, "laz")]
+  if(handleCleanLAZ <= -1){
+    cFiles <- cFiles[!endsWith(cFiles, "_clean.laz")]
+  } else if(handleCleanLAZ >= 1){
+    cFiles <- cFiles[!duplicated(gsub("_clean.laz", ".laz", cFiles), fromLast = T)]
+  }
+  {
+    if(move){
+      cat("Moving ")
+    } else {
+      cat("Copying ")
+    }
+    cat(length(cFiles), "files\n from: ", inConnectPath, "\n   to: ", outNewFolder)
+  }
+  rento <- gsub("ts/", "", basename(cFiles))
+  rento <- gsub("ts../", "", rento)
+  rento <- gsub("ts.../", "", rento)
+  rento
+  
+  # Loop through each subdirectory
+  for (i in 1:length(cFiles)) {
+    old_dir <- paste0(inConnectPath, cFiles[i])
+    
+    # Define the new directory path in the target directory
+    new_dir <- paste0(outNewFolder, "", rento[i])
+    
+    cat(i, "- file", old_dir, "\n")
+    #if(endsWith(new_dir, "geoslam")) next()
+    
+    #if(!endsWith(new_dir, "gs-traj")) next()
+    
+    if(!file.exists(old_dir)) next()
+    
+    if(!dir.exists(dirname(new_dir))) dir.create(dirname(new_dir), recursive = T)
+    
+    # Get the original modification time of the subdirectory
+    orig_time <- file.info(old_dir)$mtime
+    
+    # Copy or Move the subdirectory to the target directory
+    file.copy(from = old_dir, to = new_dir, overwrite = T)
+    # MOVE - careful, old file is lost
+    # file.renamefrom = old_dir, to = new_dir, overwrite = T)
+    
+    #Sys.setFileTime(dirname(old_dir), orig_time)
+    # Set the modification time for the new directory
+    if (length(orig_time) > 0) {
+      Sys.setFileTime(new_dir, orig_time)
+      Sys.setFileTime("D:/Laser_Tirol_Noflatscher/_in_laz/", orig_time)
+    }
+    
+    # Deleting processed .geoslam file and rest of folder
+    if(cleanConnectPath) unlink(paste0(old_dir, "/"), recursive = T)
+    
+  }
+}
+
