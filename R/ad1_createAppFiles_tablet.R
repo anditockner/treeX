@@ -1235,7 +1235,10 @@ createAppFiles <- function(fileFinder = NA,
             }
             
             if (greenTreeLocations) {
-              treeListFile <- paste0(dirPath,fileFinder,"_ALLGO_100to300_dbh/trees_dbh.txt")
+              treeListFile <- paste0(dirPath,fileFinder,"/trees_dbh.txt")
+              if(!file.exists(treeListFile[1])){
+                treeListFile <- paste0(dirPath,fileFinder,"_ALLGO_100to300_dbh/trees_dbh.txt")
+              }
               for(j in 1:length(fileFinder)){
                 if(file.exists(treeListFile[i])){
                   trees <- read.table(treeListFile[i], header = TRUE)
