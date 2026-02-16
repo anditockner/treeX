@@ -10,6 +10,9 @@
 #' @param fileFinder user defined name to find this certain dataset in further processing
 #' @param changeFileFinder rename app background to this name
 #' @param quickPreview set TRUE to plot only reduced density of slice
+#' @param drawGround set FALSE to omitt the voxelized ground points lower than 1 m
+#' @param fullGroundGrey set TRUE to plot full ground points from 1 m lower in grey (instead of voxelized points)
+#' 
 #'
 #' @param pixelUnit_cm how many cms are represented in one pixel - default 1 (100 pixel equals one meter), also 2 works for smaller plots
 #' @param circleRadius radius of the additional circle that is plot in blue on top of the background file - recommended: 5 m more than desired sample plot radius
@@ -18,6 +21,7 @@
 #' @export
 createAppFiles <- function(fileFinder = NA, 
                            drawGround = T, 
+                           fullGroundGrey = F,
                            drawRedSlice = T, 
                            pixelUnit_cm = 2, 
                            
@@ -200,6 +204,7 @@ createAppFiles <- function(fileFinder = NA,
     #slices <- c("_clusterSlice_100to300.laz", "_clusterSlice_50to200.laz")
     # slices <- c("_clusterSlice_100to300.laz")
     slices_gr <- c("_ground_100cm_vox.laz")
+    if(fullGroundGrey) slices_gr <- "_ground.laz"
     slices_grTRAJ <- c("_ground_100cm_vxtraj.laz")
     
    
@@ -292,10 +297,14 @@ createAppFiles <- function(fileFinder = NA,
         
       }
     }
-    if(drawGround){
-      cat(", with ground")
+    if(fullGroundGrey){
+      cat(", with full grey ground")
     } else {
-      cat(" and no ground")
+      if(drawGround){
+        cat(", with ground")
+      } else {
+        cat(" and no ground")
+      }
     }
   } else {
     cat("Background .png is skipped")
@@ -1103,7 +1112,16 @@ createAppFiles <- function(fileFinder = NA,
               if(drawGround){
                 maxIntGr <- as.integer(max(ground@data$Intensity)/1.5)
                 ground@data$Intensity[ground@data$Intensity > maxIntGr] <- as.integer(maxIntGr)
-                points(ground@data$X, ground@data$Y, cex = 0.00001, col = rgb(0,0,0, alpha = ground@data$Intensity, maxColorValue = maxIntGr))
+                if(fullGroundGrey){
+                  cat("0")
+                  points(ground@data$X, ground@data$Y, cex = 0.00001, 
+                         col = rgb(maxIntGr/2, maxIntGr/2, maxIntGr/2, 
+                                   alpha = ground@data$Intensity, maxColorValue = maxIntGr))
+                } else {
+                  cat("o")
+                  points(ground@data$X, ground@data$Y, cex = 0.00001, 
+                         col = rgb(0,0,0, alpha = ground@data$Intensity, maxColorValue = maxIntGr))
+                }
               }
               
               if(addTrajLAZ){
