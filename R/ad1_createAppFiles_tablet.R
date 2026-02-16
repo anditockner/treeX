@@ -1109,7 +1109,6 @@ createAppFiles <- function(fileFinder = NA,
               maxInt <- as.integer(max(slice@data$Intensity)/1.5)
               slice@data$Intensity[slice@data$Intensity > maxInt] <- as.integer(maxInt)
               
-              cat(".")
               if(drawGround){
                 maxIntGr <- as.integer(max(ground@data$Intensity)/1.5)
                 ground@data$Intensity[ground@data$Intensity > maxIntGr] <- as.integer(maxIntGr)
@@ -1123,6 +1122,8 @@ createAppFiles <- function(fileFinder = NA,
                   points(ground@data$X, ground@data$Y, cex = 0.00001, 
                          col = rgb(0,0,0, alpha = ground@data$Intensity, maxColorValue = maxIntGr))
                 }
+              } else {
+                cat(".")
               }
               
               if(addTrajLAZ){
