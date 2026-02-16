@@ -973,8 +973,9 @@ createAppFiles <- function(fileFinder = NA,
                          cutWindow[1]+cutWindow[3]+dtmPuffer, 
                          cutWindow[2]+cutWindow[3]+dtmPuffer)
                 }
+                
+                dtm <- crop(dtm, e)
               }
-              dtm <- crop(dtm, e)
               #crs(dtm) <- CRS("+init=epsg:31258")
               cat("to normalize height...")
               bothLAS <- normalize_height(bothLAS, dtm, na.rm = TRUE)
