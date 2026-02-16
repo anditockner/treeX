@@ -298,6 +298,7 @@ createAppFiles <- function(fileFinder = NA,
       }
     }
     if(fullGroundGrey){
+      drawGround <- T
       cat(", with full grey ground")
     } else {
       if(drawGround){
