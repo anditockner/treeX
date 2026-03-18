@@ -888,7 +888,7 @@ createAppFiles <- function(fileFinder = NA,
           if(yLarge) cat(" y =", (spanY_cm_drawn*pixelUnit_cm))
           if(areaLarge) cat(" area =", round((spanY_cm_drawn*pixelUnit_cm)*(spanX_cm_drawn*pixelUnit_cm)/1000000), "Mio")
           
-          pixelUnit_cm <- pixelUnit_cm - 0.05
+          pixelUnit_cm <- round(pixelUnit_cm - 0.05,2)
           xLarge <- (spanX_cm_drawn*pixelUnit_cm) > 32768
           yLarge <- (spanY_cm_drawn*pixelUnit_cm) > 32768
           areaLarge <- (spanY_cm_drawn*pixelUnit_cm)*(spanX_cm_drawn*pixelUnit_cm) > 1000000000
@@ -1635,9 +1635,9 @@ createAppFiles <- function(fileFinder = NA,
     
     ### renaming and converting background image ####
     
-    setStringApp <- paste0("_ct00_", -topLeftX*pixelUnit_cm, 
-                           "_", topLeftY*pixelUnit_cm, 
-                           "_", pixelUnit_cm*100, 
+    setStringApp <- paste0("_ct00_", round(-topLeftX*pixelUnit_cm), 
+                           "_", round(topLeftY*pixelUnit_cm), 
+                           "_", round(pixelUnit_cm*100), 
                            "_", modeApp)
     
     
