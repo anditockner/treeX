@@ -174,7 +174,7 @@ createAppFiles <- function(fileFinder = NA,
     groundPath <- paste0(dirPath, "_total_ground_veg/")
     
     
-    if(drawTraj){
+    if(drawTraj & createBGR_pic){
       cat("Searching for trajectory... ")
       trajFiles <- paste0(groundPath, fileFinder, "_traj.txt")
       cat(sum(file.exists(trajFiles)), "found!\n")
