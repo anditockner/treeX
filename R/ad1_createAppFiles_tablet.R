@@ -189,6 +189,7 @@ createAppFiles <- function(fileFinder = NA,
         traj <- traj[seq(from = 1, to = nrow(traj), by = 25), 
         ]
         traj$col <- rainbow(length(traj[, 1]), end = 0.7, rev = T)
+        colnames(traj)[1] <- "time"
         allTraj <- rbind(allTraj, traj)
         
       }
