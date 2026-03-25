@@ -110,7 +110,8 @@ createAppFiles <- function(fileFinder = NA,
         cat("Creating app files (only .txt) for set", fileFinder, "\n")
       }
       
-      outName <- tolower(fileFinder)
+      #outName <- tolower(fileFinder)
+      outName <- (fileFinder)
       if(changeFileFinder != ""){
         outName <- changeFileFinder
         cat("Changing set name to", outName, "\n")
@@ -146,13 +147,15 @@ createAppFiles <- function(fileFinder = NA,
       cat("        ", paste0(fileFinder, collapse = ",  "))
       
       
-      outName <- tolower(paste0(fileFinder, collapse = ""))
+      #outName <- tolower(paste0(fileFinder, collapse = ""))
+      outName <- (paste0(fileFinder, collapse = "+"))
       if(changeFileFinder != ""){
         outName <- changeFileFinder
       } else if(reduceName){
         # reduce the name to first letter of every _ segmented word
         # just in case I ever need it...
-        outName <- tolower(paste0(fileFinder, collapse = "_"))
+        #outName <- tolower(paste0(fileFinder, collapse = "_"))
+        outName <- (paste0(fileFinder, collapse = "_"))
         parts <- strsplit(outName, "_")
         outName <- unlist(lapply(parts, substr, 1, 1))
         outName <- paste0(outName, collapse = "")
@@ -233,7 +236,8 @@ createAppFiles <- function(fileFinder = NA,
     
     
     tempFileFinder <- strsplit(basename(dtm.path), "_")[[1]][1]
-    outName <- tolower(tempFileFinder)
+    #outName <- tolower(tempFileFinder)
+    outName <- (tempFileFinder)
     if(changeFileFinder != ""){
       outName <- changeFileFinder
       cat("Changing set name to", outName, "\n")
@@ -1653,13 +1657,15 @@ createAppFiles <- function(fileFinder = NA,
         # if image larger than 600 Mio pixel R fails to convert to jpg, better leave png manually!
         # this failure breaks down R session, so better be careful!
         cat(" - exceeding image limit, only renaming .png to .jpg (convert it yourself!)\n")
-        toFile <- paste0(appPath,"/bgr_", tolower(outName), setStringApp, ".jpg")
+        #toFile <- paste0(appPath,"/bgr_", tolower(outName), setStringApp, ".jpg")
+        toFile <- paste0(appPath,"/bgr_", (outName), setStringApp, ".jpg")
         file.copy(fromFile, toFile, overwrite = T)
       } else {
         # read png and convert to jpg
         
         cat(" - converting .png to .jpg of quality", round(jpgQuality*100,1), "%...\n")
-        toFile <- paste0(appPath,"bgr_", tolower(outName), setStringApp, ".jpg")
+        #toFile <- paste0(appPath,"bgr_", tolower(outName), setStringApp, ".jpg")
+        toFile <- paste0(appPath,"bgr_", (outName), setStringApp, ".jpg")
         img <- readPNG(fromFile)
         writeJPEG(img, target = toFile, quality = jpgQuality)
         rm(img)
@@ -1671,10 +1677,12 @@ createAppFiles <- function(fileFinder = NA,
     } else {
       if(createTIFF){
         cat(" - renaming .png to .tif file...\n")
-        toFile <- paste0(appPath,"/bgr_", tolower(outName), setStringApp, ".tif")
+        #toFile <- paste0(appPath,"/bgr_", tolower(outName), setStringApp, ".tif")
+        toFile <- paste0(appPath,"/bgr_", (outName), setStringApp, ".tif")
       } else {
         cat(" - renaming .png file...\n")
-        toFile <- paste0(appPath,"/bgr_", tolower(outName), setStringApp, ".png")
+        #toFile <- paste0(appPath,"/bgr_", tolower(outName), setStringApp, ".png")
+        toFile <- paste0(appPath,"/bgr_", (outName), setStringApp, ".png")
       }
       file.copy(fromFile, toFile, overwrite = T)
     }
@@ -2178,7 +2186,9 @@ createAppFiles <- function(fileFinder = NA,
     
     
     
-    write.table(appList, file = paste0(dirPath,"app/trees_",tolower(outName),".txt"),
+    #write.table(appList, file = paste0(dirPath,"app/trees_",tolower(outName),".txt"),
+    #            row.names = FALSE, sep = "\t")
+    write.table(appList, file = paste0(dirPath,"app/trees_",(outName),".txt"),
                 row.names = FALSE, sep = "\t")
     cat("  -> set", outName, "done!")
    
@@ -2233,7 +2243,8 @@ openColoredLAZ <- function(fileFinder,
   #EB fileFinder <- paste0("eb", sprintf("%03d", openThis))
   #EB fileFinder <- fileFinders[openThis]
   #EB allFileFinderFiles <- list.files(path = appPath, pattern = fileFinder)
-  allFileFinderFiles <- list.files(path = appPath, pattern = paste0(tolower(fileFinder), ".txt"))
+  #allFileFinderFiles <- list.files(path = appPath, pattern = paste0(tolower(fileFinder), ".txt"))
+  allFileFinderFiles <- list.files(path = appPath, pattern = paste0((fileFinder), ".txt"))
   if(length(allFileFinderFiles) > 0){
     if(length(allFileFinderFiles) > 1){
       allFileFinderFiles <- allFileFinderFiles[order(allFileFinderFiles, decreasing = T)]
