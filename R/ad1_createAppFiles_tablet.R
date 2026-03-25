@@ -1291,7 +1291,7 @@ createAppFiles <- function(fileFinder = NA,
             
           }, error = function(error_condition) {
             cat("Error in creating this image, next loop!\n")
-            next
+            next()
           })
       
         dev.off()
