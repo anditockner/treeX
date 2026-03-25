@@ -185,7 +185,10 @@ createAppFiles <- function(fileFinder = NA,
       
       allTraj <- data.frame()
       for(i in 1:length(trajFiles)){
-        if(!file.exists(trajFiles[i])) next()
+        if(!file.exists(trajFiles[i])){
+          next()
+        }
+        
         try({
           traj <- read.csv(trajFiles[i], sep = " ")
         })
@@ -1826,7 +1829,7 @@ createAppFiles <- function(fileFinder = NA,
           lines3$Z[is.na(lines3$Z)] <- 0
           }, error = function(error_condition) {
           cat("Error in reading the dtm-model, next loop!")
-          return()
+          next()
         })
       
       lines3$Intensity <- 1L
