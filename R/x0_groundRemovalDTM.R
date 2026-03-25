@@ -567,6 +567,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       big@data$Y <- round(tempCoords[,2], 6)
       big@data$Z <- round(tempCoords[,3], 6)
       cat("clean, ")
+      big <- LAS(data = big@data)
       rm(tempCoords)
       gc()
 
