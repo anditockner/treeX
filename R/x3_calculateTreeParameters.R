@@ -48,7 +48,7 @@ measureNewDBH <- function(treeLAS, nowMeta, picPath = getwd(),
   kde_dat <- data.frame("x" = clustInt@data$X, "y" = clustInt@data$Y)
   if(length(kde_dat$x) < 10){
     cat("\n",dbhMeta$id, "- too few points in seed, skip this one\n")
-    next()
+    return()
   }
   kde_sample <- ks::kde(x = kde_dat, eval.points = kde_dat)
   #n_cols <- 20
