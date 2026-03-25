@@ -347,8 +347,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           dtm_z <- raster(dtmFile)
         },
         error = function(error_condition) {
-          cat("Error in reading the dtm-model, next loop!")
-          next
+          stop("Error in reading the dtm-model, next loop!")
         }
       )
       clustList$z <- round(extract(dtm_z, SpatialPoints(data.frame(x = clustList$x, y = clustList$y))) + 1.3, 3)
@@ -638,7 +637,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
             if (clustCloud@header@PHB$`Number of point records` == 0) {
               cat(" DISCARD: no seed points at DBH found (!)")
               dropoutList[length(dropoutList[, 1]) + 1, ] <- nowClust
-              next
+              next()
             }
 
             if (findDBH & nowClust$id >= 9000) {
@@ -679,7 +678,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           if (clustCloud@header@PHB$`Number of point records` == 0) {
             cat(" DISCARD: no seed points at DBH found (!)")
             dropoutList[length(dropoutList[, 1]) + 1, ] <- nowClust
-            next
+            next()
           }
 
           if (findDBH & nowClust$id >= 9000) {
