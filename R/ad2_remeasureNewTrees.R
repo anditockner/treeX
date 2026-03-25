@@ -720,7 +720,7 @@ grabDBH <- function(fileFinder,
           #deleting seed, as there were no seed points at breast height found
           #cat(" DISCARD: no seed points at DBH found (!)")
           dropoutList[length(dropoutList[, 1]) + 1, ] <- nowClust
-          next
+          next()
         }
         
         # cat("d", clustCloud@header@PHB$`Number of point records`)
