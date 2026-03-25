@@ -13,8 +13,7 @@ clustSplit(
   ipad = FALSE,
   nr_cores = 0,
   bushPreparation = FALSE,
-  filterSOR = FALSE,
-  filterINT = 0,
+  filterINT = 95,
   ref = NA,
   ref.plot_id = NA,
   cutWindow = c(-1000, -1000, 2000),
@@ -22,7 +21,8 @@ clustSplit(
   heightExtent = 1.3,
   TLS = FALSE,
   silent = TRUE,
-  fast = TRUE,
+  fast = FALSE,
+  reduceClusterToPoints = 80000,
   retainPointClouds = TRUE,
   dirPath = paste0(getwd(), "/")
 )

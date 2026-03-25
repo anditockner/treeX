@@ -6,7 +6,7 @@
 \alias{treeX-package}
 \title{treeX: Individual Tree Extraction of Ground-Based Point Clouds}
 \description{
-Perform tree detection, instance segmentation and automatic measurements of individual trees in LiDAR point clouds.
+Methods for tree detection, instance segmentation and automatic measurements of individual trees from ground-based point clouds.
 }
 \author{
 \strong{Maintainer}: Andreas Tockner \email{andreas.tockner@boku.ac.at} (\href{https://orcid.org/0000-0001-6833-6713}{ORCID})

@@ -12,6 +12,7 @@ computeTree_i(
   nowMeta = NA,
   detail.level = 0,
   decimateTreeForFasterCrowns = FALSE,
+  extendedTaper = 0,
   vol.alpha = 2,
   area.alpha = 0.3,
   alternativeCrownBase.Ratio = 0.3,

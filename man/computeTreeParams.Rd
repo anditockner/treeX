@@ -9,8 +9,13 @@ computeTreeParams(
   loopStart = 1,
   loopEnd = 0,
   getRAM = FALSE,
+  limitShare = 0.003,
+  zScale = 2,
+  voxelSize = 4,
   detail.level = 0,
+  vol.alpha = 2,
   drawNumberPoints = TRUE,
+  extendedTaper = 0,
   writeLAZ = TRUE,
   writePicture = TRUE,
   crownParameters = TRUE,
@@ -18,13 +23,9 @@ computeTreeParams(
   maxRadius = 0,
   ipad = FALSE,
   cutWindow = c(-1000, -1000, 2000),
-  zScale = 2,
-  limitShare = 0.004,
-  voxelSize = 0,
-  vol.alpha = 2,
   alternativeCrownBase.Ratio = 0.3,
   fogFilter.estHeight = FALSE,
-  selector = "xyzcit0",
+  selector = "xyzcit0RGB",
   limitSpanSide = 30,
   limitSpanArea = 440,
   referenceDiameterLimit = 150,
@@ -40,7 +41,7 @@ computeTreeParams(
   groundCutHeight = 0,
   silent = TRUE,
   retainPointClouds = FALSE,
-  nr_cores = 0,
+  nr_cores = 2,
   nr_cores_params = 0,
   treeNames = NULL,
   smallTrees = FALSE,
@@ -48,19 +49,17 @@ computeTreeParams(
 )
 }
 \arguments{
+\item{vol.alpha}{defines the alpha hull of crown volume, if 2 very rough (balloons) if 0.4 very tight (old settings)}
+
 \item{writeLAZ}{export the single trees as .laz}
 
 \item{writePicture}{export the single trees as front, side and top view image, INCREASES COMPUTATION TIME}
 
 \item{maxRadius}{for Ebensee implemented, in a circle of 20 m all trees will be exported, but not the outer trees}
 
-\item{vol.alpha}{defines the alpha hull of crown volume, if 2 very rough (balloons) if 0.4 very tight (old settings)}
-
 \item{fogFilter.estHeight}{if TRUE the height will be calculated to 99.9 \% quantile to the highest point, if FALSE to max height of the tree}
 
 \item{groundCutHeight}{how much distance between lowest point of tree and ground (if ground was cut off)}
-
-\item{fileName}{origin of the segmented crown las file in dirPath}
 }
 \description{
 Loads in all single seperated Tree files from segmented _crowns.laz

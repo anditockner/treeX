@@ -8,18 +8,19 @@ crownFeel(
   fileFinder,
   cutWindow = c(-1000, -1000, 2000),
   ipad = FALSE,
+  limitStems = 50,
+  limitShare = 0.003,
+  zScale = 2,
+  voxelSize = 4,
   doReferencedOnly = FALSE,
   referenced = FALSE,
-  zScale = 2,
   merged = FALSE,
   totalRuns = 1000,
-  limitShare = 0.004,
   incrementDistance = 0.005,
-  limitStems = 0,
-  tileClipping = 5,
+  tileClipping = 3,
   diagonals = FALSE,
   useTreeFile = "",
-  selector = "xyzcit0",
+  selector = "xyzcit0RGB",
   distanceCounter_cm_limit = 220,
   quantileIntensity = 15,
   CC_level = 10,
@@ -30,7 +31,6 @@ crownFeel(
   bottomCut = 1,
   bushPreparation = FALSE,
   filterSOR = FALSE,
-  voxelSize = 0,
   numberIntensity = 0,
   silent = TRUE,
   fast = TRUE,
@@ -39,7 +39,7 @@ crownFeel(
   frame.up = 0.3,
   frame.down = 0.3,
   frame.rad = 1.05,
-  retainPointClouds = FALSE,
+  retainPointClouds = TRUE,
   dirPath = paste0(getwd(), "/")
 )
 }
@@ -48,15 +48,17 @@ crownFeel(
 
 \item{cutWindow}{c(xL, yL, width) square frame to detect trees from}
 
-\item{doReferencedOnly}{deletes all the above 20000 stems, they do not make senseful trees}
+\item{limitShare}{if we are adding less points from blanks than that, then incrementing searching distance (default: 0.005 = 0.5 \%)}
 
 \item{zScale}{relative number of Z-variable multiplication for a better height progress}
+
+\item{voxelSize}{before the region growing the point cloud can be voxelized, in cm, default = 0 (no voxelisation)}
+
+\item{doReferencedOnly}{deletes all the above 20000 stems, they do not make senseful trees}
 
 \item{merged}{set TRUE if using a combined stem-file with field "size" for combining}
 
 \item{totalRuns}{number of iterations for discovering crowns, default 500}
-
-\item{limitShare}{if we are adding less points from blanks than that, then incrementing searching distance (default: 0.005 = 0.5 \%)}
 
 \item{incrementDistance}{the step of raising searching distance if less than limitShare points are found}
 
@@ -73,8 +75,6 @@ crownFeel(
 \item{bushPreparation}{if TRUE then there is additional density filtering to remove low branches and bushes}
 
 \item{filterSOR}{if TRUE then we use the SOR clean file}
-
-\item{voxelSize}{before the region growing the point cloud can be voxelized, in cm, default = 0 (no voxelisation)}
 
 \item{numberIntensity}{if you rather want to specify a number of most intense points to be kept}
 
