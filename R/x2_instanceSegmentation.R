@@ -1,7 +1,7 @@
 globalTimeDiff <<- "no timez"
 
 
-
+#' Report current LAS_veg name and also outLAS name (to quickly do segmentation without reading in laz)
 #' @export
 changeLASVEG <- function() {
   groundPath <- v.env$groundPath

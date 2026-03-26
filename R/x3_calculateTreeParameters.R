@@ -2326,7 +2326,6 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
 #'
 #' @param vol.alpha defines the alpha hull of crown volume, if 2 very rough (balloons) if 0.4 very tight (old settings)
 #'
-#' @param fileName origin of the segmented crown las file in dirPath
 #' @param writeLAZ export the single trees as .laz
 #' @param writePicture export the single trees as front, side and top view image, INCREASES COMPUTATION TIME
 #' @param groundCutHeight how much distance between lowest point of tree and ground (if ground was cut off)
@@ -3237,8 +3236,11 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
 
 
 
+#' Plot one tree from single .laz file
+#' @param treePath path to laz file that is to be plot
+#' @param stemBase relative z coordinate of bottom of stem (z.DBH - 1.3 m) to get height and stem length correctly
 #' @export
-plotOneTree <- function(treePath = "D:/tree0354.laz", pic = "cb", stemBase = 12.3){
+plotOneTree <- function(treePath = "D:/tree0354.laz", stemBase = 12.3){
   co <- capture.output(tempTree <- readLAS(treePath))
   minZ <- tempTree@header@PHB$`Min Z`
   maxZ <- tempTree@header@PHB$`Max Z`

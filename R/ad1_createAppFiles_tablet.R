@@ -1,4 +1,343 @@
 
+# functions formzahl and tree species
+
+
+
+#' Convert tree species number to abbreviated name
+#' 
+#' e.g. 1 = "Fi"
+#'
+#' @param number numeric that is converted to tree species German abbreviation
+#' @export
+treeSpecies <- function(number) {
+  species <- "YY"
+  
+  species <- switch (paste0(number),
+                     "1" = "Fi",
+                     "2" = "Ta",
+                     "3" = "La",
+                     "4" = "Ki",
+                     "5" = "Sk",
+                     "6" = "Zk",
+                     "10" = "Bu",
+                     "11" = "Ei",
+                     "12" = "Ha",
+                     "13" = "Es",
+                     "14" = "Ah",
+                     "15" = "Ul",
+                     "18" = "Ks",
+                     "19" = "Bi",
+                     "20" = "Er",
+                     "22" = "Wp",
+                     "23" = "Zp",
+                     "26" = "We",
+                     "28" = "Hs",
+                     "NA")
+  return(species)
+}
+
+treeSpecies <- Vectorize(treeSpecies)
+
+
+#' Convert tree species abbreviated name to the inventory number
+#' 
+#' e.g. "Fi" = 1
+#'
+#' @param species German species name that is converted to number for inventory list
+#' @export
+treeSpeciesNumber <- function(species) {
+  number <- -1
+  
+  number <- switch (paste0(species),
+                    "Fi" = 1,
+                    "Ta" = 2,
+                    "La" = 3,
+                    "Ki" = 4,
+                    "Sk" = 5,
+                    "Zk" = 6,
+                    "Bu" = 10,
+                    "Vb" = 10,
+                    "Ei" = 11,
+                    "Ze" = 11,
+                    "Ha" = 12,
+                    "Hb" = 12,
+                    "Es" = 13,
+                    "Ah" = 14,
+                    "Li" = 14,
+                    "Ul" = 15,
+                    "Ks" = 18,
+                    "Bi" = 19,
+                    "Se" = 20,
+                    "Er" = 20,
+                    "Wp" = 22,
+                    "Zp" = 23,
+                    "Pa" = 23,
+                    "We" = 26,
+                    "XL" = 26,
+                    "Hs" = 28,
+                    "Lt" = 28,
+                    -1)
+  
+  return(number)
+}
+
+treeSpeciesNumber <- Vectorize(treeSpeciesNumber)
+
+
+#' Calculate form factor (Formzahl) according to Pollanschuetz given species, dbh and height
+#'
+#' @param species number for species from function treeSpeciesNumber, spruce = 1
+#' @param dbh_cm diameter at breast height in cm
+#' @param height_m tree height in meters
+#' @export
+fPoll <- function(species,dbh_cm,height_m) {
+  BHD = dbh_cm / 10
+  Hoehe = height_m * 10
+  
+  if (species == 1 && BHD > 1.05) { #Fichte, sonst. Nadelholz
+    b1 = 0.46818
+    b2 = -0.013919
+    b3 = -28.213
+    b4 = 0.37474
+    b5 = -0.28875
+    b6 = 28.279
+    b7 = 0
+  }
+  if (species == 1 && BHD <= 1.05) { #Fichte, sonst. Nadelholz
+    b1 = 0.563443
+    b2 = -0.12731
+    b3 = -8.55022
+    b4 = 0
+    b5 = 0
+    b6 = 7.6331
+    b7 = 0
+  }
+  if (species == 2 && BHD > 1.05) { #Tanne
+    b1 = 0.580223
+    b2 = -0.0307373
+    b3 = -17.1507
+    b4 = 0.089869
+    b5 = -0.080557
+    b6 = 19.661
+    b7 = -2.45844
+  }
+  if (species == 2 && BHD <= 1.05) { #Tanne
+    b1 = 0.560673
+    b2 = 0.15468
+    b3 = -0.65583
+    b4 = 0.03321
+    b5 = 0
+    b6 = 0
+    b7 = -0
+  }
+  if (species == 3 && BHD > 1.05) { #L?rche
+    b1 = 0.609443
+    b2 = -0.0455748
+    b3 = -18.6631
+    b4 = -0.248736
+    b5 = 0.126594
+    b6 = 36.9783
+    b7 = -14.204
+  }
+  if (species == 3 && BHD <= 1.05) { #L?rche
+    b1 = 0.48727
+    b2 = 0
+    b3 = -2.04291
+    b4 = 0
+    b5 = 0
+    b6 = 5.9995
+    b7 = 0
+  }
+  if (species == 4) { #Kiefer
+    b1 = 0.435949
+    b2 = -0.0149083
+    b3 = 5.21091
+    b4 = 0
+    b5 = 0.028702
+    b6 = 0
+    b7 = 0
+  }
+  if (species == 5) { #Schwarzkiefer
+    b1 = 0.53438
+    b2 = -0.00763
+    b3 = 0
+    b4 = 0
+    b5 = 0
+    b6 = 0
+    b7 = 2.2414
+  }
+  if (species == 6) { #Zirbe
+    b1 = 0.525744
+    b2 = -0.0334896
+    b3 = 7.38943
+    b4 = -0.10646
+    b5 = 0
+    b6 = 0
+    b7 = 3.34479
+  }
+  if (species == 10 && BHD > 1.05) { #Buche, Kastanie, Robinie, S|bus
+    b1 = 0.686253
+    b2 = -0.0371508
+    b3 = -31.0674
+    b4 = -0.386321
+    b5 = 0.219462
+    b6 = 49.6163
+    b7 = -22.3719
+  }
+  if (species == 10  && BHD <= 1.05) { #Buche, Kastanie, Robinie, S|bus
+    b1 = 0.5173
+    b2 = 0
+    b3 = -13.62144
+    b4 = 0
+    b5 = 0
+    b6 = 9.9888
+    b7 = 0
+  }
+  if (species == 11 && BHD > 1.05) { #Eiche
+    b1 = 0.115631
+    b2 = 0
+    b3 = 65.9961
+    b4 = 1.20321
+    b5 = -0.930406
+    b6 = -215.758
+    b7 = 168.477
+  }
+  if (species == 11 && BHD <= 1.05) { #Eiche
+    b1 = 0.417118
+    b2 = 0.21941
+    b3 = 13.32594
+    b4 = 0
+    b5 = 0
+    b6 = 0
+    b7 = 0
+  }
+  if (species == 12) { #Hainbuche
+    b1 = 0.32473
+    b2 = 0.02432
+    b3 = 0
+    b4 = 0.23972
+    b5 = 0
+    b6 = -9.9388
+    b7 = 0
+  }
+  if (species == 13) { #Esche
+    b1 = 0.48122
+    b2 = -0.01489
+    b3 = -10.83056
+    b4 = 0
+    b5 = 0
+    b6 = 9.3936
+    b7 = 0
+  }
+  if (species == 14 ) { #Ah|n, Linde
+    b1 = 0.50101
+    b2 = -0.03521
+    b3 = -8.07176
+    b4 = 0
+    b5 = 0.03521
+    b6 = 0
+    b7 = 0
+  }
+  if (species == 15) { #Ulme
+    b1 = 0.44215
+    b2 = -0.02446
+    b3 = 0
+    b4 = 0
+    b5 = 0
+    b6 = 0
+    b7 = 2.87714
+  }
+  if (species == 18) { #Kirsche
+    b1 = 0.54008
+    b2 = -0.02716
+    b3 = -25.11447
+    b4 = 0.08327
+    b5 = 0
+    b6 = 9.3988
+    b7 = 0
+  }
+  if (species == 19) { #Birke
+    b1 = 0.42831
+    b2 = -0.06643
+    b3 = 0
+    b4 = 0
+    b5 = 0
+    b6 = 8.4307
+    b7 = 0
+  }
+  if (species == 20 && BHD > 1.05) { #Erle
+    b1 = 0.42937
+    b2 = 0
+    b3 = -4.10259
+    b4 = 0
+    b5 = 0
+    b6 = 16.7578
+    b7 = -5.16631
+  }
+  if (species == 20 && BHD <= 1.05) { #Erle
+    b1 = 0.387399
+    b2 = 0
+    b3 = 7.17123
+    b4 = 0.04407
+    b5 = 0
+    b6 = 0
+    b7 = 0
+  }
+  if (species == 22 && BHD > 1.05) { #Wei?pappel
+    b1 = 0.31525
+    b2 = 0
+    b3 = 0
+    b4 = 0.51079
+    b5 = -0.34279
+    b6 = -26.08
+    b7 = 28.6334
+  }
+  if (species == 22 && BHD <= 1.05) { #Wei?pappel
+    b1 = 0.366419
+    b2 = 0
+    b3 = 1.13323
+    b4 = 0.1306
+    b5 = 0
+    b6 = 0
+    b7 = 0
+  }
+  if (species == 23 ) {  #Schwarzpappel, Zitterppappel
+    b1 = 0.4115
+    b2 = -0.00989
+    b3 = -28.27478
+    b4 = 0.35599
+    b5 = -0.21986
+    b6 = 21.4913
+    b7 = 0
+  }
+  if (species == 26 ) { #Salix, Kirsche, Other broadleaved trees
+    b1 = 0.54008
+    b2 = -0.02716
+    b3 = -25.11447
+    b4 = 0.08327
+    b5 = 0
+    b6 = 9.3988
+    b7 = 0
+  }
+  if (species == 28 ) { #Hasel, Latsche
+    b1 = 0
+    b2 = 0
+    b3 = 0
+    b4 = 0
+    b5 = 0
+    b6 = 0
+    b7 = 0
+  }
+  
+  f = b1 + b2*(log(BHD))^2 + b3*(1/Hoehe) + b4*(1/BHD) + b5*(1/(BHD^2)) + b6*(1/(BHD*Hoehe)) + b7*(1/(BHD^2*Hoehe))
+  
+  f
+  
+}
+
+fPoll <- Vectorize(fPoll)
+
+
 
 
 
@@ -17,7 +356,6 @@
 #' @param pixelUnit_cm how many cms are represented in one pixel - default 1 (100 pixel equals one meter), also 2 works for smaller plots
 #' @param circleRadius radius of the additional circle that is plot in blue on top of the background file - recommended: 5 m more than desired sample plot radius
 #' @param fixedLimit limit in meters that defines boundary of background file - for round circles set it to the clipped file size, so that all backgrounds have the same dimensions
-#' @param exportClippedLAS if set TRUE, then a laz file will be exported according to clip.radius
 #' @export
 createAppFiles <- function(fileFinder = NA, 
                            drawGround = T, 
@@ -356,330 +694,6 @@ createAppFiles <- function(fileFinder = NA,
     cat("\n\nONLY FOR QUICK PREVIEW!!!\n\n")
   }
   
-  
-  
-  # functions formzahl and tree species
-  {
-    treeSpecies <- function(number) {
-      species <- "YY"
-      
-      species <- switch (paste0(number),
-                         "1" = "Fi",
-                         "2" = "Ta",
-                         "3" = "La",
-                         "4" = "Ki",
-                         "5" = "Sk",
-                         "6" = "Zk",
-                         "10" = "Bu",
-                         "11" = "Ei",
-                         "12" = "Ha",
-                         "13" = "Es",
-                         "14" = "Ah",
-                         "15" = "Ul",
-                         "18" = "Ks",
-                         "19" = "Bi",
-                         "20" = "Er",
-                         "22" = "Wp",
-                         "23" = "Zp",
-                         "26" = "We",
-                         "28" = "Hs",
-                         "NA")
-      return(species)
-    }
-    
-    treeSpecies <- Vectorize(treeSpecies)
-    
-    
-    treeSpeciesNumber <- function(species) {
-      number <- -1
-      
-      number <- switch (paste0(species),
-                        "Fi" = 1,
-                        "Ta" = 2,
-                        "La" = 3,
-                        "Ki" = 4,
-                        "Sk" = 5,
-                        "Zk" = 6,
-                        "Bu" = 10,
-                        "Vb" = 10,
-                        "Ei" = 11,
-                        "Ze" = 11,
-                        "Ha" = 12,
-                        "Hb" = 12,
-                        "Es" = 13,
-                        "Ah" = 14,
-                        "Li" = 14,
-                        "Ul" = 15,
-                        "Ks" = 18,
-                        "Bi" = 19,
-                        "Se" = 20,
-                        "Er" = 20,
-                        "Wp" = 22,
-                        "Zp" = 23,
-                        "Pa" = 23,
-                        "We" = 26,
-                        "XL" = 26,
-                        "Hs" = 28,
-                        "Lt" = 28,
-                        -1)
-      
-      return(number)
-    }
-    
-    treeSpeciesNumber <- Vectorize(treeSpeciesNumber)
-    
-    
-    
-    
-    # Formzahl nach Pollanschuetz
-    
-    fPoll <- function(species,dbh_cm,height_m) {
-      BHD = dbh_cm / 10
-      Hoehe = height_m * 10
-      
-      if (species == 1 && BHD > 1.05) { #Fichte, sonst. Nadelholz
-        b1 = 0.46818
-        b2 = -0.013919
-        b3 = -28.213
-        b4 = 0.37474
-        b5 = -0.28875
-        b6 = 28.279
-        b7 = 0
-      }
-      if (species == 1 && BHD <= 1.05) { #Fichte, sonst. Nadelholz
-        b1 = 0.563443
-        b2 = -0.12731
-        b3 = -8.55022
-        b4 = 0
-        b5 = 0
-        b6 = 7.6331
-        b7 = 0
-      }
-      if (species == 2 && BHD > 1.05) { #Tanne
-        b1 = 0.580223
-        b2 = -0.0307373
-        b3 = -17.1507
-        b4 = 0.089869
-        b5 = -0.080557
-        b6 = 19.661
-        b7 = -2.45844
-      }
-      if (species == 2 && BHD <= 1.05) { #Tanne
-        b1 = 0.560673
-        b2 = 0.15468
-        b3 = -0.65583
-        b4 = 0.03321
-        b5 = 0
-        b6 = 0
-        b7 = -0
-      }
-      if (species == 3 && BHD > 1.05) { #L?rche
-        b1 = 0.609443
-        b2 = -0.0455748
-        b3 = -18.6631
-        b4 = -0.248736
-        b5 = 0.126594
-        b6 = 36.9783
-        b7 = -14.204
-      }
-      if (species == 3 && BHD <= 1.05) { #L?rche
-        b1 = 0.48727
-        b2 = 0
-        b3 = -2.04291
-        b4 = 0
-        b5 = 0
-        b6 = 5.9995
-        b7 = 0
-      }
-      if (species == 4) { #Kiefer
-        b1 = 0.435949
-        b2 = -0.0149083
-        b3 = 5.21091
-        b4 = 0
-        b5 = 0.028702
-        b6 = 0
-        b7 = 0
-      }
-      if (species == 5) { #Schwarzkiefer
-        b1 = 0.53438
-        b2 = -0.00763
-        b3 = 0
-        b4 = 0
-        b5 = 0
-        b6 = 0
-        b7 = 2.2414
-      }
-      if (species == 6) { #Zirbe
-        b1 = 0.525744
-        b2 = -0.0334896
-        b3 = 7.38943
-        b4 = -0.10646
-        b5 = 0
-        b6 = 0
-        b7 = 3.34479
-      }
-      if (species == 10 && BHD > 1.05) { #Buche, Kastanie, Robinie, S|bus
-        b1 = 0.686253
-        b2 = -0.0371508
-        b3 = -31.0674
-        b4 = -0.386321
-        b5 = 0.219462
-        b6 = 49.6163
-        b7 = -22.3719
-      }
-      if (species == 10  && BHD <= 1.05) { #Buche, Kastanie, Robinie, S|bus
-        b1 = 0.5173
-        b2 = 0
-        b3 = -13.62144
-        b4 = 0
-        b5 = 0
-        b6 = 9.9888
-        b7 = 0
-      }
-      if (species == 11 && BHD > 1.05) { #Eiche
-        b1 = 0.115631
-        b2 = 0
-        b3 = 65.9961
-        b4 = 1.20321
-        b5 = -0.930406
-        b6 = -215.758
-        b7 = 168.477
-      }
-      if (species == 11 && BHD <= 1.05) { #Eiche
-        b1 = 0.417118
-        b2 = 0.21941
-        b3 = 13.32594
-        b4 = 0
-        b5 = 0
-        b6 = 0
-        b7 = 0
-      }
-      if (species == 12) { #Hainbuche
-        b1 = 0.32473
-        b2 = 0.02432
-        b3 = 0
-        b4 = 0.23972
-        b5 = 0
-        b6 = -9.9388
-        b7 = 0
-      }
-      if (species == 13) { #Esche
-        b1 = 0.48122
-        b2 = -0.01489
-        b3 = -10.83056
-        b4 = 0
-        b5 = 0
-        b6 = 9.3936
-        b7 = 0
-      }
-      if (species == 14 ) { #Ah|n, Linde
-        b1 = 0.50101
-        b2 = -0.03521
-        b3 = -8.07176
-        b4 = 0
-        b5 = 0.03521
-        b6 = 0
-        b7 = 0
-      }
-      if (species == 15) { #Ulme
-        b1 = 0.44215
-        b2 = -0.02446
-        b3 = 0
-        b4 = 0
-        b5 = 0
-        b6 = 0
-        b7 = 2.87714
-      }
-      if (species == 18) { #Kirsche
-        b1 = 0.54008
-        b2 = -0.02716
-        b3 = -25.11447
-        b4 = 0.08327
-        b5 = 0
-        b6 = 9.3988
-        b7 = 0
-      }
-      if (species == 19) { #Birke
-        b1 = 0.42831
-        b2 = -0.06643
-        b3 = 0
-        b4 = 0
-        b5 = 0
-        b6 = 8.4307
-        b7 = 0
-      }
-      if (species == 20 && BHD > 1.05) { #Erle
-        b1 = 0.42937
-        b2 = 0
-        b3 = -4.10259
-        b4 = 0
-        b5 = 0
-        b6 = 16.7578
-        b7 = -5.16631
-      }
-      if (species == 20 && BHD <= 1.05) { #Erle
-        b1 = 0.387399
-        b2 = 0
-        b3 = 7.17123
-        b4 = 0.04407
-        b5 = 0
-        b6 = 0
-        b7 = 0
-      }
-      if (species == 22 && BHD > 1.05) { #Wei?pappel
-        b1 = 0.31525
-        b2 = 0
-        b3 = 0
-        b4 = 0.51079
-        b5 = -0.34279
-        b6 = -26.08
-        b7 = 28.6334
-      }
-      if (species == 22 && BHD <= 1.05) { #Wei?pappel
-        b1 = 0.366419
-        b2 = 0
-        b3 = 1.13323
-        b4 = 0.1306
-        b5 = 0
-        b6 = 0
-        b7 = 0
-      }
-      if (species == 23 ) {  #Schwarzpappel, Zitterppappel
-        b1 = 0.4115
-        b2 = -0.00989
-        b3 = -28.27478
-        b4 = 0.35599
-        b5 = -0.21986
-        b6 = 21.4913
-        b7 = 0
-      }
-      if (species == 26 ) { #Salix, Kirsche, Other broadleaved trees
-        b1 = 0.54008
-        b2 = -0.02716
-        b3 = -25.11447
-        b4 = 0.08327
-        b5 = 0
-        b6 = 9.3988
-        b7 = 0
-      }
-      if (species == 28 ) { #Hasel, Latsche
-        b1 = 0
-        b2 = 0
-        b3 = 0
-        b4 = 0
-        b5 = 0
-        b6 = 0
-        b7 = 0
-      }
-      
-      f = b1 + b2*(log(BHD))^2 + b3*(1/Hoehe) + b4*(1/BHD) + b5*(1/(BHD^2)) + b6*(1/(BHD*Hoehe)) + b7*(1/(BHD^2*Hoehe))
-      
-      f
-      
-    }
-    
-    fPoll <- Vectorize(fPoll)
-  }
   
   
   
@@ -2213,22 +2227,26 @@ createAppFiles <- function(fileFinder = NA,
 
 
 
-#
-# opens multiple height slices in Cloudcompare
-# for better visualisation and finding omitted trees
-#
-# opens following slices:
-#   * red DBH (120 - 140 cm)
-#   * bw 100 - 300 cm
-#   * bw 300 - 500 cm
-#  (* bw 0 - 100 cm (ground))
-#   ' grid 5 x 5 m (5 x 10 m)
-# 
-# optionally opens ground (0 - 100 cm) by setting    withGround <- T
+#' opens multiple height slices in CloudCompare
+#' for better visualization and finding omitted trees
+#'
+#' opens following slices:
+#'   * red DBH (120 - 140 cm)
+#'   * bw 100 - 300 cm
+#'   * bw 300 - 500 cm
+#'  (* bw 0 - 100 cm (ground))
+#'   ' grid 5 x 5 m (5 x 10 m)
+#' 
+#' optionally opens ground (0 - 100 cm) by setting    withGround <- T
+#' @param fileFinder name of the set to open in dirPath
+#' @param withGround should ground file (usually quite heavy in data) also be opened? default: TRUE
+#' @param dirPath directory that contains fileFinder folders and _total_ground_veg
+#' @param pathCloudCompare path leading to CloudCompare.exe, default for windows in C ProgramFiles
 #' @export
 openColoredLAZ <- function(fileFinder, 
                            withGround = T, 
-                           dirPath = paste0(getwd(), "/")){
+                           dirPath = paste0(getwd(), "/",), 
+                           pathCloudCompare = "\"C:/Program Files/CloudCompare/\""){
   #library(lidR)
   library(PBSmodelling) #open files
   
@@ -2300,8 +2318,7 @@ openColoredLAZ <- function(fileFinder,
   
   
   File.exe <- "Cloudcompare.exe"
-  Path.CloudCompare <- "\"C:/Program Files/CloudCompare/\""
-  Path.exe <- paste0(Path.CloudCompare, File.exe)
+  Path.exe <- paste0(pathCloudCompare, File.exe)
   (command.exe <- paste0(" ", Path.exe, " ", 
                          gsub(",","",toString(lasOpen))))
   
@@ -2314,7 +2331,6 @@ openColoredLAZ <- function(fileFinder,
 
 
 
-#' 
 #' Creates a list of how many new trees were added ( id > 9000 )
 #' and also gives the mean, max and median of new and old DBH
 #' 
