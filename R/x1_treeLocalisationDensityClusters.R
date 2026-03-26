@@ -533,7 +533,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
 
 
   cat("Creating local output file slice_cluster_slope.laz containing", numClustCut, "clusters... ")
-  # writeLAS(sliVox_norm, paste0(dbhPath, "slice_cluster.laz"))
+  writeLAS(sliVox_norm, paste0(dbhPath, "slice_cluster.laz"))
   # global
   writeLAS(sliVox, paste0(dbhPath, "slice_cluster_slope.laz"))
   #local
