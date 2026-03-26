@@ -119,7 +119,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
     
     cat("\n\n")
     print(data.frame("fileFinders" = uniqueFiles$fileFinders_list, 
-                     "completedList" = uniqueFiles$listPath), row.names = F)
+                     "completedList" = basename(uniqueFiles$listPath)), row.names = F)
     cat("\n\n")
     
     {
@@ -132,6 +132,10 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
       cat("#\n")
       cat("#############################\n")
     }
+    
+    
+    
+    if(nr_cores > nrow(uniqueFiles)) nr_cores <- nrow(uniqueFiles)
     
     cat("Circle-fitting parallel on", nr_cores,"cores...\n")
     
@@ -155,13 +159,11 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
                     .packages = c("treeX", "dplyr", "mgcv", "spatstat", "Morpho", "Rvcg", "rgl"), 
                     .verbose = FALSE, 
                     .export = c("grabDBH")) %dopar% {
-                      for(i in 1:nrow(uniqueFiles)){
-                        nowFileFinder <- uniqueFiles$fileFinders_list[i]
-                        nowTreeList <- uniqueFiles$listPath[i]
-                        
-                        try(grabDBH(nowFileFinder, treeList.path = nowTreeList, 
-                                    remeasure = T, tileClipping = tileClipping))
-                      }
+                      nowFileFinder <- uniqueFiles$fileFinders_list[i]
+                      nowTreeList <- uniqueFiles$listPath[i]
+                      
+                      try(grabDBH(nowFileFinder, treeList.path = nowTreeList, 
+                                  remeasure = T, tileClipping = tileClipping))
                     }
   }
   
