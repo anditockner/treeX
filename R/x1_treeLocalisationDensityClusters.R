@@ -4,7 +4,12 @@ if(!exists("sliVox")){
   sliVox <<- NA # holds the voxelized slice, to extract per cluster points for dbh measuring faster
 }
 
-
+#' Remove German Umlaut letters and convert them
+#'
+#' Improves handling of ae, oe, ue and ss letters to prevent issues with various encodings
+#'
+#' @returns text that is free from Umlaut letters. Throws a warning in case a Umlaut was removed. 
+#' @param inputString text that might contain Umlaut letters
 #' @export
 removeUmlaut <- function(inputString){
   out <- stringi::stri_replace_all_fixed(
@@ -1500,7 +1505,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
                     
                     dbh.circle.2 <- r.start*100*2
                     tryCatch({
-                      BHD_fit <- LMcircleFit(plot.j[, 1:2], ParIni=c(x.start, y.start, r.start),  IterMAX = 20)
+                      BHD_fit <- LMCircleFitDebug(plot.j[, 1:2], ParIni=c(x.start, y.start, r.start),  IterMAX = 20)
                       pos.dbh2.x <- BHD_fit[1]
                       pos.dbh2.y <- BHD_fit[2]
                       dbh.circle.2 <- BHD_fit[3]*2*100
@@ -1845,7 +1850,7 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
                 
                 dbh.circle.2 <- r.start*100*2
                 tryCatch({
-                  BHD_fit <- LMcircleFit(plot.j[, 1:2], ParIni=c(x.start, y.start, r.start),  IterMAX = 20)
+                  BHD_fit <- LMCircleFitDebug(plot.j[, 1:2], ParIni=c(x.start, y.start, r.start),  IterMAX = 20)
                   pos.dbh2.x <- BHD_fit[1]
                   pos.dbh2.y <- BHD_fit[2]
                   dbh.circle.2 <- BHD_fit[3]*2*100
@@ -2271,6 +2276,7 @@ diameterBeast <- function(fileFinder, dbhPath,
 #' analyzes, if the measured cluster can be a tree
 #'
 #' @param circleFile name of the file to be analyzed
+#' @export
 fineCluster_i <- function(circleFile){
   
   out <- read.csv2(circleFile)
@@ -2803,6 +2809,17 @@ fineCluster_i <- function(circleFile){
   return(wahl_all_ende)
 }
 
+#' Reducing list of all analyzed clusters to the final tree list
+#' 
+#' @param fileFinder name of the set to be analyzed
+#' @param dbhPath folder that holds the /fineCluster/ subfolder
+#' @param allDBHs add all measured diameters (gam, circle, ellipsis) to the output file trees_dbh.txt
+#' @param nr_cores how many parallel cores for analyzing clusters
+#' @param bushPreparation not implemented
+#' @param cutWindow only cut a smaller window given minx, miny and length in a 3 column array
+#' @param silent no verbose messaging to console
+#' @param dirPath path with all fileFinders
+#' @export
 fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0, 
                         bushPreparation = FALSE, 
                         cutWindow = c(-1000, -1000, 2000), silent = FALSE, dirPath = paste0(getwd(), "/")){
