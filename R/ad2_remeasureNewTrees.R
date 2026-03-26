@@ -7,7 +7,7 @@
 #' @param tileClipping global setting for all tiles (standard setting 2x2 for small points, if large forest scan, set to 4x4 or 5x5 tiles)
 #' @export
 remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinders_selected = "",
-                              dirPath = paste0(getwd(), "/"), tileClipping = 2){
+                              dirPath = paste0(getwd(), "/"), tileClipping = 2, nr_cores = 1){
   
   {
     library(dplyr)
@@ -86,26 +86,83 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
     
   }
   
-  for(i in 1:nrow(uniqueFiles)){
-    nowFileFinder <- uniqueFiles$fileFinders_list[i]
-    nowTreeList <- uniqueFiles$listPath[i]
+  
+  if(nr_cores == 1){
+    # SERIAL SCRIPT
+    for(i in 1:nrow(uniqueFiles)){
+      nowFileFinder <- uniqueFiles$fileFinders_list[i]
+      nowTreeList <- uniqueFiles$listPath[i]
+      
+      {
+        #LASfile <- NA
+        cat("\n###########################\n",
+            "#\n",
+            "# REMEASURING NEW TREES #", i, "\n", sep = "")
+        cat("# FILEFINDER =",nowFileFinder,"\n")
+        cat("# COMPLETED LIST =",nowTreeList,"\n")
+        cat("# TODAY IS", paste(Sys.time()),"\n")
+        cat("#\n")
+        cat("#############################\n")
+      }
+      
+      
+      try(grabDBH(nowFileFinder, treeList.path = nowTreeList, 
+                  remeasure = T, tileClipping = tileClipping))
+      
+    }
+    
+    
+  } else {
+    # PARALLEL SCRIPT
+    
+    
+    
+    cat("\n\n")
+    print(data.frame("fileFinders" = uniqueFiles$fileFinders_list, 
+                     "completedList" = uniqueFiles$listPath), row.names = F)
+    cat("\n\n")
     
     {
       #LASfile <- NA
       cat("\n###########################\n",
           "#\n",
-          "# REMEASURING NEW TREES ", i, "\n", sep = "")
-      cat("# FILEFINDER =",nowFileFinder,"\n")
-      cat("# COMPLETED LIST =",nowTreeList,"\n")
+          "# REMEASURING NEW TREES PARALLEL FOR", nrow(uniqueFiles), "SETS\n", sep = "")
+      cat("# ON", nr_cores, "PARALLEL CORES\n")
       cat("# TODAY IS", paste(Sys.time()),"\n")
       cat("#\n")
       cat("#############################\n")
     }
     
+    cat("Circle-fitting parallel on", nr_cores,"cores...\n")
     
-    try(grabDBH(nowFileFinder, treeList.path = nowTreeList, 
-                remeasure = T, tileClipping = tileClipping))
+    if (.Platform$OS.type == "windows") {
+      library(doParallel)
+      cl <- makeCluster(nr_cores, outfile="")
+      registerDoParallel(cl)
+      cat("   (on windows system using doParallel)\n")
+    } else {
+      library(doMC)
+      registerDoMC(cores = nr_cores)
+      cat("   (on Unix-like system using doMC)\n")
+    }
+    cat("\n")
     
+    
+    i <- 1
+    timePar1 <- Sys.time()
+    
+    fdc <<- foreach(i = 1:nrow(uniqueFiles), .errorhandling = 'remove',
+                    .packages = c("treeX", "dplyr", "mgcv", "spatstat", "Morpho", "Rvcg", "rgl"), 
+                    .verbose = FALSE, 
+                    .export = c("grabDBH")) %dopar% {
+                      for(i in 1:nrow(uniqueFiles)){
+                        nowFileFinder <- uniqueFiles$fileFinders_list[i]
+                        nowTreeList <- uniqueFiles$listPath[i]
+                        
+                        try(grabDBH(nowFileFinder, treeList.path = nowTreeList, 
+                                    remeasure = T, tileClipping = tileClipping))
+                      }
+                    }
   }
   
 }
