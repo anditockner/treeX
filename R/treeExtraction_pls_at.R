@@ -41,6 +41,8 @@ library("Morpho") # for transformation of point clouds
   )
 }
 
+#' v.env stores the path _total_ground_veg
+#' @export
 v.env <- new.env(parent = emptyenv())
 v.env$groundPath <- "_total_ground_veg/"
 v.env$rndV <- "1989e10e48ae4bbc7a6ed615367367768ea2bd574929a0ea1fa118c031973596"
@@ -119,7 +121,7 @@ if(1==2){
 
 # FUNCTIONS GLOBALLY
 
-# separate function to generate the adressing string to store the files with all the settings in the name
+#' Separate function to generate the addressing string to store the files with all the settings in the name
 #' @export
 generateSetString <- function(fileFinder = NA, mode = NA, threshold = NA, threshold_percent = NA,
                               bottomCut = NA, clipHeight = 0, bushPreparation = FALSE,
@@ -204,7 +206,8 @@ generateSetString <- function(fileFinder = NA, mode = NA, threshold = NA, thresh
 }
 
 
-#Creates values with thousandmark (are prettier to look at)
+#' Creates values with thousandmark (are prettier to look at)
+#' @param val Numeric value that is extended with thousand mark 15200000 -> 15.200.000
 #' @export
 thMk <- function(val) {
   val2 <- format(val, big.mark = ".", decimal.mark = ",", scientific = FALSE)
@@ -213,6 +216,11 @@ thMk <- function(val) {
 
 
 
+
+#' Convert abbreviation or numeric code to tree species
+#' @param number abbreviation for tree species with two letters, be for beech, sp for spruce (English to German) 
+#' @param modeNumber set to TRUE when the input is a number and not an abbreviation 
+#' @export
 treeSpecies <- function(number, modeNumber = FALSE) {
   species <- "unklar"
   if(modeNumber){
@@ -256,6 +264,10 @@ treeSpecies <- function(number, modeNumber = FALSE) {
   return(species)
 }
 
+#' Convert abbreviation or numeric code to tree species color
+#' @param number abbreviation for tree species with two letters, be for beech, sp for spruce (English to German), or numeric
+#' @param modeNumber set to TRUE when the input is a number and not an abbreviation 
+#' @export
 treeCol <- function(number, modeNumber = FALSE) {
   color <- "pink"
   if(modeNumber){
@@ -304,6 +316,9 @@ treeCol <- function(number, modeNumber = FALSE) {
 
 
 
+
+#' Convert points into polygon for circle section by ordering to angle - not used in package
+#' @param pts spatial points object
 #' @export
 centrit <- function(pts){
   centre = st_coordinates(st_centroid(st_union(pts)))
@@ -318,6 +333,12 @@ centrit <- function(pts){
 
 }
 
+#' Get best cluster for a given number of best clusters to search
+#' Credits to the developers of the edci package in R
+#' 
+#' @param clust cluster object as from oregMclust or circMclust
+#' @param nc number of best cluster
+#' @param crit which column extracts best clusters, default: "value"
 #' @export
 bestMclust <- function (clust, nc = 1, crit = "value")
 {
@@ -343,6 +364,14 @@ bestMclust <- function (clust, nc = 1, crit = "value")
 # prec = prec
 # ncol = 3
 # dz = TRUE
+
+#' Delete duplicated clusters via rounding errors or maximization value of zero
+#' Credits to the developers of the edci package in R
+#' 
+#' @param clust numerical matrix where columns are parameters of clusters
+#' @param prec decimal places for rounding, positive integer, optional
+#' @param ncol number of columns that gives clusters
+#' @param dz when TRUE, the clusters with 0 are deleted
 #' @export
 deldupMclust <- function (clust, prec = NULL, ncol = NULL, dz = TRUE)
 {
@@ -447,7 +476,9 @@ deldupMclust <- function (clust, prec = NULL, ncol = NULL, dz = TRUE)
 # bw=0.01 # bw=0.05
 #
 
-
+#' Debugged function to get circular clusters from edci
+#' for parameter help please refer to 
+#' https://rdrr.io/cran/edci/man/circMclust.html
 #' @export
 circMclust <- function (datax, datay, bw, method = "const", prec = 4, minsx = min(datax),
                         maxsx = max(datax), nx = 10, minsy = min(datay), maxsy = max(datay),
@@ -1099,4 +1130,54 @@ pullFromFaroConnect <- function(inConnectPath, outNewFolder,
     
   }
 }
+
+LMCircleFitDebug <- function (XY, ParIni = NA, LambdaIni = 1, epsilon = 1e-06, IterMAX = 50) 
+{
+  if (length(ParIni) != 3) 
+    ParIni <- NA
+  if (!is.numeric(ParIni)) 
+    ParIni <- NA
+  if (sum(is.na(ParIni))==length(ParIni))
+    ParIni <- estimateInitialGuessCircle(XY)
+  lambda_sqrt = sqrt(LambdaIni)
+  Par = ParIni
+  Jtmp = CurrentIteration(Par, XY)
+  J <- Jtmp$J
+  g <- Jtmp$g
+  F <- Jtmp$F
+  for (iter in 1:IterMAX) {
+    while (TRUE) {
+      DelPar = mldivide(rbind(J, lambda_sqrt * diag(3)), 
+                        rbind(g, 0, 0, 0))
+      progress = sqrt(sum(DelPar^2))/(sqrt(sum(Par^2)) + 
+                                        epsilon)
+      if (progress < epsilon) 
+        break
+      ParTemp = Par - t(DelPar)
+      Jtmp = CurrentIteration(ParTemp, XY)
+      JTemp <- Jtmp$J
+      gTemp <- Jtmp$g
+      FTemp <- Jtmp$F
+      if (FTemp < F && ParTemp[3] > 0) {
+        lambda_sqrt = lambda_sqrt/2
+        break
+      }
+      else {
+        lambda_sqrt = lambda_sqrt * 2
+        next
+      }
+    }
+    if (progress < epsilon) 
+      break
+    Par = ParTemp
+    J = JTemp
+    g = gTemp
+    F = FTemp
+  }
+  Par
+}
+
+
+
+
 
