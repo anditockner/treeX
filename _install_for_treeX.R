@@ -8,9 +8,12 @@ library("devtools")
   }
 }
 
-devtools::install_github('tiagodc/TreeLS')
-#remotes::install_github('tiagodc/TreeLS')
+devtools::install_github("tiagodc/TreeLS")
+#remotes::install_github("tiagodc/TreeLS")
 #install.packages("TreeLS", dep = T)
+
+devtools::install_github("ethanyxu/ADPclust")
+#install.packages("ADPclust")
 
 packs_to_install <- c("lidR", "RANN", "conicfit", "alphashape3d", "alphahull",
                       "plotrix", "dbscan", "doParallel", "data.table",
