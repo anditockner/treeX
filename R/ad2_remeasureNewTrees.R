@@ -1015,14 +1015,14 @@ grabDBH <- function(fileFinder,
   
   if(filterDIST < 100){
     if(!is.element("SensorDistance", colnames(seedLAS@data))){
-      cat("\nCalculating sensor distance for point cloud...\n")
+      cat("\nCalculating sensor distance for total point cloud...\n")
       
       traj_path <- paste0(dirPath, groundPath, fileFinder, "_traj.txt")
       if(!file.exists(traj_path)){
         cat("WARNING - No traj found, no distance filtering possible (missing SensorDistance field)!\n")
         filterDIST <- 100
       } else {
-        totalCloud <- calcSensorDist(totalCloud, trajPath = traj_path)
+        totalCloud <- calcSensorDist(seedLAS, trajPath = traj_path)
       }
     } else {
       cat("Distance filtering per seed is",filterDIST,"%.\n")
