@@ -194,6 +194,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 #' @param new.numbers assign new sequential numbers for circles (1 being the thickest tree)
 #' @param moveOnly set to TRUE to keep old DBHs in the main list (in case there is a lot of movement expected and circles are not perfectly centered)
 #' @param filterINT quantile that is kept with highest intensity (remove branches), default: 50, 95 means that only 5 percent are cut away (takes longer)
+#' @param filterDIST quantile that is kept with closest points from trajectory, default: 50, 95 means that only 5 percent are cut away (takes longer)
 #' @param frame.up delta z up from 1.30 m for circle fitting
 #' @param frame.down delta z down from 1.30 m for circle fitting
 #' @param frame.rad re-locating circles: factor of which input DBH will be multiplied to extend circle-fitting
@@ -208,6 +209,7 @@ grabDBH <- function(fileFinder,
                     transformSlice = "_clusterSlice_120to140.laz",
                     moveOnly = F,
                     
+                    filterDIST = 50, 
                     filterINT = 50, 
                     
                     dirPath = paste0(getwd(), "/"),
@@ -879,7 +881,20 @@ grabDBH <- function(fileFinder,
   cat("Re-measuring", n.remeasure, "newly assigned clusters.\n")
   
   
-  cat("Intensity filtering per seed is",filterINT,"%.\n\n")
+  
+
+  
+  if(filterDIST < 100){
+    if(!is.element("SensorDistance", colnames(seedLAS_file@data))){
+      cat("WARNING - No distance filtering possible because of missing SensorDistance field!\n")
+      filterDIST <- 100
+    } else {
+      cat("Distance filtering per seed is",filterDIST,"%.\n\n")
+    }
+  }
+  if(filterINT < 100){
+    cat("Intensity filtering per seed is",filterINT,"%.\n\n")
+  }
   
   threshold_percent_kde <- 94
   cat("KDE filtering per slice is",threshold_percent_kde,"%.\n\n")
@@ -904,10 +919,22 @@ grabDBH <- function(fileFinder,
     clustCloud <- filter_poi(seedLAS, StemID == nowId)
     #plot(clustCloud)
     
-    # INTENSITY FILTERING
-    threshold <- quantile(clustCloud@data$Intensity, 1 - filterINT / 100) # all above are 5 %
-    clustInt <- filter_poi(clustCloud, Intensity > threshold)
-    #cat(" ", clustInt@header@PHB$`Number of point records`, "pts ")
+    
+    if(filterDIST < 100){
+      # DISTANCE FILTERING
+      thresholdDIST <- quantile(clustCloud@data$SensorDistance, 1 - filterDIST / 100) # all above are 5 %
+      clustCloud <- filter_poi(clustCloud, SensorDistance > filterDIST)
+    }
+    
+    if(filterINT < 100){
+      # INTENSITY FILTERING
+      thresholdINT <- quantile(clustCloud@data$Intensity, 1 - filterINT / 100) # all above are 5 %
+      clustCloud <- filter_poi(clustCloud, Intensity > thresholdINT)
+      #cat(" ", clustInt@header@PHB$`Number of point records`, "pts ")
+    }
+   
+    clustInt <- clustCloud
+    
     
     # WEIGHED KERNEL DENSITY 2D
     #image(kde$eval.points[[1]], kde$eval.points[[2]], kde$estimate,
