@@ -1461,7 +1461,7 @@ grabDBH <- function(fileFinder,
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=firstTreeMeasured:length(clustList$id),  .errorhandling = 'remove', 
                     .export=c('grabDBH_i', 'v.env', 'seedLAS'), 
-                    .packages = c("treeX", "data.table", "dplyr"))%dopar% {
+                    .packages = c("treeX"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       
