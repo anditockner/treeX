@@ -2,8 +2,10 @@ Package: treeX
 Title: Individual Tree Extraction of Ground-Based Point Clouds
 Version: 1.0.260330
 Authors@R: 
-    person("Andreas", "Tockner",  , "andreas.tockner@boku.ac.at", role = c("aut", "cre"),
+    person("Andreas", "Tockner", role = c("aut", "cre"), email = "andreas.tockner@boku.ac.at", 
            comment = c(ORCID = "0000-0001-6833-6713"))
+Author: Andreas Tockner [aut, cre]
+Maintainer: Andreas Tockner <andreas.tockner@boku.ac.at>
 Description: Methods for tree detection, instance segmentation and
     automatic measurements of individual trees from ground-based point
     clouds.
