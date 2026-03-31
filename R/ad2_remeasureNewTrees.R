@@ -1385,7 +1385,7 @@ grabDBH <- function(fileFinder,
       #dev.off()
       
     }
-    cat(paste(clustList[i, selectorius[c(4:length(selectorius))]]), sep = "\t")
+    cat(paste(clustList[i, selectorius[c(5:length(selectorius))]]), sep = "\t")
     cat("\n")
   }
   
