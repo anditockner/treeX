@@ -974,7 +974,8 @@ grabDBH <- function(fileFinder,
   }
   
   clustList <- data.frame("id" = metaList$id, "dbh_ref" = metaList$dbh)
-  clustList$nPoints <- 0
+  clustList$nP.all <- 0
+  clustList$nP.filt <- 0
   clustList$dbh <- -1
   clustList$dbh.gam <- -1
   clustList$sd.gam <- -1 
@@ -1018,7 +1019,7 @@ grabDBH <- function(fileFinder,
   
   if(filterDIST < 100){
     if(!is.element("SensorDistance", colnames(seedLAS@data))){
-      cat("\nCalculating sensor distance for total point cloud...\n")
+      cat("\nCalculating sensor distance for seedLAS point cloud...\n")
       
       traj_path <- paste0(dirPath, groundPath, fileFinder, "_traj.txt")
       if(!file.exists(traj_path)){
@@ -1027,9 +1028,8 @@ grabDBH <- function(fileFinder,
       } else {
         seedLAS <- calcSensorDist(seedLAS, trajPath = traj_path)
       }
-    } else {
-      cat("Distance filtering per seed is",filterDIST,"%.\n")
     }
+    cat("Distance filtering per seed is",filterDIST,"%.\n")
   }
   if(filterINT < 100){
     cat("Intensity filtering per seed is",filterINT,"%.\n")
@@ -1043,7 +1043,7 @@ grabDBH <- function(fileFinder,
   #nowId <- 9208
   #i <- which(clustList$id == nowId)
   
-  selectorius <- c(1,3,2,5,4,10, 12, 15, 16, 17)
+  selectorius <- c(1,4,2,3,6,5,11, 13, 16, 17, 18)
   cat("\t")
   cat(paste(colnames(clustList)[selectorius]), sep = "\t")
   cat("\n")
@@ -1062,12 +1062,11 @@ grabDBH <- function(fileFinder,
     
     clustCloud <- filter_poi(seedLAS, StemID == nowId)
     
-    nPoints <- clustCloud@header@PHB$`Number of point records`
-    cat(paste0(sprintf(paste0("%", 6, "s"), thMk(nPoints)), "\t"))
-    cat(paste0(nowDBHref, "\t"))
+    nPointsOri <- clustCloud@header@PHB$`Number of point records`
+    cat(paste0(sprintf(paste0("%", 6, "s"), thMk(nPointsOri)), "\t"))
     #plot(clustCloud)
     
-    if(nPoints < 10){
+    if(nPointsOri < 10){
       cat("\n",clustList$id[i], "- too few points in seed, skip this one\n")
       next()
     }
@@ -1075,7 +1074,7 @@ grabDBH <- function(fileFinder,
     if(filterDIST < 100){
       # DISTANCE FILTERING
       thresholdDIST <- quantile(clustCloud@data$SensorDistance, 1 - filterDIST / 100) # all above are 5 %
-      clustCloud <- filter_poi(clustCloud, SensorDistance > filterDIST)
+      clustCloud <- filter_poi(clustCloud, SensorDistance < filterDIST)
     }
     
     if(filterINT < 100){
@@ -1103,6 +1102,16 @@ grabDBH <- function(fileFinder,
       #hist(kde_sample$estimate)
       threshold_kde <- quantile(clustCloud@data$kde, 1 - filterKDE / 100) # all above are 5 %
       clustCloud <- filter_poi(clustCloud, kde > threshold_kde)
+    }
+    
+    nPoints <- clustCloud@header@PHB$`Number of point records`
+    cat(paste0(sprintf(paste0("%", 6, "s"), thMk(nPoints)), "\t"))
+    cat(paste0(nowDBHref, "\t"))
+    #plot(clustCloud)
+    
+    if(nPoints < 10){
+      cat("\n",clustList$id[i], "- too few points in seed, skip this one\n")
+      next()
     }
     
     #plot(clustCloud@data$X, clustCloud@data$Y, pch = ".", col = clustCloud@data$kde, asp = 1)
