@@ -964,7 +964,7 @@ grabDBH <- function(fileFinder,
   
   #plot(seedLAS)
   idList <- sort(unique(seedLAS@data$StemID))
-  clustList <- data.frame("id" = idList, "dbh_ref" = NA)
+  clustList <- data.frame("id" = idList, "dbh.ref" = NA)
   
   
   metaList <- merge.data.frame(clustList, metaList, by = "id")
@@ -973,8 +973,8 @@ grabDBH <- function(fileFinder,
     metaList <- metaList[order(metaList$dbh, decreasing = T),]
   }
   
-  clustList <- data.frame("id" = metaList$id, "dbh_ref" = metaList$dbh)
-  clustList$nP.all <- 0
+  clustList <- data.frame("id" = metaList$id, "dbh.ref" = metaList$dbh)
+  clustList$nP.orig <- 0
   clustList$nP.filt <- 0
   clustList$dbh <- -1
   clustList$dbh.gam <- -1
@@ -988,7 +988,7 @@ grabDBH <- function(fileFinder,
   clustList$y.ref <- metaList$y
   {
     cat("Distribution of dbhs:")
-    clustList$dbhGroup <- ceiling(clustList$dbh_ref/10)*10
+    clustList$dbhGroup <- ceiling(clustList$dbh.ref/10)*10
     print(table(clustList$dbhGroup))
   }
   clustList$move <- -1
@@ -1043,7 +1043,7 @@ grabDBH <- function(fileFinder,
   #nowId <- 9208
   #i <- which(clustList$id == nowId)
   
-  selectorius <- c(1,4,2,3,6,5,11, 13, 16, 17, 18)
+  selectorius <- c(1,4,3,2,6,5,11, 13, 16, 17, 18)
   cat("\t")
   cat(paste(colnames(clustList)[selectorius]), sep = "\t")
   cat("\n")
@@ -1057,7 +1057,7 @@ grabDBH <- function(fileFinder,
     cat(paste0(i - firstTreeMeasured + 1, "/", n.remeasure, "\t"))
     
     nowId <- clustList$id[i]
-    nowDBHref <- clustList$dbh_ref[i]
+    nowDBHref <- clustList$dbh.ref[i]
     cat(paste0(nowId, "\t"))
     
     clustCloud <- filter_poi(seedLAS, StemID == nowId)
@@ -1065,6 +1065,10 @@ grabDBH <- function(fileFinder,
     nPointsOri <- clustCloud@header@PHB$`Number of point records`
     cat(paste0(sprintf(paste0("%", 6, "s"), thMk(nPointsOri)), "\t"))
     #plot(clustCloud)
+    
+    
+    
+    clustList[i, ]$nP.orig <- nPointsOri
     
     if(nPointsOri < 10){
       cat("\n",clustList$id[i], "- too few points in seed, skip this one\n")
@@ -1106,6 +1110,8 @@ grabDBH <- function(fileFinder,
     
     nPoints <- clustCloud@header@PHB$`Number of point records`
     cat(paste0(sprintf(paste0("%", 6, "s"), thMk(nPoints)), "\t"))
+    clustList[i, ]$nP.filt <- nPoints
+    
     cat(paste0(nowDBHref, "\t"))
     #plot(clustCloud)
     
@@ -1340,7 +1346,7 @@ grabDBH <- function(fileFinder,
                " (vr", round(sd(circles[6, ], na.rm = T),2), ")",
                " sd ", round(median(circles[7, ], na.rm = T), 1), 
                " (vr", round(sd(circles[7, ], na.rm = T),2), ")",
-               " --- alt ", round(clustList[i,]$dbh_ref, 1))
+               " --- alt ", round(clustList[i,]$dbh.ref, 1))
         , 
         outer = T, cex = 3
       )
@@ -1355,7 +1361,6 @@ grabDBH <- function(fileFinder,
         gam.sd.mean <- round(median(circles[7, ], na.rm = T), 3)
         dbhStop <- Sys.time()
         
-        timeNB <- as.numeric(difftime(dbhStop, dbhStart, units = "secs"))
         #cat("DBH circle", dbh.mean, "cm and gam",dbh.gam.mean,"cm in", round(timeNB, 1), units(timeNB), "\n")
         
         clustList[i, ]$dbh <- dbh.mean
@@ -1370,15 +1375,12 @@ grabDBH <- function(fileFinder,
         clustList[i, ]$slices <- length(slices)
         clustList[i, ]$move <- round(100*sqrt((x.mean - clustList$x.ref[i])^2 + (y.mean - clustList$y.ref[i])^2), 1)
         clustList[i, ]$timeSec <- round(timeNB, 1)
-        clustList[i, ]$nPoints <- nPoints
       } else {
-        timeNB <- as.numeric(difftime(dbhStop, dbhStart, units = "secs"))
-        clustList[i, ]$timeSec <- round(timeNB, 1)
-        clustList[i, ]$nPoints <- nPoints
         #cat("No DBH estimated in", round(timeNB, 1), units(timeNB), "\n")
       }
       
-      
+      timeNB <- as.numeric(difftime(dbhStop, dbhStart, units = "secs"))
+      clustList[i, ]$timeSec <- round(timeNB, 1)
       
       
       #dev.off()
@@ -1428,8 +1430,8 @@ grabDBH <- function(fileFinder,
         "and na.circ =", sum(improveList$dbh == -11),").\n")
     
     improveList$diff.dist <- sqrt((improveList$x.ref - improveList$x)^2 + (improveList$y.ref - improveList$y)^2 )
-    improveList$diff.dbh <- abs(improveList$dbh_ref - improveList$dbh)
-    improveList$diff.dbh.gam <- abs(improveList$dbh_ref - improveList$dbh.gam)
+    improveList$diff.dbh <- abs(improveList$dbh.ref - improveList$dbh)
+    improveList$diff.dbh.gam <- abs(improveList$dbh.ref - improveList$dbh.gam)
     
     cat("5 cm accepted tolerance to guessed DBH: ")
     acceptToleranceCM <- 5
@@ -1502,7 +1504,7 @@ grabDBH <- function(fileFinder,
     sum(improveList$dbh.gam == -11) #133 no gam
     sum(improveList$dbh.sugg == -11) #82 not measured (51 from circle dbh)
     notImprovedList <- improveList[improveList$dbh.sugg == -11,]
-    #table(notImprovedList$dbh_ref) # only up to 5 cm dbh, Altmuenster one very outside 30 cm (not anymore in area)
+    #table(notImprovedList$dbh.ref) # only up to 5 cm dbh, Altmuenster one very outside 30 cm (not anymore in area)
     
     
     
@@ -1531,7 +1533,7 @@ grabDBH <- function(fileFinder,
       cat("\nShifting",sum(shift.those, na.rm = T),"to new center, at most", frame.minD * 100, "cm.")
       
     } else {
-      shift.those <- improveList$diff.dist < improveList$dbh_ref/100*2
+      shift.those <- improveList$diff.dist < improveList$dbh.ref/100*2
       shift.those.also <- improveList$diff.dist < 0.2
       shift.those <- shift.those | shift.those.also
       table(shift.those)
@@ -1567,7 +1569,7 @@ grabDBH <- function(fileFinder,
     improveList$shift.col[shift.those] <- "Vb"
     
     mergeImprove <- data.frame("id" = improveList$id, 
-                               "dbh.ref" = improveList$dbh_ref, 
+                               "dbh.ref" = improveList$dbh.ref, 
                                "dbh.sugg" = improveList$dbh.sugg, 
                                "dbh.check" = improveList$dbh.check, 
                                "shift.x" = improveList$shift.x, 
