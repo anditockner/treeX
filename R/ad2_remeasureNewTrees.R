@@ -645,6 +645,7 @@ grabDBH <- function(fileFinder,
       # automatic tile clipping setting
       xSpan <- (totalCloud@header@PHB$`Max X` - totalCloud@header@PHB$`Min X`)
       ySpan <- (totalCloud@header@PHB$`Max Y` - totalCloud@header@PHB$`Min Y`)
+      cat("Automatic tile detection for", round(xSpan*ySpan), "m2.\n")
       if((xSpan * ySpan) < 5000){
         # half a hectare means 70x70 m square (or 35 m radius circle 3800 m2)
         tileClipping <- 2
