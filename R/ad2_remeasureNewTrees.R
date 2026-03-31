@@ -1043,7 +1043,7 @@ grabDBH <- function(fileFinder,
   #nowId <- 9208
   #i <- which(clustList$id == nowId)
   
-  selectorius <- c(1,4,3,2,6,5,11, 13, 16, 17, 18)
+  selectorius <- c(1,3,4,2,6,5,11, 13, 16, 17, 18)
   cat("\t")
   cat(paste(colnames(clustList)[selectorius]), sep = "\t")
   cat("\n")
