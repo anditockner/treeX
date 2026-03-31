@@ -172,6 +172,83 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 
 
 
+calcSensorDist <- function(las, trajPath){
+  # ---------- TOTAL TIMER ----------
+  t_total_start <- Sys.time()
+  
+  # Extract data
+  x <- las@data$X
+  y <- las@data$Y
+  z <- las@data$Z
+  t_points <- las@data$gpstime
+  
+  # ---------- LOAD TRAJECTORY ----------
+  #cat("traj read + ")
+  
+  co <- suppressWarnings(traj <- fread(trajPath, sep = " ", header = TRUE))
+  colnames(traj)[1] <- "world_time"
+  setnames(traj, make.names(names(traj)))
+  
+  t_traj <- as.numeric(traj[["world_time"]])
+  x_traj <- as.numeric(traj[["x"]])
+  y_traj <- as.numeric(traj[["y"]])
+  z_traj <- as.numeric(traj[["z"]])
+  
+  # ---------- SORT TRAJECTORY ----------
+  #cat("sort + ")
+  
+  order_idx <- order(t_traj)
+  
+  t_traj <- t_traj[order_idx]
+  x_traj <- x_traj[order_idx]
+  y_traj <- y_traj[order_idx]
+  z_traj <- z_traj[order_idx]
+  
+  # ---------- MATCHING ----------
+  #cat("match + ")
+  
+  idx <- findInterval(t_points, t_traj)
+  
+  idx[idx < 1] <- 1
+  idx[idx >= length(t_traj)] <- length(t_traj) - 1
+  
+  #left <- idx
+  #right <- idx + 1
+  #choose_right <- abs(t_traj[right] - t_points) < abs(t_traj[left] - t_points)
+  #nearest_idx <- ifelse(choose_right, right, left)
+  nearest_idx <- idx
+  
+  xs <- x_traj[nearest_idx]
+  ys <- y_traj[nearest_idx]
+  zs <- z_traj[nearest_idx]
+  
+  # ---------- COMPUTE DISTANCE ----------
+  #cat("dist calc + ")
+  
+  dist <- round(sqrt((x - xs)^2 + (y - ys)^2 + (z - zs)^2),2)*100
+  
+  # ---------- ADD DIMENSION ----------
+  #cat("add.\n")
+  
+  las <- add_lasattribute_manual(
+    las,
+    x = dist,
+    name = "SensorDistance",
+    desc = "cm dist scanhead to point", 
+    type = "ushort"
+  )
+  
+  
+  # ---------- TOTAL END ----------
+  t_total_end <- Sys.time()
+  
+  cat(sprintf("Sensor distance computed in %.2f sec\n", as.numeric(difftime(t_total_end, t_total_start, units = "secs"))))
+  
+  return(las)
+}
+
+
+
 # new idea to prevent merging of close together trees: 
 # _______________________________________________________
 #
@@ -627,10 +704,26 @@ grabDBH <- function(fileFinder,
     }
     
     
+    
+    
+    if(filterDIST < 100 & !is.element("SensorDistance", colnames(totalCloud@data))){
+      cat("\nCalculating sensor distance for point cloud...\n")
+      
+      traj_path <- paste0(dirPath, groundPath, fileFinder, "_traj.txt")
+      if(!file.exists(traj_path)){
+        stop(paste0("ERROR - trajectory for sensor distance not found in", traj_path))
+      }
+      totalCloud <- calcSensorDist(totalCloud, trajPath = traj_path)
+    }
+    
+    
     totalCloud <- add_lasattribute(totalCloud, 0, "StemID", "Single Stem ID")
     totalCloud <- add_lasattribute(totalCloud, 0, "comment", "Random Stem ID")
     
     seedLAS <- filter_poi(totalCloud, StemID != 0) # getting every detected stempoint as seed
+    
+    
+    
     
     
     
