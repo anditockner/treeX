@@ -1410,9 +1410,6 @@ grabDBH <- function(fileFinder,
   #i <- which(clustList$id == nowId)
   
   selectorius <- c(1,3,4,2,6,5,11, 13, 16, 17, 18)
-  cat("\t")
-  cat(paste(colnames(clustList)[selectorius]), sep = "\t")
-  cat("\n")
   
   
   if(nr_cores == 1){
@@ -1432,6 +1429,11 @@ grabDBH <- function(fileFinder,
       cat("#\n")
       cat("#############################\n")
     }
+    
+    
+    cat("\t")
+    cat(paste(colnames(clustList)[selectorius]), sep = "\t")
+    cat("\n")
     # measure this all trees
     for(i in firstTreeMeasured:length(clustList$id)){
       dbhMeta <- grabDBH_i(seedLAS, nowMeta = clustList[i,], circleImagePath = circleImagePath,
@@ -1493,8 +1495,13 @@ grabDBH <- function(fileFinder,
     }
     cat("\n")
     
-    file_parallelProtocol <- paste0(dbhPath, "temp_par_grabDBH.txt")
+    file_parallelProtocol <- paste0(dbhPath, "temp_par_grabDBH_", format(Sys.time(), "%Y%m%d_%H%M"), ".txt")
     file.create(file_parallelProtocol)
+    sink(file_parallelProtocol)
+    cat("\t")
+    cat(paste(colnames(clustList)[selectorius]), sep = "\t")
+    cat("\n")
+    sink()
     fdc <<- foreach(i=firstTreeMeasured:length(clustList$id),  .errorhandling = 'remove', 
                     .export=c('grabDBH_i', 'v.env', 'seedLAS'), 
                     .packages = c("treeX"))%dopar% {
