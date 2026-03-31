@@ -1378,7 +1378,6 @@ grabDBH <- function(fileFinder,
   
   n.remeasure <- (length(clustList$id) - firstTreeMeasured+1)
   #clustList[firstTreeMeasured,]
-  cat("Re-measuring", n.remeasure, "newly assigned clusters.\n\n")
   
   
   
@@ -1418,6 +1417,21 @@ grabDBH <- function(fileFinder,
   
   if(nr_cores == 1){
     
+    timeSer1 <- Sys.time()
+    {
+      #LASfile <- NA
+      cat("\n###########################\n",
+          "#\n",
+          "# SERIAL MEASURING OF NEW DBHs (CIRCLE AND GAM)\n", sep = "")
+      if(allTrees){
+        cat("# FOR", n.remeasure, "TREES ON THE PLOT\n")
+      } else {
+        cat("# FOR", n.remeasure, "NEW TREES 9000+ (ADDED BY TABLET APP)\n")
+      }
+      cat("# TODAY IS", paste(Sys.time()),"\n")
+      cat("#\n")
+      cat("#############################\n")
+    }
     # measure this all trees
     for(i in firstTreeMeasured:length(clustList$id)){
       dbhMeta <- grabDBH_i(seedLAS, nowMeta = clustList[i,], circleImagePath = circleImagePath,
@@ -1432,13 +1446,36 @@ grabDBH <- function(fileFinder,
       clustList[i, ] <- dbhMeta
     }
     
+    timeSer2 <- Sys.time()
+    
+    cat("\nSerial work is done in a ")
+    print.difftime(round(timeSer2 - timeSer1, 1))
+    cat("\n")
+    
+    
   } else {
     
+    timePar1 <- Sys.time()
+    
+    {
+      #LASfile <- NA
+      cat("\n###########################\n",
+          "#\n",
+          "# PARALLEL MEASURING OF NEW DBHs (CIRCLE AND GAM)\n", sep = "")
+      if(allTrees){
+        cat("# FOR", n.remeasure, "TREES ON THE PLOT\n")
+      } else {
+        cat("# FOR", n.remeasure, "NEW TREES 9000+ (ADDED BY TABLET APP)\n")
+      }
+      cat("# ON", nr_cores, "PARALLEL CORES\n")
+      cat("# TODAY IS", paste(Sys.time()),"\n")
+      cat("#\n")
+      cat("#############################\n")
+    }
     
     
-    
-    if(nr_cores > (length(clustList$id) - firstTreeMeasured + 1)){
-      nr_cores <- (length(clustList$id) - firstTreeMeasured + 1)
+    if(nr_cores > n.remeasure){
+      nr_cores <- n.remeasure
     }
     
     # PARALLEL PART
@@ -1456,7 +1493,6 @@ grabDBH <- function(fileFinder,
     }
     cat("\n")
     
-    timePar1 <- Sys.time()
     file_parallelProtocol <- paste0(dbhPath, "temp_par_grabDBH.txt")
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=firstTreeMeasured:length(clustList$id),  .errorhandling = 'remove', 
