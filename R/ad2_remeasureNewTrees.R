@@ -191,6 +191,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 #' @param tileClipping how many tiles should be created (3 means: 3x3 = 9 tiles), set to 4 (= 16 tiles) for big files, for circular plots 2 is fine or even 1 (smaller than 10 m radius)
 #' @param regenerateCylinderLAS creates new cylinderLAS for measuring diameters, set FALSE only if cylinderLAS is already up to date, otherwise some trees might be missing
 #' @param allTrees set this TRUE to also measure trees with numbers less than 9000
+#' @param retainPointClouds set this TRUE to quicken repetitive measurements for parameter tuning (saves input point clouds in LAS_ground and LAS_veg)
 #' @param new.numbers assign new sequential numbers for circles (1 being the thickest tree)
 #' @param moveOnly set to TRUE to keep old DBHs in the main list (in case there is a lot of movement expected and circles are not perfectly centered)
 #' @param filterINT quantile that is kept with highest intensity (remove branches), default: 50, 95 means that only 5 percent are cut away (takes longer)
@@ -220,7 +221,7 @@ grabDBH <- function(fileFinder,
                     regenerateCylinderLAS = T, 
                     
                     
-                    
+                    retainPointClouds = F,
                     allTrees = F, new.numbers = F, 
                     frame.up = 0.3, frame.down = 0.3, 
                     frame.rad = 1.3, frame.minD = 0.05){
@@ -585,33 +586,43 @@ grabDBH <- function(fileFinder,
     cat("Settings for seedLAS_cylinders: fr.up =", frame.up, "  fr.down =", frame.down, 
         "  fr.rad =", frame.rad," fr.minDist = ", frame.minD, "m.\n")
     
-    totalCloud.name <- paste0(dirPath, groundPath, fileFinder, "_raw_veg.laz")
+    vegCloud.name <- paste0(dirPath, groundPath, fileFinder, "_raw_veg.laz")
     groundCloud.name <- paste0(dirPath, groundPath, fileFinder, "_ground.laz")
     if(exists("LAS_veg_name") && LAS_veg_name == fileFinder){
       if(exists("LAS_veg") && !is.na(LAS_veg)){
         cat("Using old vegetationCloud!\n")
         totalCloud <- LAS_veg
       } else {
-        cat("Reading in totalCloud from", totalCloud.name, "\n")
-        co <- capture.output(totalCloud <- readLAS(totalCloud.name, select = "xyzcit0"))
+        cat("Reading in totalCloud from", vegCloud.name, "\n")
+        co <- capture.output(totalCloud <- readLAS(vegCloud.name, select = "xyzcit0"))
       }
       if (exists("LAS_ground") && !is.na(LAS_ground)) {
         cat("Also using old groundCloud!\n")
         totalCloud <- rbind(totalCloud, LAS_ground)
       } else {
-        cat("Reading in groundCloud from", groundCloud.name, 
-            "\n")
+        cat("    Reading in ground cloud from", groundCloud.name, "\n")
         co <- capture.output(groundCloud <- readLAS(groundCloud.name, select = "xyzcit0"))
       }
+      if(retainPointClouds){
+        LAS_veg <<- totalCloud
+        LAS_ground <<- groundCloud
+        LAS_veg_name <<- fileFinder
+      }
     } else {
-      cat("Reading in totalCloud from", totalCloud.name, "\n")
-      co <- capture.output(totalCloud <- readLAS(totalCloud.name, select = "xyzcit0"))
-      cat("Reading in groundCloud from", groundCloud.name, "\n")
+      cat("Reading in vegetation cloud from", vegCloud.name, "\n")
+      co <- capture.output(totalCloud <- readLAS(vegCloud.name, select = "xyzcit0"))
+      cat("    Reading in ground cloud from", groundCloud.name, "\n")
       co <- capture.output(groundCloud <- readLAS(groundCloud.name, select = "xyzcit0"))
       
+      if(retainPointClouds){
+        LAS_veg <<- totalCloud
+        LAS_ground <<- groundCloud
+        LAS_veg_name <<- fileFinder
+      }
       totalCloud <- rbind(totalCloud, groundCloud)
       
     }
+    
     
     totalCloud <- add_lasattribute(totalCloud, 0, "StemID", "Single Stem ID")
     totalCloud <- add_lasattribute(totalCloud, 0, "comment", "Random Stem ID")
