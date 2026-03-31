@@ -921,12 +921,14 @@ grabDBH <- function(fileFinder,
     cat(paste0(i - firstTreeMeasured + 1, "/", n.remeasure, "\t"))
     
     nowId <- clustList$id[i]
+    nowDBHref <- clustList$dbh_ref[i]
     cat(paste0(nowId, "\t"))
     
     clustCloud <- filter_poi(seedLAS, StemID == nowId)
     
     nPoints <- clustCloud@header@PHB$`Number of point records`
     cat(paste0(sprintf(paste0("%", 6, "s"), thMk(nPoints)), "\t"))
+    cat(paste0(nowDBHref, "\t"))
     #plot(clustCloud)
     
     if(nPoints < 10){
@@ -1236,7 +1238,7 @@ grabDBH <- function(fileFinder,
       #dev.off()
       
     }
-    cat(paste(clustList[i, selectorius[c(3:length(selectorius))]]), sep = "\t")
+    cat(paste(clustList[i, selectorius[c(4:length(selectorius))]]), sep = "\t")
     cat("\n")
   }
   
