@@ -211,6 +211,7 @@ grabDBH <- function(fileFinder,
                     
                     filterDIST = 50, 
                     filterINT = 50, 
+                    filterKDE = 94, 
                     
                     dirPath = paste0(getwd(), "/"),
                     tileClipping = 3, 
@@ -844,6 +845,7 @@ grabDBH <- function(fileFinder,
   }
   
   clustList <- data.frame("id" = metaList$id, "dbh_ref" = metaList$dbh)
+  clustList$nPoints <- 0
   clustList$dbh <- -1
   clustList$dbh.gam <- -1
   clustList$sd.gam <- -1 
@@ -854,13 +856,13 @@ grabDBH <- function(fileFinder,
   clustList$x.ref <- metaList$x
   clustList$y <- -1
   clustList$y.ref <- metaList$y
-  clustList$slices <- -1
   {
     cat("Distribution of dbhs:")
     clustList$dbhGroup <- ceiling(clustList$dbh_ref/10)*10
     print(table(clustList$dbhGroup))
   }
   clustList$move <- -1
+  clustList$slices <- -1
   
   
   if(!allTrees & max(clustList$id) < 9000){
@@ -896,13 +898,14 @@ grabDBH <- function(fileFinder,
     cat("Intensity filtering per seed is",filterINT,"%.\n\n")
   }
   
-  threshold_percent_kde <- 94
-  cat("KDE filtering per slice is",threshold_percent_kde,"%.\n\n")
+  if(filterKDE < 100){
+    cat("KDE filtering per slice is",filterKDE,"%.\n\n")
+  }
   
   #nowId <- 9208
   #i <- which(clustList$id == nowId)
   
-  selectorius <- c(1,2,4,3, 9, 11, 13, 15)
+  selectorius <- c(1,3,2,5,4,10, 12, 15, 16)
   cat("\t")
   cat(paste(colnames(clustList)[selectorius]), sep = "\t")
   cat("\n")
@@ -917,8 +920,14 @@ grabDBH <- function(fileFinder,
     
     nowId <- clustList$id[i]
     clustCloud <- filter_poi(seedLAS, StemID == nowId)
+    
+    nPoints <- clustCloud@header@PHB$`Number of point records`
     #plot(clustCloud)
     
+    if(nPoints < 10){
+      cat("\n",clustList$id[i], "- too few points in seed, skip this one\n")
+      next()
+    }
     
     if(filterDIST < 100){
       # DISTANCE FILTERING
@@ -930,38 +939,34 @@ grabDBH <- function(fileFinder,
       # INTENSITY FILTERING
       thresholdINT <- quantile(clustCloud@data$Intensity, 1 - filterINT / 100) # all above are 5 %
       clustCloud <- filter_poi(clustCloud, Intensity > thresholdINT)
-      #cat(" ", clustInt@header@PHB$`Number of point records`, "pts ")
+      #cat(" ", clustCloud@header@PHB$`Number of point records`, "pts ")
     }
-   
-    clustInt <- clustCloud
     
-    
-    # WEIGHED KERNEL DENSITY 2D
-    #image(kde$eval.points[[1]], kde$eval.points[[2]], kde$estimate,
-    # col = viridis::viridis(20), xlab = "x", ylab = "y")
-    kde_dat <- data.frame("x" = clustInt@data$X, "y" = clustInt@data$Y)
-    if(length(kde_dat$x) < 10){
-      cat("\n",clustList$id[i], "- too few points in seed, skip this one\n")
-      next()
+    if(filterKDE < 100){
+      # WEIGHED KERNEL DENSITY 2D
+      #image(kde$eval.points[[1]], kde$eval.points[[2]], kde$estimate,
+      # col = viridis::viridis(20), xlab = "x", ylab = "y")
+      kde_dat <- data.frame("x" = clustCloud@data$X, "y" = clustCloud@data$Y)
+      
+      kde_sample <- ks::kde(x = kde_dat, eval.points = kde_dat)
+      #n_cols <- 20
+      #quantiles <- quantile(kde_sample$estimate, probs = seq(0, 1, l = n_cols + 1))
+      #col <- viridis::viridis(n_cols)[cut(kde_sample$estimate, breaks = quantiles)]
+      #points(kde$x, pch = ".", col = col) # The data is returned in $x
+      #plot(kde$x, col = col, pch = 19, xlab = "x", ylab = "y")
+      clustCloud <- add_lasattribute(clustCloud, kde_sample$estimate, name = "kde", desc = "2D kernel density")
+      
+      # KDE filtering for circles density
+      #hist(kde_sample$estimate)
+      threshold_kde <- quantile(clustCloud@data$kde, 1 - filterKDE / 100) # all above are 5 %
+      clustCloud <- filter_poi(clustCloud, kde > threshold_kde)
     }
-    kde_sample <- ks::kde(x = kde_dat, eval.points = kde_dat)
-    #n_cols <- 20
-    #quantiles <- quantile(kde_sample$estimate, probs = seq(0, 1, l = n_cols + 1))
-    #col <- viridis::viridis(n_cols)[cut(kde_sample$estimate, breaks = quantiles)]
-    #points(kde$x, pch = ".", col = col) # The data is returned in $x
-    #plot(kde$x, col = col, pch = 19, xlab = "x", ylab = "y")
-    clustInt <- add_lasattribute(clustInt, kde_sample$estimate, name = "kde", desc = "2D kernel density")
     
-    # KDE filtering for circles density
-    #hist(kde_sample$estimate)
-    threshold_kde <- quantile(clustInt@data$kde, 1 - threshold_percent_kde / 100) # all above are 5 %
-    clustInt <- filter_poi(clustInt, kde > threshold_kde)
-    
-    #plot(clustInt@data$X, clustInt@data$Y, pch = ".", col = clustInt@data$kde, asp = 1)
+    #plot(clustCloud@data$X, clustCloud@data$Y, pch = ".", col = clustCloud@data$kde, asp = 1)
     
     sliceHeight <- 0.1 # m
-    slices <- seq(from = clustInt@header@PHB$`Min Z`,
-                  to = clustInt@header@PHB$`Max Z`, by = sliceHeight)
+    slices <- seq(from = clustCloud@header@PHB$`Min Z`,
+                  to = clustCloud@header@PHB$`Max Z`, by = sliceHeight)
     
     
     par(mfrow = c(1, 1))
@@ -972,7 +977,7 @@ grabDBH <- function(fileFinder,
       
       for(j in 1:length(slices)){
         par.circle.1 <- rep(-1, 7)
-        slice <- filter_poi(clustInt, Z >= slices[j], Z < slices[j] + sliceHeight)
+        slice <- filter_poi(clustCloud, Z >= slices[j], Z < slices[j] + sliceHeight)
         #cat("There were", thMk(slice@header@PHB$`Number of point records`), "points found.\n")
         #plot(slice@data$Y, slice@data$X, pch = ".", col = slice@data$Intensity)
         #hist(slice@data$Intensity)
@@ -1488,20 +1493,23 @@ grabDBH <- function(fileFinder,
                             which(colnames(trees_out) == "inside"),
                             which(colnames(trees_out) == "selected"))]
     
-    appList.dropped <- dropoutList[,c(which(colnames(dropoutList) == "x"),
-                                      which(colnames(dropoutList) == "y"),
-                                      which(colnames(dropoutList) == "z"),
-                                      which(colnames(dropoutList) == "id"),
-                                      which(colnames(dropoutList) == "comment"),
-                                      which(colnames(dropoutList) == "species"),
-                                      which(colnames(dropoutList) == "dbh"),
-                                      which(colnames(dropoutList) == "height"),
-                                      which(colnames(dropoutList) == "vol"),
-                                      which(colnames(dropoutList) == "fz"),
-                                      which(colnames(dropoutList) == "inside"),
-                                      which(colnames(dropoutList) == "selected"))]
+    if(regenerateCylinderLAS){
+      appList.dropped <- dropoutList[,c(which(colnames(dropoutList) == "x"),
+                                        which(colnames(dropoutList) == "y"),
+                                        which(colnames(dropoutList) == "z"),
+                                        which(colnames(dropoutList) == "id"),
+                                        which(colnames(dropoutList) == "comment"),
+                                        which(colnames(dropoutList) == "species"),
+                                        which(colnames(dropoutList) == "dbh"),
+                                        which(colnames(dropoutList) == "height"),
+                                        which(colnames(dropoutList) == "vol"),
+                                        which(colnames(dropoutList) == "fz"),
+                                        which(colnames(dropoutList) == "inside"),
+                                        which(colnames(dropoutList) == "selected"))]
+      
+      appList <- rbind(appList, appList.dropped)
+    }
     
-    appList <- rbind(appList, appList.dropped)
     
     appList <- appList[order(appList$id, decreasing = F),]
     
