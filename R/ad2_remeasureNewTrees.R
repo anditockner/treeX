@@ -711,7 +711,7 @@ grabDBH <- function(fileFinder,
       
       traj_path <- paste0(dirPath, groundPath, fileFinder, "_traj.txt")
       if(!file.exists(traj_path)){
-        stop(paste0("ERROR - trajectory for sensor distance not found in", traj_path))
+        stop(paste0("ERROR - trajectory for sensor distance not found in", traj_path,"\nPlease set filterDist to 100 or specify right trajectory!"))
       }
       totalCloud <- calcSensorDist(totalCloud, trajPath = traj_path)
     }
@@ -1015,8 +1015,15 @@ grabDBH <- function(fileFinder,
   
   if(filterDIST < 100){
     if(!is.element("SensorDistance", colnames(seedLAS@data))){
-      cat("WARNING - No distance filtering possible because of missing SensorDistance field!\n")
-      filterDIST <- 100
+      cat("\nCalculating sensor distance for point cloud...\n")
+      
+      traj_path <- paste0(dirPath, groundPath, fileFinder, "_traj.txt")
+      if(!file.exists(traj_path)){
+        cat("WARNING - No traj found, no distance filtering possible (missing SensorDistance field)!\n")
+        filterDIST <- 100
+      } else {
+        totalCloud <- calcSensorDist(totalCloud, trajPath = traj_path)
+      }
     } else {
       cat("Distance filtering per seed is",filterDIST,"%.\n")
     }
