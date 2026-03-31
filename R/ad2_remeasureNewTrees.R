@@ -1078,7 +1078,7 @@ grabDBH <- function(fileFinder,
     if(filterDIST < 100){
       # DISTANCE FILTERING
       thresholdDIST <- quantile(clustCloud@data$SensorDistance, 1 - filterDIST / 100) # all above are 5 %
-      clustCloud <- filter_poi(clustCloud, SensorDistance < filterDIST)
+      clustCloud <- filter_poi(clustCloud, SensorDistance < thresholdDIST)
     }
     
     if(filterINT < 100){
