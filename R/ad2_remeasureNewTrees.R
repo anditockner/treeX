@@ -1421,13 +1421,10 @@ grabDBH <- function(fileFinder,
               filterDIST = filterDIST, 
               filterINT = filterINT, filterKDE = filterKDE)
     
-    printString <- paste0(i - firstTreeMeasured + 1, "/", n.remeasure, "\t", 
-               nowId, "\t",
-               sprintf(paste0("%", 6, "s"), thMk(dbhMeta$nP.orig)), "\t",
-               dbhMeta$dbh.ref, "\t", 
-               sprintf(paste0("%", 6, "s"), thMk(dbhMeta$nP.filt)), "\t", 
-               paste(dbhMeta[selectorius[c(5:length(selectorius))]], collapse = "\t"), 
-               "\n")
+    printString <- paste0(i - firstTreeMeasured + 1, "/", n.remeasure, "\t",
+                          dbhMeta$id, "\t", sprintf(paste0("%", 6, "s"), thMk(dbhMeta$nP.orig)), "\t",
+                          sprintf(paste0("%", 6, "s"), thMk(dbhMeta$nP.filt)), "\t", dbhMeta$dbh.ref, "\t", 
+                          paste(dbhMeta[selectorius[c(5:length(selectorius))]], collapse = "\t"), "\n")
     cat(printString)
     clustList[i, ] <- dbhMeta
   }
