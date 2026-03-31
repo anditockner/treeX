@@ -193,6 +193,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 #' @param allTrees set this TRUE to also measure trees with numbers less than 9000
 #' @param new.numbers assign new sequential numbers for circles (1 being the thickest tree)
 #' @param moveOnly set to TRUE to keep old DBHs in the main list (in case there is a lot of movement expected and circles are not perfectly centered)
+#' @param filterINT quantile that is kept with highest intensity (remove branches), default: 50, 95 means that only 5 percent are cut away (takes longer)
 #' @param frame.up delta z up from 1.30 m for circle fitting
 #' @param frame.down delta z down from 1.30 m for circle fitting
 #' @param frame.rad re-locating circles: factor of which input DBH will be multiplied to extend circle-fitting
@@ -206,6 +207,8 @@ grabDBH <- function(fileFinder,
                     transformList.matrix = "",
                     transformSlice = "_clusterSlice_120to140.laz",
                     moveOnly = F,
+                    
+                    filterINT = 50, 
                     
                     dirPath = paste0(getwd(), "/"),
                     tileClipping = 3, 
@@ -876,8 +879,7 @@ grabDBH <- function(fileFinder,
   cat("Re-measuring", n.remeasure, "newly assigned clusters.\n")
   
   
-  threshold_percent <- 50
-  cat("Intensity filtering per seed is",threshold_percent,"%.\n\n")
+  cat("Intensity filtering per seed is",filterINT,"%.\n\n")
   
   threshold_percent_kde <- 94
   cat("KDE filtering per slice is",threshold_percent_kde,"%.\n\n")
@@ -903,7 +905,7 @@ grabDBH <- function(fileFinder,
     #plot(clustCloud)
     
     # INTENSITY FILTERING
-    threshold <- quantile(clustCloud@data$Intensity, 1 - threshold_percent / 100) # all above are 5 %
+    threshold <- quantile(clustCloud@data$Intensity, 1 - filterINT / 100) # all above are 5 %
     clustInt <- filter_poi(clustCloud, Intensity > threshold)
     #cat(" ", clustInt@header@PHB$`Number of point records`, "pts ")
     
@@ -947,8 +949,8 @@ grabDBH <- function(fileFinder,
         #cat("There were", thMk(slice@header@PHB$`Number of point records`), "points found.\n")
         #plot(slice@data$Y, slice@data$X, pch = ".", col = slice@data$Intensity)
         #hist(slice@data$Intensity)
-        #threshold_percent <- 100
-        #threshold <- quantile(slice@data$Intensity, 1 - threshold_percent / 100) # all above are 5 %
+        #filterINT <- 100
+        #threshold <- quantile(slice@data$Intensity, 1 - filterINT / 100) # all above are 5 %
         #lasInt <- filter_poi(slice, Intensity >= threshold)
         #cat("After Intensity filtering there are", thMk(lasInt@header@PHB$`Number of point records`), "points remaining (equals only",
         # round(lasInt@header@PHB$`Number of point records` / slice@header@PHB$`Number of point records`*100, 1), "% of original data).\n")
