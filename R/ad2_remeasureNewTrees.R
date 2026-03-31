@@ -581,6 +581,7 @@ grabDBH <- function(fileFinder,
   } 
   else 
   {
+    timeSeedCylinder1 <- Sys.time()
     cat("\nCutting a cylinder of each seed tree:\n")
     
     cat("Settings for seedLAS_cylinders: fr.up =", frame.up, "  fr.down =", frame.down, 
@@ -604,6 +605,7 @@ grabDBH <- function(fileFinder,
         co <- capture.output(groundCloud <- readLAS(groundCloud.name, select = "xyzcit0"))
       }
       if(retainPointClouds){
+        cat("Retaining point clouds in global variables LAS_veg and LAS_ground!\n")
         LAS_veg <<- totalCloud
         LAS_ground <<- groundCloud
         LAS_veg_name <<- fileFinder
@@ -615,6 +617,7 @@ grabDBH <- function(fileFinder,
       co <- capture.output(groundCloud <- readLAS(groundCloud.name, select = "xyzcit0"))
       
       if(retainPointClouds){
+        cat("Retaining point clouds in global variables LAS_veg and LAS_ground!\n")
         LAS_veg <<- totalCloud
         LAS_ground <<- groundCloud
         LAS_veg_name <<- fileFinder
@@ -775,7 +778,7 @@ grabDBH <- function(fileFinder,
       
       tilesLAS <- filter_poi(totalCloud, X > xu - tileBuffer, X < xo + tileBuffer,
                              Y > yu - tileBuffer, Y < yo + tileBuffer)
-      cat("", tilesLAS@header@PHB$`Number of point records`, "pts")
+      cat("", thMk(tilesLAS@header@PHB$`Number of point records`), "pts")
       
       
       for(b in 1:length(metaList.sub$id)){
@@ -855,6 +858,10 @@ grabDBH <- function(fileFinder,
     cat("Generating seedLAS_cylinders.las... \n")
     seedLAS <- add_lasattribute(seedLAS, 1L, "comment", "random Col")
     writeLAS(seedLAS, paste0(dbhPath, "seedLAS_cylinders_remeasure.las"))
+  
+    timeSeedCylinder2 <- Sys.time()
+    cat("seedLAS (cylinders) generated in a")
+    print.difftime(round(timeSeedCylinder2 - timeSeedCylinder1, 1))
   }
   
   
@@ -1235,7 +1242,8 @@ grabDBH <- function(fileFinder,
         dbh.gam.mean <- round(median(circles[6, ], na.rm = T), 3)
         gam.sd.mean <- round(median(circles[7, ], na.rm = T), 3)
         dbhStop <- Sys.time()
-        timeNB <- as.difftime(dbhStop - dbhStart)
+        
+        timeNB <- as.numeric(difftime(dbhStop, dbhStart, units = "secs"))
         #cat("DBH circle", dbh.mean, "cm and gam",dbh.gam.mean,"cm in", round(timeNB, 1), units(timeNB), "\n")
         
         clustList[i, ]$dbh <- dbh.mean
@@ -1252,7 +1260,7 @@ grabDBH <- function(fileFinder,
         clustList[i, ]$timeSec <- round(timeNB, 1)
         clustList[i, ]$nPoints <- nPoints
       } else {
-        timeNB <- as.difftime(dbhStop - dbhStart)
+        timeNB <- as.numeric(difftime(dbhStop, dbhStart, units = "secs"))
         clustList[i, ]$timeSec <- round(timeNB, 1)
         clustList[i, ]$nPoints <- nPoints
         #cat("No DBH estimated in", round(timeNB, 1), units(timeNB), "\n")
