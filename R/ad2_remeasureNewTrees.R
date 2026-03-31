@@ -175,7 +175,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 
 
 calcSensorDist <- function(las, trajPath){
-  library(data.table)
+  suppressPackageStartupMessages(library("data.table", character.only = T))
   # ---------- TOTAL TIMER ----------
   t_total_start <- Sys.time()
   
