@@ -654,6 +654,8 @@ grabDBH <- function(fileFinder,
                     filterINT = 50, 
                     filterKDE = 94, 
                     
+                    nr_cores = 1,
+                    
                     dirPath = paste0(getwd(), "/"),
                     tileClipping = -1, 
                     overWriteDBHlist = TRUE, # shall old trees_dbh.txt be replaced for segmenting new volumes
@@ -1414,21 +1416,81 @@ grabDBH <- function(fileFinder,
   cat("\n")
   
   
-  
-  # measure this all trees
-  for(i in firstTreeMeasured:length(clustList$id)){
-    dbhMeta <- grabDBH_i(seedLAS, nowMeta = clustList[i,], circleImagePath = circleImagePath,
-              filterDIST = filterDIST, 
-              filterINT = filterINT, filterKDE = filterKDE)
+  if(nr_cores == 1){
     
-    printString <- paste0(i - firstTreeMeasured + 1, "/", n.remeasure, "\t",
-                          dbhMeta$id, "\t", sprintf(paste0("%", 6, "s"), thMk(dbhMeta$nP.orig)), "\t",
-                          sprintf(paste0("%", 6, "s"), thMk(dbhMeta$nP.filt)), "\t", dbhMeta$dbh.ref, "\t", 
-                          paste(dbhMeta[selectorius[c(5:length(selectorius))]], collapse = "\t"), "\n")
-    cat(printString)
-    clustList[i, ] <- dbhMeta
+    # measure this all trees
+    for(i in firstTreeMeasured:length(clustList$id)){
+      dbhMeta <- grabDBH_i(seedLAS, nowMeta = clustList[i,], circleImagePath = circleImagePath,
+                           filterDIST = filterDIST, 
+                           filterINT = filterINT, filterKDE = filterKDE)
+      
+      printString <- paste0(i - firstTreeMeasured + 1, "/", n.remeasure, "\t",
+                            dbhMeta$id, "\t", sprintf(paste0("%", 6, "s"), thMk(dbhMeta$nP.orig)), "\t",
+                            sprintf(paste0("%", 6, "s"), thMk(dbhMeta$nP.filt)), "\t", dbhMeta$dbh.ref, "\t", 
+                            paste(dbhMeta[selectorius[c(5:length(selectorius))]], collapse = "\t"), "\n")
+      cat(printString)
+      clustList[i, ] <- dbhMeta
+    }
+    
+  } else {
+    
+    
+    
+    
+    if(nr_cores > (length(clustList$id) - firstTreeMeasured + 1)){
+      nr_cores <- (length(clustList$id) - firstTreeMeasured + 1)
+    }
+    
+    # PARALLEL PART
+    cat(fileFinder, " - Going parallel on", nr_cores, "cores.\n")
+    
+    if (.Platform$OS.type == "windows") {
+      library(doParallel)
+      cl <- makeCluster(nr_cores)
+      registerDoParallel(cl)
+      cat("   (on windows system using doParallel)\n")
+    } else {
+      library(doMC)
+      registerDoMC(cores = nr_cores)
+      cat("   (on Unix-like system using doMC)\n")
+    }
+    cat("\n")
+    
+    file_parallelProtocol <- paste0(dbhPath, "temp_par_grabDBH.txt")
+    file.create(file_parallelProtocol)
+    fdc <<- foreach(i=firstTreeMeasured:length(clustList$id),  .errorhandling = 'remove', 
+                    .export=c('grabDBH_i', 'v.env', 'seedLAS'), 
+                    .packages = c("treeX", "data.table", "dplyr"))%dopar% {
+                      t1 <- Sys.time()
+                      sink(file_parallelProtocol, append = T)
+                      
+                      dbhMeta <- grabDBH_i(seedLAS, nowMeta = clustList[i,], circleImagePath = circleImagePath,
+                                           filterDIST = filterDIST, 
+                                           filterINT = filterINT, filterKDE = filterKDE)
+                      
+                      printString <- paste0(i - firstTreeMeasured + 1, "/", n.remeasure, "\t",
+                                            dbhMeta$id, "\t", sprintf(paste0("%", 6, "s"), thMk(dbhMeta$nP.orig)), "\t",
+                                            sprintf(paste0("%", 6, "s"), thMk(dbhMeta$nP.filt)), "\t", dbhMeta$dbh.ref, "\t", 
+                                            paste(dbhMeta[selectorius[c(5:length(selectorius))]], collapse = "\t"), "\n")
+                      cat(printString)
+                      sink()
+                      return(dbhMeta)
+                    }
+    if (exists("cl")) stopCluster(cl)
+    timePar2 <- Sys.time()
+    gc()
+    
+    cat("Parallel work is done in a ")
+    print.difftime(round(timePar2 - timePar1, 1))
+    
+    clustList <- data.frame(matrix(unlist(fdc), nrow=length(fdc), byrow=TRUE))
+    colnames(clustList) <- colnames(fdc[[1]])
+    for(j in c(1:length(clustList[1,]))){ # all num 
+      clustList[,j] <- as.numeric(as.character(clustList[,j]))
+    }
   }
-  
+    
+    
   write.table(clustList, paste0(dbhPath, "trees_remeasured_dbh_circleFits.txt"), row.names = F, sep = "\t", dec = ".")
   
   
