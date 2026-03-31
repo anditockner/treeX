@@ -863,6 +863,7 @@ grabDBH <- function(fileFinder,
   }
   clustList$move <- -1
   clustList$slices <- -1
+  clustList$timeSec <- 0
   
   
   if(!allTrees & max(clustList$id) < 9000){
@@ -880,7 +881,7 @@ grabDBH <- function(fileFinder,
   
   n.remeasure <- (length(clustList$id) - firstTreeMeasured+1)
   #clustList[firstTreeMeasured,]
-  cat("Re-measuring", n.remeasure, "newly assigned clusters.\n")
+  cat("Re-measuring", n.remeasure, "newly assigned clusters.\n\n")
   
   
   
@@ -891,21 +892,22 @@ grabDBH <- function(fileFinder,
       cat("WARNING - No distance filtering possible because of missing SensorDistance field!\n")
       filterDIST <- 100
     } else {
-      cat("Distance filtering per seed is",filterDIST,"%.\n\n")
+      cat("Distance filtering per seed is",filterDIST,"%.\n")
     }
   }
   if(filterINT < 100){
-    cat("Intensity filtering per seed is",filterINT,"%.\n\n")
+    cat("Intensity filtering per seed is",filterINT,"%.\n")
   }
   
   if(filterKDE < 100){
-    cat("KDE filtering per slice is",filterKDE,"%.\n\n")
+    cat("KDE filtering per slice is",filterKDE,"%.\n")
   }
+  cat("\n")
   
   #nowId <- 9208
   #i <- which(clustList$id == nowId)
   
-  selectorius <- c(1,3,2,5,4,10, 12, 15, 16)
+  selectorius <- c(1,3,2,5,4,10, 12, 15, 16, 17)
   cat("\t")
   cat(paste(colnames(clustList)[selectorius]), sep = "\t")
   cat("\n")
@@ -1216,8 +1218,12 @@ grabDBH <- function(fileFinder,
         clustList[i, ]$y <- y.mean
         clustList[i, ]$slices <- length(slices)
         clustList[i, ]$move <- round(100*sqrt((x.mean - clustList$x.ref[i])^2 + (y.mean - clustList$y.ref[i])^2), 1)
+        clustList[i, ]$timeSec <- timeNB
+        clustList[i, ]$nPoints <- nPoints
       } else {
         timeNB <- as.difftime(dbhStop - dbhStart)
+        clustList[i, ]$timeSec <- timeNB
+        clustList[i, ]$nPoints <- nPoints
         #cat("No DBH estimated in", round(timeNB, 1), units(timeNB), "\n")
       }
       
