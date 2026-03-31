@@ -567,9 +567,9 @@ grabDBH <- function(fileFinder,
   
 
   
-  seedLAS_file <- paste0(dbhPath, "seedLAS_cylinders.las")
+  seedLAS_file <- paste0(dbhPath, "seedLAS_cylinders_remeasure.las")
   if(!file.exists(seedLAS_file)){
-    seedLAS_file <- paste0(dbhPath, "seedLAS_cylinders_remeasure.las")
+    seedLAS_file <- paste0(dbhPath, "seedLAS_cylinders.las")
   }
   
   if(!regenerateCylinderLAS && file.exists(seedLAS_file)){
