@@ -921,9 +921,12 @@ grabDBH <- function(fileFinder,
     cat(paste0(i - firstTreeMeasured + 1, "/", n.remeasure, "\t"))
     
     nowId <- clustList$id[i]
+    cat(paste0(nowId, "\t"))
+    
     clustCloud <- filter_poi(seedLAS, StemID == nowId)
     
     nPoints <- clustCloud@header@PHB$`Number of point records`
+    cat(paste0(sprintf(paste0("%", 6, "s"), thMk(nPoints)), "\t"))
     #plot(clustCloud)
     
     if(nPoints < 10){
@@ -1208,7 +1211,7 @@ grabDBH <- function(fileFinder,
         #cat("DBH circle", dbh.mean, "cm and gam",dbh.gam.mean,"cm in", round(timeNB, 1), units(timeNB), "\n")
         
         clustList[i, ]$dbh <- dbh.mean
-        clustList[i, ]$dbh.gam <- dbh.gam.mean
+        clustList[i, ]$dbh.gam <- round(dbh.gam.mean,2)
         clustList[i, ]$sd.gam <- gam.sd.mean
         clustList[i, ]$var.dbh <- round(sd(circles[3, ]*200, na.rm = T),2)
         clustList[i, ]$var.dbh.gam <- round(sd(circles[6, ], na.rm = T),2)
@@ -1219,11 +1222,11 @@ grabDBH <- function(fileFinder,
         clustList[i, ]$slices <- length(slices)
         clustList[i, ]$move <- round(100*sqrt((x.mean - clustList$x.ref[i])^2 + (y.mean - clustList$y.ref[i])^2), 1)
         clustList[i, ]$timeSec <- round(timeNB, 1)
-        clustList[i, ]$nPoints <- thMk(nPoints)
+        clustList[i, ]$nPoints <- nPoints
       } else {
         timeNB <- as.difftime(dbhStop - dbhStart)
         clustList[i, ]$timeSec <- round(timeNB, 1)
-        clustList[i, ]$nPoints <- thMk(nPoints)
+        clustList[i, ]$nPoints <- nPoints
         #cat("No DBH estimated in", round(timeNB, 1), units(timeNB), "\n")
       }
       
@@ -1233,7 +1236,7 @@ grabDBH <- function(fileFinder,
       #dev.off()
       
     }
-    cat(paste(clustList[i, selectorius]), sep = "\t")
+    cat(paste(clustList[i, selectorius[c(3:length(selectorius))]]), sep = "\t")
     cat("\n")
   }
   
