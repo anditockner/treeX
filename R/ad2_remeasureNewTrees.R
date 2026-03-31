@@ -676,6 +676,11 @@ grabDBH <- function(fileFinder,
       } else {
         cat("Reading in totalCloud from", vegCloud.name, "\n")
         co <- capture.output(totalCloud <- readLAS(vegCloud.name, select = "xyzcit0"))
+        if(retainPointClouds){
+          cat("Retaining vegetation point cloud in global variable LAS_veg!\n")
+          LAS_veg <<- totalCloud
+          LAS_veg_name <<- fileFinder
+        }
       }
       if (exists("LAS_ground") && !is.na(LAS_ground)) {
         cat("Also using old groundCloud!\n")
@@ -683,12 +688,12 @@ grabDBH <- function(fileFinder,
       } else {
         cat("    Reading in ground cloud from", groundCloud.name, "\n")
         co <- capture.output(groundCloud <- readLAS(groundCloud.name, select = "xyzcit0"))
-      }
-      if(retainPointClouds){
-        cat("Retaining point clouds in global variables LAS_veg and LAS_ground!\n")
-        LAS_veg <<- totalCloud
-        LAS_ground <<- groundCloud
-        LAS_veg_name <<- fileFinder
+        if(retainPointClouds){
+          cat("Retaining ground point cloud in global variable LAS_ground!\n")
+          LAS_ground <<- groundCloud
+          LAS_veg_name <<- fileFinder
+        }
+        totalCloud <- rbind(totalCloud, groundCloud)
       }
     } else {
       cat("Reading in vegetation cloud from", vegCloud.name, "\n")
