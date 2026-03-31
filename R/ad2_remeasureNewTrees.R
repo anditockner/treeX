@@ -107,7 +107,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
       
       
       try(grabDBH(nowFileFinder, treeList.path = nowTreeList, 
-                  remeasure = T, tileClipping = tileClipping))
+                  regenerateCylinderLAS = T, tileClipping = tileClipping))
       
     }
     
@@ -163,7 +163,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
                       nowTreeList <- uniqueFiles$listPath[i]
                       
                       try(grabDBH(nowFileFinder, treeList.path = nowTreeList, 
-                                  remeasure = T, tileClipping = tileClipping))
+                                  regenerateCylinderLAS = T, tileClipping = tileClipping))
                     }
   }
   
@@ -189,7 +189,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 #'
 #' @param treeList.path input path of trees that should be re-measured
 #' @param tileClipping how many tiles should be created (default 3 means: 3x3 = 9 tiles), set to 4 (= 16 tiles) for big files
-#' @param remeasure creates new cylinderLAS for measuring diameters, set FALSE only if cylinderLAS is already up to date, otherwise some trees might be missing
+#' @param regenerateCylinderLAS creates new cylinderLAS for measuring diameters, set FALSE only if cylinderLAS is already up to date, otherwise some trees might be missing
 #' @param allTrees set this TRUE to also measure trees with numbers less than 9000
 #' @param new.numbers assign new sequential numbers for circles (1 being the thickest tree)
 #' @param moveOnly set to TRUE to keep old DBHs in the main list (in case there is a lot of movement expected and circles are not perfectly centered)
@@ -216,7 +216,7 @@ grabDBH <- function(fileFinder,
                     tileClipping = 3, 
                     overWriteDBHlist = TRUE, # shall old trees_dbh.txt be replaced for segmenting new volumes
                     keepBorderTrees = F, # set TRUE if there are many trees outside of DTM (check if thats a good idea)
-                    remeasure = T, 
+                    regenerateCylinderLAS = T, 
                     
                     
                     
@@ -237,7 +237,7 @@ grabDBH <- function(fileFinder,
     dirPath <- "D:/Species/awayyyyy/"
     treeList.path <- "D:/trees.txt"
     fileFinder <- "KBKI2"
-    remeasure = T
+    regenerateCylinderLAS = T
     allTrees = F
     new.numbers = F
     tileClipping = 3
@@ -575,7 +575,7 @@ grabDBH <- function(fileFinder,
     seedLAS_file <- paste0(dbhPath, "seedLAS_cylinders_remeasure.las")
   }
   
-  if(!remeasure && file.exists(seedLAS_file)){
+  if(!regenerateCylinderLAS && file.exists(seedLAS_file)){
     cat("Reading old", basename(seedLAS_file), "file... ")
     co <- capture.output(seedLAS <- readLAS(seedLAS_file, select = "xyzcit0"))
     cat("done!\n")
@@ -885,7 +885,7 @@ grabDBH <- function(fileFinder,
 
   
   if(filterDIST < 100){
-    if(!is.element("SensorDistance", colnames(seedLAS_file@data))){
+    if(!is.element("SensorDistance", colnames(seedLAS@data))){
       cat("WARNING - No distance filtering possible because of missing SensorDistance field!\n")
       filterDIST <- 100
     } else {
