@@ -188,7 +188,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 #'
 #'
 #' @param treeList.path input path of trees that should be re-measured
-#' @param tileClipping how many tiles should be created (default 3 means: 3x3 = 9 tiles), set to 4 (= 16 tiles) for big files
+#' @param tileClipping how many tiles should be created (3 means: 3x3 = 9 tiles), set to 4 (= 16 tiles) for big files, for circular plots 2 is fine or even 1 (smaller than 10 m radius)
 #' @param regenerateCylinderLAS creates new cylinderLAS for measuring diameters, set FALSE only if cylinderLAS is already up to date, otherwise some trees might be missing
 #' @param allTrees set this TRUE to also measure trees with numbers less than 9000
 #' @param new.numbers assign new sequential numbers for circles (1 being the thickest tree)
@@ -214,7 +214,7 @@ grabDBH <- function(fileFinder,
                     filterKDE = 94, 
                     
                     dirPath = paste0(getwd(), "/"),
-                    tileClipping = 3, 
+                    tileClipping = -1, 
                     overWriteDBHlist = TRUE, # shall old trees_dbh.txt be replaced for segmenting new volumes
                     keepBorderTrees = F, # set TRUE if there are many trees outside of DTM (check if thats a good idea)
                     regenerateCylinderLAS = T, 
@@ -270,10 +270,6 @@ grabDBH <- function(fileFinder,
     if(transformList.path == ""){
       transformList.path <- paste0(dirname(dirname(treeList.path)), "/")
     }
-  }
-  
-  if(tileClipping <= 0){
-    tileClipping <- 1
   }
   
   sink(paste0(dbhPath,"grabDBH_",format(Sys.time(), "%Y%m%d_%H%M"),"_Rcons.txt"), append = TRUE, split = TRUE)
@@ -640,6 +636,24 @@ grabDBH <- function(fileFinder,
     
     #for every tree! put into seed set
     i <- 1
+    
+    if(tileClipping == 0){
+      tileClipping <- 1
+    }
+    
+    if(tileClipping < 0){
+      # automatic tile clipping setting
+      xSpan <- (totalCloud@header@PHB$`Max X` - totalCloud@header@PHB$`Min X`)
+      ySpan <- (totalCloud@header@PHB$`Max Y` - totalCloud@header@PHB$`Min Y`)
+      if((xSpan * ySpan) < 5000){
+        # half a hectare means 70x70 m square (or 35 m radius circle 3800 m2)
+        tileClipping <- 2
+      } else {
+        tileClipping <- 3
+      }
+    }
+    
+    
     
     
     if(tileClipping == 1){
