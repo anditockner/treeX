@@ -1456,6 +1456,7 @@ grabDBH <- function(fileFinder,
     }
     cat("\n")
     
+    timePar1 <- Sys.time()
     file_parallelProtocol <- paste0(dbhPath, "temp_par_grabDBH.txt")
     file.create(file_parallelProtocol)
     fdc <<- foreach(i=firstTreeMeasured:length(clustList$id),  .errorhandling = 'remove', 
