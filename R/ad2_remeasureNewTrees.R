@@ -10,7 +10,9 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
                               dirPath = paste0(getwd(), "/"), tileClipping = 2, nr_cores = 1){
   
   {
-    library(dplyr)
+    
+    suppressPackageStartupMessages(library("data.table", character.only = T))
+    suppressPackageStartupMessages(library("dplyr", character.only = T))
     
     #plot(1, 1, type = "n", xaxt = "n", yaxt = "n", 
     #     ylab = "", xlab = "", main = "initializing plot area", bty = "n")
@@ -173,6 +175,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
 
 
 calcSensorDist <- function(las, trajPath){
+  library(data.table)
   # ---------- TOTAL TIMER ----------
   t_total_start <- Sys.time()
   
@@ -707,7 +710,7 @@ grabDBH <- function(fileFinder,
     
     
     if(filterDIST < 100 & !is.element("SensorDistance", colnames(totalCloud@data))){
-      cat("\nCalculating sensor distance for point cloud...\n")
+      cat("\nCalculating sensor distance for total point cloud...\n")
       
       traj_path <- paste0(dirPath, groundPath, fileFinder, "_traj.txt")
       if(!file.exists(traj_path)){
@@ -1022,7 +1025,7 @@ grabDBH <- function(fileFinder,
         cat("WARNING - No traj found, no distance filtering possible (missing SensorDistance field)!\n")
         filterDIST <- 100
       } else {
-        totalCloud <- calcSensorDist(seedLAS, trajPath = traj_path)
+        seedLAS <- calcSensorDist(seedLAS, trajPath = traj_path)
       }
     } else {
       cat("Distance filtering per seed is",filterDIST,"%.\n")
