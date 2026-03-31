@@ -1218,12 +1218,12 @@ grabDBH <- function(fileFinder,
         clustList[i, ]$y <- y.mean
         clustList[i, ]$slices <- length(slices)
         clustList[i, ]$move <- round(100*sqrt((x.mean - clustList$x.ref[i])^2 + (y.mean - clustList$y.ref[i])^2), 1)
-        clustList[i, ]$timeSec <- timeNB
-        clustList[i, ]$nPoints <- nPoints
+        clustList[i, ]$timeSec <- round(timeNB, 1)
+        clustList[i, ]$nPoints <- thMk(nPoints)
       } else {
         timeNB <- as.difftime(dbhStop - dbhStart)
-        clustList[i, ]$timeSec <- timeNB
-        clustList[i, ]$nPoints <- nPoints
+        clustList[i, ]$timeSec <- round(timeNB, 1)
+        clustList[i, ]$nPoints <- thMk(nPoints)
         #cat("No DBH estimated in", round(timeNB, 1), units(timeNB), "\n")
       }
       
