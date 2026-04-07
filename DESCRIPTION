@@ -1,6 +1,6 @@
 Package: treeX
 Title: Individual Tree Extraction of Ground-Based Point Clouds
-Version: 1.0.260330
+Version: 1.0.260407
 Authors@R: 
     person("Andreas", "Tockner", role = c("aut", "cre"), email = "andreas.tockner@boku.ac.at", 
            comment = c(ORCID = "0000-0001-6833-6713"))
