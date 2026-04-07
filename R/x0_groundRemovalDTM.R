@@ -1124,9 +1124,14 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
           cat("in a ")
           print.difftime(round(t3-t2,1))
         }
-        plot(gr_vox)
+        #plot(gr_vox)
         if(onlyGroundMin){
           cat("\n\nTerminating after minimum ground extraction!\n\n")
+          
+          allStop <- Sys.time()
+          cat("\nAll tasks completed. Global ")
+          print.difftime(round(allStop - allStart,1))
+          cat("\n\n")
           sink()
           return()
         }
@@ -1195,7 +1200,16 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
         cat("in a ")
         print.difftime(round(t3-t2,1))
       }
-
+      if(onlyGroundMin){
+        cat("\n\nTerminating after minimum ground extraction!\n\n")
+        
+        allStop <- Sys.time()
+        cat("\nAll tasks completed. Global ")
+        print.difftime(round(allStop - allStart,1))
+        cat("\n\n")
+        sink()
+        return()
+      }
       res.dtm = 1
       k.dtm = 1000
       p.dtm = 2
