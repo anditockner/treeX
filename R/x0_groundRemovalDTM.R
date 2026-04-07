@@ -245,6 +245,7 @@ transformVegetation <- function(LASfile, fileFinder,
 #' @param clip.trajectory.distance can be set to cut the input file according to the trajectory
 #' @param clip.radius can be set to cut a circle from 0 0 with the given radius of the big input file
 #' @param exportClippedLAS if set TRUE, then a laz file will be exported according to clip.radius
+#' @param onlyGroundMin if set TRUE, then function stops after ground_min_vox is created (for merging many tiles)
 #' @export
 extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FALSE,
                               groundCutHeight = 1.0, steepSlope = TRUE, clothSize = 0.10,
@@ -258,6 +259,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
                               additionalSlices = TRUE,
                               exportSlice.upperLimit = 3, exportSlice.lowerLimit = 1, #m
                               exportClippedLAS = FALSE,
+                              onlyGroundMin = FALSE,
                               dirPath = paste0(getwd(), "/")){
 
   
@@ -1123,6 +1125,11 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
           print.difftime(round(t3-t2,1))
         }
         plot(gr_vox)
+        if(onlyGroundMin){
+          cat("\n\nTerminating after minimum ground extraction!\n\n")
+          sink()
+          return()
+        }
 
 
 
