@@ -25,8 +25,8 @@ changeLASVEG <- function() {
 #' @param doReferencedOnly deletes all the above 20000 stems, they do not make senseful trees
 #' @param zScale relative number of Z-variable multiplication for a better height progress
 #' @param merged set TRUE if using a combined stem-file with field "size" for combining
-#' @param totalRuns number of iterations for discovering crowns, default 500
-#' @param limitShare if we are adding less points from blanks than that, then incrementing searching distance (default: 0.005 = 0.5 %)
+#' @param totalRuns number of iterations for discovering crowns, default 1000
+#' @param limitShare if we are adding less points from blanks than that, then incrementing searching distance (default: 0.003 = 0.3 %)
 #' @param zScale relative number of Z-variable multiplication for a better height progress
 #' @param voxelSize before the region growing the point cloud can be voxelized, in cm, default = 0 (no voxelisation)
 #' @param incrementDistance the step of raising searching distance if less than limitShare points are found
@@ -46,7 +46,8 @@ changeLASVEG <- function() {
 #' @export
 crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALSE, 
                       limitStems = 50, limitShare = 0.003, 
-                      zScale = 2, voxelSize = 4,
+                      zScale = 2, ignorezScaleStartRow = FALSE, 
+                      voxelSize = 4,
                       doReferencedOnly = FALSE, referenced = FALSE,
                       merged = FALSE, totalRuns = 1000, incrementDistance = 0.005,
                       tileClipping = 3, diagonals = FALSE,
@@ -605,7 +606,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
             totalCloud, X > xu - tileBuffer, X < xo + tileBuffer,
             Y > yu - tileBuffer, Y < yo + tileBuffer
           )
-          cat("", tilesLAS@header@PHB$`Number of point records`, "pts")
+          cat("", thMk(tilesLAS@header@PHB$`Number of point records`), "pts")
 
 
           for (b in 1:length(clustList.sub$id)) {
@@ -1027,8 +1028,10 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
   # maximumDistance <- 0.50 # if nearest points are further than 50 cm, for is terminated early
 
 
+  
 
-
+  # originally wanted to disable the z-scale for the start row (leaning stems rather touching here) but not implemented yet
+  #originalzScale <- zScale
 
   for (j in 1:totalRuns) {
     start <- Sys.time()
@@ -1086,7 +1089,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
       # NEW RULE HERE 8 / 20, no caring for minimum number of stems, if half of maximum distance is already reached! or it will soon be over, expecially with voxel.
       if (length(nowStems) < minimumNowStems && searchDistance < maximumDistance / 2) {
-        cat("Taking all points in because less than", minimumNowStems, "stems added in last round!\n\n")
+        cat("Increasing search distance because less than", minimumNowStems, "stems added in last round!\n\n")
         searchDistance <- searchDistance + incrementDistance
         despr <- 0
         gc() # garbage collection
@@ -1098,6 +1101,12 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           decreas.count <- 0
           searchDistance <- searchDistance + incrementDistance
           despr <- despr + 1
+          
+          cat(fileFinder, ": Iteration ", sprintf("%03d", j),
+              " on _", format(Sys.time(), "%a%d. %X"), "_  ", 
+              sep = ""
+          )
+          
           # alernaternative with justdown: condition = (despr > despr.max || (searchDistance < 0.05 && !justDown))
           if ((justUp && nrow(blankLAS@data) / pointNumber > 0.05) || despr > despr.max || searchDistance < 0.05) { # this is kind of a border ...| 5cm |.... no jumps
             if (justUp && voxelSize < 1) {
@@ -1110,7 +1119,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
             ## bad punishment...
             despr <- 0
             gc() # garbage collection
-            cat("Too less seed points, taking all in again...\n\n")
+            cat("Not enough seed points, increasing search distance...\n\n")
             seedSet <- outLAS@data
           } else {
             justUp <- TRUE
@@ -1118,7 +1127,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
             if (voxelSize > 1) {
               despr <- 0
               gc() # garbage collection
-              cat("Undershooting limitshare in Voxel settings, taking all in again...\n\n")
+              cat(paste0("Less than limitShare = ", limitShare*100, "%  points added, increasing search distance...\n\n"))
               seedSet <- outLAS@data
             }
             # seedSet <- filter_poi(outLAS, runJay > j-3)@data # never tried that, only using 3 last times seeds
@@ -1131,18 +1140,24 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           }
 
           cat(fileFinder, ": Iteration ", sprintf("%03d", j),
-            " on _", format(Sys.time(), "%a%d. %X"), "_     ",
+            " on _", format(Sys.time(), "%a%d. %X"), "_  ", 
             sep = ""
           )
         } else {
           cat(fileFinder, ": Iteration ", sprintf("%03d", j),
-            " on _", format(Sys.time(), "%a%d. %X"), "_     ",
+            " on _", format(Sys.time(), "%a%d. %X"), "_  ",
             sep = ""
           )
 
 
           if (j <= length(startRow)) {
-            cat("STROW ")
+            #if(ignorezScaleStartRow){
+            #  zScale <- 1
+            #}
+            cat("STROW  ")
+          } else {
+            cat("  ")
+            #zScale <- originalzScale
           }
           justUp <- FALSE
           # justDown <- FALSE
@@ -1199,7 +1214,8 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
       cat(
         "dist =",
-        round(searchDistance * 100), "cm\n"
+        round(searchDistance * 100), "cm, zDist =",
+        round(searchDistance * 100 * zScale), "cm\n"
       )
 
 
@@ -1334,11 +1350,19 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     # nowStems <- nowStems[nowStems!=0] # 0 refers to the blanks, is no tree at all
     nowStems <- nowStems[order(nowStems)]
 
-    cat(" - Our newly assigned blanks hold", length(nowStems), "tree entities ranging from", range(nowStems), "\n")
-    if (length(nowStems) < 50) {
-      cat(nowStems)
-      cat("\n")
-    }
+    if(length(nowStems) == 0){
+      cat(" - - - WARNING - - - no trees added in blank set!\n")
+    } else if(length(nowStems) == 1){
+      cat(" - Our newly assigned blanks has only the one tree", nowStems, "\n")
+    } else if(length(nowStems) > 1 & length(nowStems) < 7){
+      cat(" - Our newly assigned blanks hold", length(nowStems), "trees, which are:", nowStems, "\n")
+    } else {
+      cat(" - Our newly assigned blanks hold", length(nowStems), "tree entities ranging from", range(nowStems), "\n")
+      if(length(nowStems) < 50){
+        cat(nowStems)
+        cat("\n")
+      }
+    } 
 
     # cat("Merge outLAS... ")
     seeds@data <- blankSet.sub[StemID != 0]
@@ -1397,13 +1421,16 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       try(grLAS@data$randomCol <- rnlist[match(grLAS@data$StemID, idlist)])
       grLAS@data$randomCol[is.na(grLAS@data$randomCol)] <- 0
       writeLAS(grLAS, paste0(crownPath, fileFinder, "_grounded_stems", locationStr, ".las"))
-      rm(grLAS)
-      gc()
       reduceGroundPoints_num <- blankLAS@data[Classification == 2, .N]
       cat("Unassigned ground points:", thMk(reduceGroundPoints_num), "pts\n")
       pointNumber <- pointNumber - reduceGroundPoints_num
       cat("New reduced pointNumber:", thMk(pointNumber), "pts\n")
+      groundWithHoles <<- filter_poi(blankLAS, Classification == 2)
+      writeLAS(groundWithHoles, paste0(crownPath, fileFinder, "_ground_blanks_vox", locationStr, ".las"))
+      
       blankLAS <<- filter_poi(blankLAS, Classification != 2)
+      rm(grLAS, groundWithHoles)
+      gc()
       groundFound <- TRUE
       cat("Ground points are removed after round", j, "from region growing.\n\n")
     }
