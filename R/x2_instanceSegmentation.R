@@ -27,6 +27,7 @@ changeLASVEG <- function() {
 #' @param merged set TRUE if using a combined stem-file with field "size" for combining
 #' @param totalRuns number of iterations for discovering crowns, default 1000
 #' @param limitShare if we are adding less points from blanks than that, then incrementing searching distance (default: 0.003 = 0.3 %)
+#' @param limitStems if we are adding less percent of all trees from blanks than that, then incrementing searching distance (default: 50 %, if many small trees than reduce to 30 or even 20 - 100 means that all trees need to be in set (only tally trees))
 #' @param zScale relative number of Z-variable multiplication for a better height progress
 #' @param voxelSize before the region growing the point cloud can be voxelized, in cm, default = 0 (no voxelisation)
 #' @param incrementDistance the step of raising searching distance if less than limitShare points are found
@@ -39,6 +40,7 @@ changeLASVEG <- function() {
 #' @param filterSOR if TRUE then we use the SOR clean file
 #' @param numberIntensity if you rather want to specify a number of most intense points to be kept
 #' @param silent fewer outputs or plots if set to TRUE
+#' @param writeVoxelizedGroundHoles set TRUE for writing _ground_blanks_vox.las (big file, for segmented ground analysis)
 #' @param useTreeFile loading and external trees_dbh.txt file
 #' @param fast if TRUE, no detailled per stem information will be calculated
 #' @param retainPointClouds if TRUE, the used point clouds will be stored for another run (more performant for different settings), if FALSE the point clouds will be passed to next function layer (always) and then discarded.
@@ -47,7 +49,7 @@ changeLASVEG <- function() {
 crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALSE, 
                       limitStems = 50, limitShare = 0.003, 
                       zScale = 2, ignorezScaleStartRow = FALSE, 
-                      voxelSize = 4,
+                      voxelSize = 4, writeVoxelizedGroundHoles = FALSE, 
                       doReferencedOnly = FALSE, referenced = FALSE,
                       merged = FALSE, totalRuns = 1000, incrementDistance = 0.005,
                       tileClipping = 3, diagonals = FALSE,
@@ -1421,15 +1423,19 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       try(grLAS@data$randomCol <- rnlist[match(grLAS@data$StemID, idlist)])
       grLAS@data$randomCol[is.na(grLAS@data$randomCol)] <- 0
       writeLAS(grLAS, paste0(crownPath, fileFinder, "_grounded_stems", locationStr, ".las"))
+      rm(grLAS)
       reduceGroundPoints_num <- blankLAS@data[Classification == 2, .N]
       cat("Unassigned ground points:", thMk(reduceGroundPoints_num), "pts\n")
       pointNumber <- pointNumber - reduceGroundPoints_num
       cat("New reduced pointNumber:", thMk(pointNumber), "pts\n")
-      groundWithHoles <<- filter_poi(blankLAS, Classification == 2)
-      writeLAS(groundWithHoles, paste0(crownPath, fileFinder, "_ground_blanks_vox", locationStr, ".las"))
+      
+      if(writeVoxelizedGroundHoles){
+        groundWithHoles <<- filter_poi(blankLAS, Classification == 2)
+        writeLAS(groundWithHoles, paste0(crownPath, fileFinder, "_ground_blanks_vox", locationStr, ".las"))
+        rm(groundWithHoles)
+      }
       
       blankLAS <<- filter_poi(blankLAS, Classification != 2)
-      rm(grLAS, groundWithHoles)
       gc()
       groundFound <- TRUE
       cat("Ground points are removed after round", j, "from region growing.\n\n")
