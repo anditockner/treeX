@@ -1431,6 +1431,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       
       if(writeVoxelizedGroundHoles){
         groundWithHoles <<- filter_poi(blankLAS, Classification == 2)
+        try(groundWithHoles@data$Z <- groundWithHoles@data$Z * zScale)
         writeLAS(groundWithHoles, paste0(crownPath, fileFinder, "_ground_blanks_vox", locationStr, ".las"))
         rm(groundWithHoles)
       }
