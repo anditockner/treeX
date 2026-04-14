@@ -31,11 +31,12 @@ removeUmlaut <- function(inputString){
 #'
 #' @param allDBHs add all measured diameters (gam, circle, ellipsis) to the output file trees_dbh.txt
 #* @param nr_cores how many cores to use for parallel cluster analysis
+#* @param tidySlice set to FALSE if you want to keep slice_cluster.laz in the end
 #* @param reduceClusterToPoints speeds up diameterBeast by reducing the clusters to a maximum number of points, standard 80.000, if set to 0, no reduction will be done - if fast is TRUE, then it will be reduced to 9.000 points by default
 #* @param fast speeds up diameterBeast by less detailed circle fitting, also reduces the number of points per cluster to 9.000 if not specified in reduceClusterToPoints differently 
 #' @export
 #' @useDynLib edc
-clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE, 
+clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE, tidySlice = TRUE, 
                        clipHeight = 3, bottomCut = 1, ipad = FALSE, nr_cores = 0,
                        bushPreparation = FALSE, filterINT = 95, ref = NA, ref.plot_id = NA,
                        cutWindow = c(-1000, -1000, 2000), numberOfPoints = 300, heightExtent = 1.3, TLS = FALSE,
@@ -163,6 +164,12 @@ clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE,
     gc()
   }
 
+  if(tidySlice){
+    if(file.exists(paste0(dbhPath, "slice_cluster.laz"))){
+      unlink(paste0(dbhPath, "slice_cluster.laz"))
+      }
+  }
+  
   gloStop <- Sys.time()
   cat("\nTree detection completed in a ")
   print.difftime(round(gloStop - gloStart, 1))
