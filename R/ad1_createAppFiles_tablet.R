@@ -2245,7 +2245,7 @@ createAppFiles <- function(fileFinder = NA,
 #' @export
 openColoredLAZ <- function(fileFinder, 
                            withGround = T, 
-                           dirPath = paste0(getwd(), "/",), 
+                           dirPath = paste0(getwd(), "/"), 
                            pathCloudCompare = "\"C:/Program Files/CloudCompare/\""){
   #library(lidR)
   library(PBSmodelling) #open files
