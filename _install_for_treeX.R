@@ -1,6 +1,9 @@
-install.packages("devtools", repos = "https://cran.rstudio.com/", dep = TRUE)
+# install.packages("devtools", repos = "https://cran.rstudio.com/", dep = TRUE)
+# library("devtools")
 
-library("devtools")
+install.packages("pak")
+library(pak)
+
 {
   as <- find_rtools()
   if(!as){
@@ -8,17 +11,18 @@ library("devtools")
   }
 }
 
-devtools::install_github("tiagodc/TreeLS")
+pak::pak("tiagodc/TreeLS")
 #remotes::install_github("tiagodc/TreeLS")
 #install.packages("TreeLS", dep = T)
 
-devtools::install_github("ethanyxu/ADPclust")
+pak::pak("ethanyxu/ADPclust")
+#devtools::install_github("ethanyxu/ADPclust")
 #install.packages("ADPclust")
 
 packs_to_install <- c("lidR", "RANN", "conicfit", "alphashape3d", "alphahull",
                       "plotrix", "dbscan", "doParallel", "data.table",
                       "ks", "Metrics", "VoxR", "RCSF", "Morpho", "doMC",
-                      "ADPclust", "densityClust", "mgcv", "spatstat",
+                      "densityClust", "mgcv", "spatstat",
                       "flexclust", "matrixStats", "Distance", "lmfor",
                       "geosphere", "recexcavAAR", "DescTools", "foreach", "PBSmodelling",
                       "benchmarkme", "stringi", "raster", "plyr", "dplyr", "png", "jpeg", 
