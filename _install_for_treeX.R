@@ -9,6 +9,9 @@ if (.Platform$OS.type == "windows") {
   if(!as){
     stop("\nRtools not found! It is required for installing TreeLS!\n\n")
   }
+  install.packages("doParallel", dep = T)
+} else {
+  install.packages("doMC", dep = T)
 }
 
 pak::pak("tiagodc/TreeLS")
@@ -19,9 +22,11 @@ pak::pak("ethanyxu/ADPclust")
 #devtools::install_github("ethanyxu/ADPclust")
 #install.packages("ADPclust")
 
+
+
 packs_to_install <- c("lidR", "RANN", "conicfit", "alphashape3d", "alphahull",
-                      "plotrix", "dbscan", "doParallel", "data.table",
-                      "ks", "Metrics", "VoxR", "RCSF", "Morpho", "doMC",
+                      "plotrix", "dbscan", "data.table",
+                      "ks", "Metrics", "VoxR", "RCSF", "Morpho", 
                       "densityClust", "mgcv", "spatstat",
                       "flexclust", "matrixStats", "Distance", "lmfor",
                       "geosphere", "recexcavAAR", "DescTools", "foreach", "PBSmodelling",
