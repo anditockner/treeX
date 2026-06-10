@@ -32,6 +32,11 @@ changeLASVEG <- function() {
 #' @param voxelSize before the region growing the point cloud can be voxelized, in cm, default = 0 (no voxelisation)
 #' @param incrementDistance the step of raising searching distance if less than limitShare points are found
 #'
+#' @param cutoff.ground vertical threshold up until which is classified as ground (2L) - removed from segmentation as soon as distancelimit.ground is reached
+#' @param cutoff.shrub vertical threshold up until which is classified as shrub (3L) - removed from segmentation as soon as distancelimit.veg is reached (defined by cutoff.shrub - 1.30 m + cutoff.shrub.limitPuffer)
+#' @param cutoff.shrub.limitPuffer how many meters more should shrub vegetation be considered before removing all shrub points from segmentation
+#' @param intensityQuantile NOT IMPLEMENTED YET 
+#'
 #' @param CC_level a connected components parameter for fineness in cloudcompare (default: 10)
 #' @param CC_numberPoints the minimum size in points of a component to not be dropped (default: 1000)
 #' @param clipHeight in m if you need to set all stem seeds to a uniform height
@@ -51,6 +56,8 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
                       zScale = 2, #ignorezScaleStartRow = FALSE, 
                       cutoff.ground = 0.5, # in m to which height ground is left in the point cloud
                       cutoff.shrub = 1, # in m 
+                      cutoff.shrub.limitPuffer = 1, # in m
+                      distancelimit.ground = 220, # in cm
                       intensityQuantile = 100, 
                       
                       voxelSize = 4, writeVoxelizedGroundHoles = FALSE, 
@@ -59,7 +66,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
                       merged = FALSE, totalRuns = 1000, incrementDistance = 0.005,
                       tileClipping = 3, diagonals = FALSE,
                       useTreeFile = "",
-                      selector = "xyzcit0RGB", distanceCounter_cm_limit = 220,
+                      selector = "xyzcit0RGB", 
                       quantileIntensity = 15, CC_level = 10, CC_numberPoints = 1000, durationMins = 2400, maximumDistance = 0.50,
                       clipHeight = 3, bottomCut = 1, bushPreparation = FALSE, filterSOR = FALSE, 
                       numberIntensity = 0, silent = TRUE, fast = TRUE, plotEvery = 100, mode = "ALLGO",
@@ -81,7 +88,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
   ## TROUBLESHOOTING #
   if (2 == 1) {
     diagonals <- FALSE
-    distanceCounter_cm_limit <- 220
+    distancelimit.ground <- 220
     selector <- "xyzcit0"
     useTreeFile <- ""
     cutWindow <- c(-1000, -1000, 2000)
@@ -860,8 +867,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         groundCloud <- rbind(groundCloud, shrubCloud)
         
         if(writeVoxelizedShrubStems){
-          cat("creating new LAS\n")
-          shrubCloud <- LAS(shrubCloud@data)
+          co <- capture.output(shrubCloud <- LAS(shrubCloud@data))
           writeLAS(shrubCloud, paste0(crownPath, fileFinder, "_shrubSlice_", cutoff.shrub, "m.laz"))
         }
         rm(shrubCloud)
@@ -988,8 +994,9 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
   distanceCounter_cm <- 0
   # 22-06-08: distanceCounter can be set at the top
-  # distanceCounter_cm_limit <- 200
-  distanceCounter_veg_cm_limit <- (cutoff.shrub - 1.3)*100 + ifelse(voxelSize == 0, 10, 5*voxelSize) # 10 cm more or 2x voxelSize
+  # distancelimit.ground <- 200
+  distancelimit.veg <- (cutoff.shrub - 1.3 + cutoff.shrub.limitPuffer)*100 
+  # 1 m more before cutting away vegetation
   groundFound <- FALSE
   vegFound <- FALSE
 
@@ -1029,7 +1036,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     cat("Due to voxelisation, the increment is set to one voxel or", voxelSize, "cm.\n")
 
 
-    start.times <- ceiling(distanceCounter_cm_limit / voxelSize / zScale)
+    start.times <- ceiling(distancelimit.ground / voxelSize / zScale)
     last.quart <- floor(start.times / 4) # the last fourth * sqrt 2 to get the diagonals as well (roundish footprint)
 
     startRow <- c(
@@ -1039,7 +1046,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     cat(paste0(start.times, " Rounds of the start row: ", start.times - last.quart, "x ", round(voxelSize, 0), " cm (simple growth) and ", last.quart, "x ", round(voxelSize * 1.6, 0), " cm (diagonal gr.).\n"))
   } else {
     start_cm <- 2
-    start.times <- distanceCounter_cm_limit / start_cm / zScale
+    start.times <- distancelimit.ground / start_cm / zScale
     startRow <- rep(start_cm / 100, start.times)
     cat("We repeat", start.times, "times the start row at", start_cm / 100, "m\n")
   }
@@ -1266,7 +1273,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
 
 
-      if (distanceCounter_cm * zScale > distanceCounter_cm_limit &&
+      if (distanceCounter_cm * zScale > distancelimit.ground &&
         !startRowFinished) {
         startRowFinished <- TRUE
         if (voxelSize != 0) {
@@ -1485,9 +1492,9 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
     
 
-    if (distanceCounter_cm * zScale > distanceCounter_cm_limit && !groundFound) {
+    if (distanceCounter_cm * zScale > distancelimit.ground && !groundFound) {
       cat("\n")
-      cat("We reached the z-limit (", distanceCounter_cm_limit, "cm), so we should be at the ground.\n")
+      cat("We reached the z-limit (", distancelimit.ground, "cm), so we should be at the ground.\n")
       grLAS <- outLAS
       try(grLAS@data$Z <- grLAS@data$Z * zScale)
       grLAS <- add_lasattribute_manual(grLAS, grLAS@data$StemID, "StemID", "Single Stem ID", type = "short")
@@ -1515,9 +1522,9 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     }
     
     
-    if (distanceCounter_cm * zScale > distanceCounter_veg_cm_limit && !vegFound) {
+    if (distanceCounter_cm * zScale > distancelimit.veg && !vegFound) {
       cat("\n")
-      cat("We reached the z-limit (", distanceCounter_veg_cm_limit, "cm), so we should be at", cutoff.shrub, "m.\n")
+      cat("We reached the z-limit (", distancelimit.veg, "cm), so we should be at", cutoff.shrub, "m.\n")
       
       if(writeVoxelizedShrubStems){
         
