@@ -48,11 +48,13 @@ changeLASVEG <- function() {
 #' @export
 crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALSE, 
                       limitStems = 50, limitShare = 0.003, 
-                      zScale = 2, ignorezScaleStartRow = FALSE, 
-                      groundCutoff = 1, # in m 
+                      zScale = 2, #ignorezScaleStartRow = FALSE, 
+                      cutoff.ground = 0.5, # in m to which height ground is left in the point cloud
+                      cutoff.shrub = 1, # in m 
                       intensityQuantile = 100, 
                       
                       voxelSize = 4, writeVoxelizedGroundHoles = FALSE, 
+                      writeVoxelizedShrubStems = FALSE, 
                       doReferencedOnly = FALSE, referenced = FALSE,
                       merged = FALSE, totalRuns = 1000, incrementDistance = 0.005,
                       tileClipping = 3, diagonals = FALSE,
@@ -332,9 +334,9 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
 
     ### assign ground level to certain threshold:
-    if(groundCutoff != 1){
+    if(cutoff.ground != 0.5 & cutoff.shrub != 1){
       tstart <- Sys.time()
-      cat("Setting the vertical cut-off for ground and shrub points at", groundCutoff, "m.\n")
+      cat("\nAssigning a horizontal cut-off for ground at", cutoff.ground, "and shrubs at", cutoff.shrub, "m.\n")
       dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_min.grd")
       if (!file.exists(dtmFile)) {
         dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_fine.grd")
@@ -346,16 +348,17 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       tryCatch(
         {
           # read in raster file
+          cat("Read dtm", basename(dtmFile), "- ")
           dtm_z <- raster(dtmFile)
+          cat("normalize", basename(dtmFile), "- ")
           
-          cat("Reading dtm from", basename(dtmFile), "- ")
           totalCloud <- normalize_height(totalCloud, dtm_z, na.rm = TRUE) # need to save it in that intermediate object or it cannot unnormalize anymore
-          cat("assigning 1L - ")
+          cat("assign 1L (rest) - ")
           totalCloud@data$Classification <- 1L # unclassified
-          cat("3L - ")
-          totalCloud@data$Classification[totalCloud@data$Z <= groundCutoff] <- 3L # ground
-          cat("2L - ")
-          totalCloud@data$Classification[totalCloud@data$Z < 1] <- 2L # low vegetation
+          cat("3L (veg) - ")
+          totalCloud@data$Classification[totalCloud@data$Z <= cutoff.shrub] <- 3L # ground
+          cat("2L (ground) - ")
+          totalCloud@data$Classification[totalCloud@data$Z < cutoff.ground] <- 2L # low vegetation
           cat("unnormalize ")
           totalCloud <- unnormalize_height(totalCloud)
           cat("done.\n")
@@ -964,7 +967,9 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
   distanceCounter_cm <- 0
   # 22-06-08: distanceCounter can be set at the top
   # distanceCounter_cm_limit <- 200
+  distanceCounter_veg_cm_limit <- (cutoff.shrub - 1.3)*100 + ifelse(voxelSize == 0, 10, 5*voxelSize) # 10 cm more or 2x voxelSize
   groundFound <- FALSE
+  vegFound <- FALSE
 
   useableDistance <- 0.7
   justUp <- FALSE # if now incrementing distance, next time take all in!
@@ -1456,6 +1461,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     prgsFrame[j, ]$treesGrow <- length(nowStems)
 
 
+    
 
     if (distanceCounter_cm * zScale > distanceCounter_cm_limit && !groundFound) {
       cat("\n")
@@ -1484,6 +1490,34 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       gc()
       groundFound <- TRUE
       cat("Ground points are removed after round", j, "from region growing.\n\n")
+    }
+    
+    
+    if (distanceCounter_cm * zScale > distanceCounter_veg_cm_limit && !vegFound) {
+      cat("\n")
+      cat("We reached the z-limit (", distanceCounter_veg_cm_limit, "cm), so we should be at", cutoff.shrub, "m.\n")
+      
+      if(writeVoxelizedShrubStems){
+        
+        shrLAS <- outLAS
+        try(shrLAS@data$Z <- shrLAS@data$Z * zScale)
+        shrLAS <- add_lasattribute_manual(shrLAS, shrLAS@data$StemID, "StemID", "Single Stem ID", type = "short")
+        shrLAS <- add_lasattribute_manual(shrLAS, 0, "randomCol", "Random Stem ID", type = "short")
+        try(shrLAS@data$randomCol <- rnlist[match(shrLAS@data$StemID, idlist)])
+        shrLAS@data$randomCol[is.na(shrLAS@data$randomCol)] <- 0
+        writeLAS(shrLAS, paste0(crownPath, fileFinder, "_ground+shrub_stems", locationStr, ".las"))
+        rm(shrlas)
+      }
+      reduceShrubPoints_num <- blankLAS@data[Classification == 3, .N]
+      cat("Unassigned shrub points:", thMk(reduceShrubPoints_num), "pts\n")
+      pointNumber <- pointNumber - reduceShrubPoints_num
+      cat("New reduced pointNumber:", thMk(pointNumber), "pts\n")
+      
+      
+      blankLAS <<- filter_poi(blankLAS, Classification != 3)
+      gc()
+      vegFound <- TRUE
+      cat("Shrub points (lower than", cutoff.shrub, "m) are removed after round", j, ".\n\n")
     }
 
 
