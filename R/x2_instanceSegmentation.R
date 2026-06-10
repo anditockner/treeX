@@ -860,6 +860,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         groundCloud <- rbind(groundCloud, shrubCloud)
         
         if(writeVoxelizedShrubStems){
+          cat("creating new LAS\n")
           shrubCloud <- LAS(shrubCloud@data)
           writeLAS(shrubCloud, paste0(crownPath, fileFinder, "_shrubSlice_", cutoff.shrub, "m.laz"))
         }
