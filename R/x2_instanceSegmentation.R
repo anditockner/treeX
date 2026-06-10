@@ -334,7 +334,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
 
     ### assign ground level to certain threshold:
-    if(cutoff.ground != 0.5 & cutoff.shrub != 1){
+    if(cutoff.ground != 0.5 | cutoff.shrub != 1){
       tstart <- Sys.time()
       cat("\nAssigning a horizontal cut-off for ground at", cutoff.ground, "and shrubs at", cutoff.shrub, "m.\n")
       dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_min.grd")
