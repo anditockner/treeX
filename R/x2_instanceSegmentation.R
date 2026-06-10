@@ -859,6 +859,8 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         cat(thMk(shrubCloud@header@PHB$`Number of point records`), "shrub points and ")
         groundCloud <- rbind(groundCloud, shrubCloud)
         if(writeVoxelizedShrubStems){
+          shrubCloud@data$randomCol <- 0
+          shrubCloud@data$StemID <- 0
           writeLAS(shrubCloud, paste0(crownPath, fileFinder, "_shrubSlice_", cutoff.shrub, "m.laz"))
         }
         rm(shrubCloud)
