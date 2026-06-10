@@ -49,6 +49,9 @@ changeLASVEG <- function() {
 crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALSE, 
                       limitStems = 50, limitShare = 0.003, 
                       zScale = 2, ignorezScaleStartRow = FALSE, 
+                      groundCutoff = 1, # in m 
+                      intensityQuantile = 100, 
+                      
                       voxelSize = 4, writeVoxelizedGroundHoles = FALSE, 
                       doReferencedOnly = FALSE, referenced = FALSE,
                       merged = FALSE, totalRuns = 1000, incrementDistance = 0.005,
@@ -328,6 +331,47 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
 
 
+    ### assign ground level to certain threshold:
+    if(groundCutoff != 1){
+      tstart <- Sys.time()
+      cat("Setting the vertical cut-off for ground and shrub points at", groundCutoff, "m.\n")
+      dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_min.grd")
+      if (!file.exists(dtmFile)) {
+        dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_fine.grd")
+      }
+      if (!file.exists(dtmFile)) {
+        dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_rough.grd")
+      }
+      
+      tryCatch(
+        {
+          # read in raster file
+          dtm_z <- raster(dtmFile)
+          
+          cat("Reading dtm from", basename(dtmFile), "- ")
+          totalCloud <- normalize_height(totalCloud, dtm_z, na.rm = TRUE) # need to save it in that intermediate object or it cannot unnormalize anymore
+          cat("assigning 1L - ")
+          totalCloud@data$Classification <- 1L # unclassified
+          cat("3L - ")
+          totalCloud@data$Classification[totalCloud@data$Z <= groundCutoff] <- 3L # ground
+          cat("2L - ")
+          totalCloud@data$Classification[totalCloud@data$Z < 1] <- 2L # low vegetation
+          cat("unnormalize ")
+          totalCloud <- unnormalize_height(totalCloud)
+          cat("done.\n")
+          tstop <- Sys.time()
+          timeNormalize <- as.difftime(tstop - tstart)
+          cat(paste0("Additional time needed: ",
+                       round(timeNormalize,1), " ", units(timeNormalize),"\n\n"))
+          
+        },
+        error = function(error_condition) {
+          stop("Error in normalizing point cloud for special height cut-off...")
+        }
+      )
+      writeLAS(totalCloud, paste0(dirPath, "testSlice.laz"))
+    }
+    
 
     totalCloud <- add_lasattribute_manual(totalCloud, 0, "StemID", "Single Stem ID", type = "short")
 
