@@ -330,50 +330,6 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       idlist <- unique(clustList$id)
       cat("Now we have", length(idlist), "unique tree ids!\n")
     }
-
-
-
-    ### assign ground level to certain threshold:
-    if(cutoff.ground != 0.5 | cutoff.shrub != 1){
-      tstart <- Sys.time()
-      cat("\nAssigning a horizontal cut-off for ground at", cutoff.ground, "and shrubs at", cutoff.shrub, "m.\n")
-      dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_min.grd")
-      if (!file.exists(dtmFile)) {
-        dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_fine.grd")
-      }
-      if (!file.exists(dtmFile)) {
-        dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_rough.grd")
-      }
-      
-      tryCatch(
-        {
-          # read in raster file
-          cat("Read dtm", basename(dtmFile), "- ")
-          dtm_z <- raster(dtmFile)
-          cat("normalize", basename(dtmFile), "- ")
-          
-          totalCloud <- normalize_height(totalCloud, dtm_z, na.rm = TRUE) # need to save it in that intermediate object or it cannot unnormalize anymore
-          cat("assign 1L (rest) - ")
-          totalCloud@data$Classification <- 1L # unclassified
-          cat("3L (veg) - ")
-          totalCloud@data$Classification[totalCloud@data$Z <= cutoff.shrub] <- 3L # ground
-          cat("2L (ground) - ")
-          totalCloud@data$Classification[totalCloud@data$Z < cutoff.ground] <- 2L # low vegetation
-          cat("unnormalize ")
-          totalCloud <- unnormalize_height(totalCloud)
-          cat("done.\n")
-          tstop <- Sys.time()
-          timeNormalize <- as.difftime(tstop - tstart)
-          cat(paste0("Additional time needed: ",
-                       round(timeNormalize,1), " ", units(timeNormalize),"\n\n"))
-          
-        },
-        error = function(error_condition) {
-          stop("Error in normalizing point cloud for special height cut-off...")
-        }
-      )
-      writeLAS(totalCloud, paste0(dirPath, "testSlice.laz"))
-    }
     
 
     totalCloud <- add_lasattribute_manual(totalCloud, 0, "StemID", "Single Stem ID", type = "short")
@@ -831,6 +787,55 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     }
 
 
+    
+    shrubCloudExists <- FALSE
+    
+    ### assign ground level to certain threshold:
+    if(cutoff.ground != 0.5 | cutoff.shrub != 1){
+      tstart <- Sys.time()
+      cat("\nAssigning a horizontal cut-off for ground at", cutoff.ground, "and shrub at", cutoff.shrub, "m.\n")
+      dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_min.grd")
+      if (!file.exists(dtmFile)) {
+        dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_fine.grd")
+      }
+      if (!file.exists(dtmFile)) {
+        dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_rough.grd")
+      }
+      
+      tryCatch(
+        {
+          # read in raster file
+          cat("Read dtm", basename(dtmFile), "- ")
+          dtm_z <- raster(dtmFile)
+          cat("normalize - ")
+          
+          totalCloud <- normalize_height(totalCloud, dtm_z, na.rm = TRUE) # need to save it in that intermediate object or it cannot unnormalize anymore
+          cat("assign 1L (unclass) - ")
+          totalCloud@data$Classification <- 1L # unclassified
+          shrubCloudExists <- TRUE
+          cat("3L (veg) - ")
+          totalCloud@data$Classification[totalCloud@data$Z <= cutoff.shrub] <- 3L # ground
+          cat("2L (ground) - ")
+          totalCloud@data$Classification[totalCloud@data$Z < cutoff.ground] <- 2L # low vegetation
+          cat("unnormalize ")
+          totalCloud <- unnormalize_height(totalCloud)
+          cat("done.\n")
+          tstop <- Sys.time()
+          timeNormalize <- as.difftime(tstop - tstart)
+          cat(paste0("Additional time needed: ",
+                     round(timeNormalize,1), " ", units(timeNormalize),"\n\n"))
+          
+        },
+        error = function(error_condition) {
+          stop("Error in normalizing point cloud for special height cut-off...")
+        }
+      )
+      #writeLAS(totalCloud, paste0(dirPath, "testSlice.laz"))
+    }
+    
+    
+    
+    
     # VOXELISATION OF INPUT POINTS ####
     if (voxelSize != 0) {
       cat("Reduction into VOXEL with a cube length of", voxelSize, "cm... \n")
@@ -842,14 +847,28 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
 
       allocationCloud <- totalCloud
 
+      
+      groundCloud <- filter_poi(totalCloud, Classification == 2)
       co <- capture.output(groundCloud <- voxelize_points(groundCloud, voxelSize / 100))
       groundCloud@data$Classification <- 2L
       cat(thMk(groundCloud@header@PHB$`Number of point records`), "ground points and ")
+      if(shrubCloudExists){
+        shrubCloud <- filter_poi(totalCloud, Classification == 3)
+        co <- capture.output(shrubCloud <- voxelize_points(shrubCloud, voxelSize / 100))
+        shrubCloud@data$Classification <- 3L
+        cat(thMk(shrubCloud@header@PHB$`Number of point records`), "shrub points and ")
+        groundCloud <- rbind(groundCloud, shrubCloud)
+        if(writeVoxelizedShrubStems){
+          writeLAS(shrubCloud, paste0(crownPath, fileFinder, "_shrubSlice_", cutoff.shrub, "m.laz"))
+        }
+        rm(shrubCloud)
+      }
 
+      vegCloud <- filter_poi(totalCloud, Classification == 1)
       co <- capture.output(vegCloud <- voxelize_points(vegCloud, voxelSize / 100))
-      vegCloud@data$Classification <- 0L
+      vegCloud@data$Classification <- 1L
       cat(thMk(vegCloud@header@PHB$`Number of point records`), "vegetation points remain.\n")
-      cat("Joining them with proper Classification (2=ground 0=veg)... ")
+      cat("Joining them with proper Classification (2=ground 1=rest)... ")
       totalCloud <- rbind(groundCloud, vegCloud)
       rm(groundCloud, vegCloud)
       gc()
