@@ -895,7 +895,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     stemCloud <- totalCloud
     stemCloud@data <- rbind(seedLAS@data, stemCloud@data, fill = TRUE)
     stemCloud@data$StemID[is.na(stemCloud@data$StemID)] <- 0
-    stemCloud@data$Classification[is.na(stemCloud@data$Classification)] <- 2L
+    stemCloud@data$Classification[is.na(stemCloud@data$Classification)] <- 1L
 
     if (is.element("gpstime", colnames(stemCloud@data))) {
       stemCloud@data$gpstime[is.na(stemCloud@data$gpstime)] <- 555
@@ -1553,8 +1553,10 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     if (distanceCounter_cm * zScale > distancelimit.ground && !groundFound) {
       cat("\n")
       cat("We reached the z-limit (", distancelimit.ground, "cm), so we should be at the ground.\n")
-      cat("Reduce limitShare to one third =", limitShare/3, "\n")
-      limitShare <- limitShare/3
+      if(shrubCloudExists){
+        cat("Reduce limitShare to one third =", limitShare/3, "\n")
+        limitShare <- limitShare/3
+      }
       grLAS <- outLAS
       try(grLAS@data$Z <- grLAS@data$Z * zScale)
       grLAS <- add_lasattribute_manual(grLAS, grLAS@data$StemID, "StemID", "Single Stem ID", type = "short")
