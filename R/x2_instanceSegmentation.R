@@ -250,8 +250,10 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     groundCloud.name <- paste0(dirPath, groundPath, fileFinder, "_ground.laz")
     cat("Reading in totalCloud from", totalCloud.name, "\n")
     co <- capture.output(totalCloud <- readLAS(totalCloud.name, select = selector))
+    totalCloud@data$Classification <- 1L
     cat("Reading in groundCloud from", groundCloud.name, "\n")
     co <- capture.output(groundCloud <- readLAS(groundCloud.name, select = selector))
+    totalCloud@data$Classification <- 2L
 
     if (retainPointClouds) {
       cat("Retaining LAS_veg and LAS_ground variable for ")
