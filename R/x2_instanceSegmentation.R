@@ -822,7 +822,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           cat("assign 1L (raw), ")
           totalCloud@data$Classification <- 1L # unclassified
           shrubCloudExists <- TRUE
-          cat("3L (bush), ")
+          cat("3L (shrub), ")
           totalCloud@data$Classification[totalCloud@data$Z <= cutoff.shrub] <- 3L # ground
           cat("2L (ground), ")
           totalCloud@data$Classification[totalCloud@data$Z < cutoff.ground] <- 2L # low vegetation
@@ -867,15 +867,17 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         co <- capture.output(shrubCloud <- voxelize_points(shrubCloud, voxelSize / 100))
         shrubCloud@data$Classification <- 3L
         cat(thMk(shrubCloud@header@PHB$`Number of point records`), "shrub points and ")
-        groundCloud <- rbind(groundCloud, shrubCloud)
+        co <- capture.output(groundCloud <- rbind(groundCloud, shrubCloud))
         if(writeShrubStemVoxelLAS){
           co <- capture.output(shrubCloud <- LAS(shrubCloud@data))
-          writeLAS(shrubCloud, paste0(dirPath, groundPath, fileFinder, "_shrubSlice_", cutoff.shrub, "m.laz"))
+          co <- capture.output(writeLAS(shrubCloud,
+                                        paste0(dirPath, groundPath, 
+                                               fileFinder, "_shrubSlice_", cutoff.shrub, "m.laz")))
         }
         rm(shrubCloud)
       }
 
-      vegCloud <- filter_poi(totalCloud, Classification == 1)
+      co <- capture.output(vegCloud <- filter_poi(totalCloud, Classification == 1))
       co <- capture.output(vegCloud <- voxelize_points(vegCloud, voxelSize / 100))
       vegCloud@data$Classification <- 1L
       cat(thMk(vegCloud@header@PHB$`Number of point records`), "vegetation points remain.\n")
@@ -907,7 +909,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         which(colnames(stemCloud@data) == "B")
       )
       subData <- subset(stemCloud@data, select = -c(removes))
-      stemCloud <- LAS(subData)
+      co <- capture.output(stemCloud <- LAS(subData))
       cat(") ")
     }
 
@@ -976,7 +978,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     nPointsNew <- frameLAS@header@PHB$`Number of point records`
     
     cat("Temporarily removing", thMk(nPointsOld - nPointsNew), "points (",
-        round((nPointsOld - nPointsNew)/nPointsOld, 1), "%) with an intensity lower than", thMk(iq), "...\n")
+        round((nPointsOld - nPointsNew)/nPointsOld*100, 1), "%) with an intensity lower than", thMk(iq), "...\n")
     intensityRemoved <- TRUE
   }
   
