@@ -971,8 +971,8 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     
     nPointsOld <- frameLAS@header@PHB$`Number of point records`
     cat(paste0("Applying intensity filter of quantile ", iq,":\n"))
-    lowIntensityLAS_temp <- filter_poi(frameLAS, "Intensity" < iq)
-    frameLAS <- filter_poi(frameLAS, "Intensity" >= iq)
+    lowIntensityLAS_temp <- filter_poi(frameLAS, Intensity < iq)
+    frameLAS <- filter_poi(frameLAS, Intensity >= iq)
     nPointsNew <- frameLAS@header@PHB$`Number of point records`
     
     cat("Temporarily removing", thMk(nPointsOld - nPointsNew), "points (",
