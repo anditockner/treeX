@@ -33,8 +33,8 @@ changeLASVEG <- function() {
 #' @param incrementDistance the step of raising searching distance if less than limitShare points are found
 #'
 #' @param cutoff.ground vertical threshold up until which is classified as ground (2L) - removed from segmentation as soon as distancelimit.ground is reached
-#' @param cutoff.shrub vertical threshold up until which is classified as shrub (3L) - removed from segmentation as soon as distancelimit.veg is reached (defined by cutoff.shrub - 1.30 m + cutoff.shrub.limitPuffer)
-#' @param cutoff.shrub.limitPuffer how many meters more should shrub vegetation be considered before removing all shrub points from segmentation
+#' @param cutoff.shrub vertical threshold up until which is classified as shrub (3L) - removed from segmentation as soon as distancelimit.veg is reached (defined by cutoff.shrub - 1.30 m)
+#' @param writeShrubStemVoxelLAS set FLASE for not writing _grounded_shrub_stems_VOX.las (big file, for segmented ground analysis)
 #' @param intensityQuantile NOT IMPLEMENTED YET 
 #'
 #' @param CC_level a connected components parameter for fineness in cloudcompare (default: 10)
@@ -45,7 +45,7 @@ changeLASVEG <- function() {
 #' @param filterSOR if TRUE then we use the SOR clean file
 #' @param numberIntensity if you rather want to specify a number of most intense points to be kept
 #' @param silent fewer outputs or plots if set to TRUE
-#' @param writeVoxelizedGroundHoles set TRUE for writing _ground_blanks_vox.las (big file, for segmented ground analysis)
+#' @param writeBlankVoxelLAS set TRUE for writing on the fly _ground_blanks_VOX.las and _shrub_blanks_VOX.las (big files, for segmented ground or shrub layer analysis)
 #' @param useTreeFile loading and external trees_dbh.txt file
 #' @param fast if TRUE, no detailled per stem information will be calculated
 #' @param retainPointClouds if TRUE, the used point clouds will be stored for another run (more performant for different settings), if FALSE the point clouds will be passed to next function layer (always) and then discarded.
@@ -56,12 +56,14 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
                       zScale = 2, #ignorezScaleStartRow = FALSE, 
                       cutoff.ground = 0.5, # in m to which height ground is left in the point cloud
                       cutoff.shrub = 1, # in m 
-                      cutoff.shrub.limitPuffer = 1, # in m
                       distancelimit.ground = 220, # in cm
                       intensityQuantile = 100, 
                       
-                      voxelSize = 4, writeVoxelizedGroundHoles = FALSE, 
-                      writeVoxelizedShrubStems = FALSE, 
+                      voxelSize = 4, 
+                      
+                      
+                      writeBlankVoxelLAS = FALSE, 
+                      writeShrubStemVoxelLAS = TRUE, 
                       doReferencedOnly = FALSE, referenced = FALSE,
                       merged = FALSE, totalRuns = 1000, incrementDistance = 0.005,
                       tileClipping = 3, diagonals = FALSE,
@@ -866,9 +868,9 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         cat(thMk(shrubCloud@header@PHB$`Number of point records`), "shrub points and ")
         groundCloud <- rbind(groundCloud, shrubCloud)
         
-        if(writeVoxelizedShrubStems){
+        if(writeShrubStemVoxelLAS){
           co <- capture.output(shrubCloud <- LAS(shrubCloud@data))
-          writeLAS(shrubCloud, paste0(crownPath, fileFinder, "_shrubSlice_", cutoff.shrub, "m.laz"))
+          writeLAS(shrubCloud, paste0(dirPath, groundPath, fileFinder, "_shrubSlice_", cutoff.shrub, "m.laz"))
         }
         rm(shrubCloud)
       }
@@ -995,12 +997,22 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
   distanceCounter_cm <- 0
   # 22-06-08: distanceCounter can be set at the top
   # distancelimit.ground <- 200
-  distancelimit.veg <- (cutoff.shrub - 1.3 + cutoff.shrub.limitPuffer)*100 
+  distancelimit.veg <- (cutoff.shrub - 1.3)*100 
   # 1 m more before cutting away vegetation
   groundFound <- FALSE
   vegFound <- FALSE
 
-  useableDistance <- 0.7
+  
+  # TODO 11.06.2026 LIFTING THE LID
+  # overthinking this concept - useable distance actually prevents highest trees from growing
+  # but if all trees are the same, no tree can grow? essentially one voxel is blocked from above
+  # need to implement a table(seeds over stemID and then check the range of maxHeight, if this is smaller than 1m then never mind)
+  # at the same time check in the table to exclude trees < 8 cm DBH, as they might be bushes or too small and should not count
+  # then of the resulting value maybe remove the lower 10% quantile to compensate for stomps or occluison
+  # (put only this threshold variable in settings as it defines when the height lid will be lifted)
+  # if these conditions are met, allow useableDistance to be 1
+  #useableDistance <- 0.7
+  useableDistance <- 1
   justUp <- FALSE # if now incrementing distance, next time take all in!
 
   #### watch out, different concept UP != DOWN ;)
@@ -1033,7 +1045,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     }
     start.by <- 0.005
     incrementDistance <- voxelSize / 100
-    cat("Due to voxelisation, the increment is set to one voxel or", voxelSize, "cm.\n")
+    cat("Due to voxelisation, the incrementDistance is set to one voxel or", voxelSize, "cm.\n")
 
 
     start.times <- ceiling(distancelimit.ground / voxelSize / zScale)
@@ -1230,11 +1242,13 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           )
 
 
-          if (j <= length(startRow)) {
+          if (j < length(startRow)) {
             #if(ignorezScaleStartRow){
             #  zScale <- 1
             #}
             cat("STROW  ")
+          } else if(shrubCloudExists && !vegFound && startRowFinished){
+            cat("SHRUB  ")
           } else {
             cat("  ")
             #zScale <- originalzScale
@@ -1501,17 +1515,17 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       grLAS <- add_lasattribute_manual(grLAS, 0, "randomCol", "Random Stem ID", type = "short")
       try(grLAS@data$randomCol <- rnlist[match(grLAS@data$StemID, idlist)])
       grLAS@data$randomCol[is.na(grLAS@data$randomCol)] <- 0
-      writeLAS(grLAS, paste0(crownPath, fileFinder, "_grounded_stems", locationStr, ".las"))
+      writeLAS(grLAS, paste0(crownPath, fileFinder, "_grounded_stems", locationStr, "_VOX.las"))
       rm(grLAS)
       reduceGroundPoints_num <- blankLAS@data[Classification == 2, .N]
       cat("Unassigned ground points:", thMk(reduceGroundPoints_num), "pts\n")
       pointNumber <- pointNumber - reduceGroundPoints_num
       cat("New reduced pointNumber:", thMk(pointNumber), "pts\n")
       
-      if(writeVoxelizedGroundHoles){
+      if(writeBlankVoxelLAS){
         groundWithHoles <<- filter_poi(blankLAS, Classification == 2)
         try(groundWithHoles@data$Z <- groundWithHoles@data$Z * zScale)
-        writeLAS(groundWithHoles, paste0(crownPath, fileFinder, "_ground_blanks_vox", locationStr, ".las"))
+        writeLAS(groundWithHoles, paste0(crownPath, fileFinder, "_blanks_ground", locationStr, "_VOX.las"))
         rm(groundWithHoles)
       }
       
@@ -1522,31 +1536,57 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     }
     
     
-    if (distanceCounter_cm * zScale > distancelimit.veg && !vegFound) {
-      cat("\n")
-      cat("We reached the z-limit (", distancelimit.veg, "cm), so we should be at", cutoff.shrub, "m.\n")
-      
-      if(writeVoxelizedShrubStems){
+    if(shrubCloudExists && !vegFound){
+      if (distanceCounter_cm * zScale > distancelimit.veg) {
+        # cat("Checking for class 1L points (above veg) in assigned seeds\n:")
+        classTab <- table(seeds@data$Classification, seeds@data$StemID)
+        # countNon <- classTab[which(rownames(classTab)==1),]
+        # countVeg <- classTab[which(rownames(classTab)==3),]
+        # cat("   1L:", countNon , "     3L:", countVeg)
+        # 
+        class1perTree <- classTab[(rownames(classTab)==1),]
+        treesReachingAboveBush <- sum(class1perTree>0)
+        treesAbovePercent <- round(treesReachingAboveBush / tallyTrees * 100,1)
+        cat(paste0(treesReachingAboveBush, " trees grow above shrub layer (", treesAbovePercent, "%)"))
+        treesThresholdAboveBush <- 80 # percent of all trees must grow above
+        if(treesAbovePercent >= treesThresholdAboveBush){
+          
+          cat("\nWe are above shrub line at", round(distanceCounter_cm * zScale), "cm for", treesAbovePercent,"% of trees, probably at", cutoff.shrub, "m above ground.\n")
+          
+          if(writeShrubStemVoxelLAS){
+            shrLAS <- outLAS
+            try(shrLAS@data$Z <- shrLAS@data$Z * zScale)
+            shrLAS <- add_lasattribute_manual(shrLAS, shrLAS@data$StemID, "StemID", "Single Stem ID", type = "short")
+            shrLAS <- add_lasattribute_manual(shrLAS, 0, "randomCol", "Random Stem ID", type = "short")
+            try(shrLAS@data$randomCol <- rnlist[match(shrLAS@data$StemID, idlist)])
+            shrLAS@data$randomCol[is.na(shrLAS@data$randomCol)] <- 0
+            writeLAS(shrLAS, paste0(crownPath, fileFinder, "_grounded_shrub_stems", locationStr, "_VOX.las"))
+            rm(shrlas)
+          }
+          reduceShrubPoints_num <- blankLAS@data[Classification == 3, .N]
+          cat("Unassigned shrub points:", thMk(reduceShrubPoints_num), "pts\n")
+          pointNumber <- pointNumber - reduceShrubPoints_num
+          cat("New reduced pointNumber:", thMk(pointNumber), "pts\n")
+          
+          if(writeBlankVoxelLAS){
+            shrubsWithHoles <<- filter_poi(blankLAS, Classification == 3)
+            try(shrubsWithHoles@data$Z <- shrubsWithHoles@data$Z * zScale)
+            writeLAS(shrubsWithHoles, paste0(crownPath, fileFinder, "_blanks_shrub", locationStr, "_VOX.las"))
+            rm(shrubsWithHoles)
+          }
+          blankLAS <<- filter_poi(blankLAS, Classification != 3)
+          gc()
+          vegFound <- TRUE
+          cat("Shrub points (lower than", cutoff.shrub, "m) removed after round", j, ".\n\n")
+          
+          
+          
+          
+        } else {
+          cat(" - resuming in shrub layer.\n")
+        }
         
-        shrLAS <- outLAS
-        try(shrLAS@data$Z <- shrLAS@data$Z * zScale)
-        shrLAS <- add_lasattribute_manual(shrLAS, shrLAS@data$StemID, "StemID", "Single Stem ID", type = "short")
-        shrLAS <- add_lasattribute_manual(shrLAS, 0, "randomCol", "Random Stem ID", type = "short")
-        try(shrLAS@data$randomCol <- rnlist[match(shrLAS@data$StemID, idlist)])
-        shrLAS@data$randomCol[is.na(shrLAS@data$randomCol)] <- 0
-        writeLAS(shrLAS, paste0(crownPath, fileFinder, "_ground+shrub_stems", locationStr, ".las"))
-        rm(shrlas)
       }
-      reduceShrubPoints_num <- blankLAS@data[Classification == 3, .N]
-      cat("Unassigned shrub points:", thMk(reduceShrubPoints_num), "pts\n")
-      pointNumber <- pointNumber - reduceShrubPoints_num
-      cat("New reduced pointNumber:", thMk(pointNumber), "pts\n")
-      
-      
-      blankLAS <<- filter_poi(blankLAS, Classification != 3)
-      gc()
-      vegFound <- TRUE
-      cat("Shrub points (lower than", cutoff.shrub, "m) are removed after round", j, ".\n\n")
     }
 
 
