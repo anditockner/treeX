@@ -843,6 +843,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     }
     
     
+    countRoundsShrubRemoval <- 0
     
     
     # VOXELISATION OF INPUT POINTS ####
@@ -867,7 +868,6 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         shrubCloud@data$Classification <- 3L
         cat(thMk(shrubCloud@header@PHB$`Number of point records`), "shrub points and ")
         groundCloud <- rbind(groundCloud, shrubCloud)
-        
         if(writeShrubStemVoxelLAS){
           co <- capture.output(shrubCloud <- LAS(shrubCloud@data))
           writeLAS(shrubCloud, paste0(dirPath, groundPath, fileFinder, "_shrubSlice_", cutoff.shrub, "m.laz"))
@@ -1011,8 +1011,8 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
   # then of the resulting value maybe remove the lower 10% quantile to compensate for stomps or occluison
   # (put only this threshold variable in settings as it defines when the height lid will be lifted)
   # if these conditions are met, allow useableDistance to be 1
-  #useableDistance <- 0.7
-  useableDistance <- 1
+  useableDistance <- 0.7
+  #useableDistance <- 1
   justUp <- FALSE # if now incrementing distance, next time take all in!
 
   #### watch out, different concept UP != DOWN ;)
@@ -1113,6 +1113,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
   # for every increase, the decreasing count is punished with an additional 10 rounds to keep stable
 
 
+  globalLimitShare <- limitShare
   # limitShare <- 0.005 # from function header
   # that variable says how much of all blank points must at least be assigned in next step
   # if less than half a percent seed points left, reset seeding to all
@@ -1235,6 +1236,15 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
             " on _", format(Sys.time(), "%a%d. %X"), "_  ", 
             sep = ""
           )
+          
+          
+          if(shrubCloudExists && !vegFound && startRowFinished){
+            cat("SHRUB  ")
+          } else {
+            cat("  ")
+            #zScale <- originalzScale
+          }
+          
         } else {
           cat(fileFinder, ": Iteration ", sprintf("%03d", j),
             " on _", format(Sys.time(), "%a%d. %X"), "_  ",
@@ -1509,6 +1519,8 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     if (distanceCounter_cm * zScale > distancelimit.ground && !groundFound) {
       cat("\n")
       cat("We reached the z-limit (", distancelimit.ground, "cm), so we should be at the ground.\n")
+      cat("Reduce limitShare to one third =", limitShare/3, "\n")
+      limitShare <- limitShare/3
       grLAS <- outLAS
       try(grLAS@data$Z <- grLAS@data$Z * zScale)
       grLAS <- add_lasattribute_manual(grLAS, grLAS@data$StemID, "StemID", "Single Stem ID", type = "short")
@@ -1549,10 +1561,23 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         treesAbovePercent <- round(treesReachingAboveBush / tallyTrees * 100,1)
         cat(paste0(treesReachingAboveBush, " trees grow above shrub layer (", treesAbovePercent, "%)"))
         treesThresholdAboveBush <- 80 # percent of all trees must grow above
+        
+        
         if(treesAbovePercent >= treesThresholdAboveBush){
+          countRoundsShrubRemoval <- countRoundsShrubRemoval + 1
+        } else {
+          cat(" - resuming in shrub layer.\n")
+        }
+        
+        if(countRoundsShrubRemoval > 10 || (distanceCounter_cm * zScale) > (2*distancelimit.veg)){
           
-          cat("\nWe are above shrub line at", round(distanceCounter_cm * zScale), "cm for", treesAbovePercent,"% of trees, probably at", cutoff.shrub, "m above ground.\n")
+          useableDistance <- 1
           
+          
+          
+          cat("\n\nWe are above shrub line at", round(distanceCounter_cm * zScale), "cm for", treesAbovePercent,"% of trees, probably at", cutoff.shrub, "m above ground.\n")
+          cat("Reset limitShare to", globalLimitShare,"\n")
+          limitShare <- globalLimitShare
           if(writeShrubStemVoxelLAS){
             shrLAS <- outLAS
             try(shrLAS@data$Z <- shrLAS@data$Z * zScale)
@@ -1581,9 +1606,6 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           
           
           
-          
-        } else {
-          cat(" - resuming in shrub layer.\n")
         }
         
       }
