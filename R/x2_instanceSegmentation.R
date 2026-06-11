@@ -895,7 +895,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     stemCloud <- totalCloud
     stemCloud@data <- rbind(seedLAS@data, stemCloud@data, fill = TRUE)
     stemCloud@data$StemID[is.na(stemCloud@data$StemID)] <- 0
-    stemCloud@data$Classification[is.na(stemCloud@data$Classification)] <- 1L
+    stemCloud@data$Classification[is.na(stemCloud@data$Classification)] <- 2L
 
     if (is.element("gpstime", colnames(stemCloud@data))) {
       stemCloud@data$gpstime[is.na(stemCloud@data$gpstime)] <- 555
@@ -1207,7 +1207,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       start <- Sys.time()
 
       
-      if(nextIntensityRound){
+      if(shrubCloudExists & nextIntensityRound){
         nextIntensityRound <- FALSE
         removeIntensityShrub <- TRUE
         cat("Adding all seeds again for intensity point completion!\n\n")
@@ -1655,7 +1655,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       }
     }
 
-    if(removeIntensityShrub){
+    if(shrubCloudExists & removeIntensityShrub){
       removeIntensityShrub <- FALSE
       blankLAS <<- filter_poi(blankLAS, Classification < 2)
       gc()
