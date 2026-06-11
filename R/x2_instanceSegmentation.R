@@ -819,14 +819,14 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           cat("normalize - ")
           
           totalCloud <- normalize_height(totalCloud, dtm_z, na.rm = TRUE) # need to save it in that intermediate object or it cannot unnormalize anymore
-          cat("assign 1L (unclass) - ")
+          cat("assign 1L (raw), ")
           totalCloud@data$Classification <- 1L # unclassified
           shrubCloudExists <- TRUE
-          cat("3L (veg) - ")
+          cat("3L (veg), ")
           totalCloud@data$Classification[totalCloud@data$Z <= cutoff.shrub] <- 3L # ground
-          cat("2L (ground) - ")
+          cat("2L (ground), ")
           totalCloud@data$Classification[totalCloud@data$Z < cutoff.ground] <- 2L # low vegetation
-          cat("unnormalize ")
+          cat("unnormalize, ")
           totalCloud <- unnormalize_height(totalCloud)
           cat("done.\n")
           tstop <- Sys.time()
@@ -1559,15 +1559,18 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         class1perTree <- classTab[(rownames(classTab)==1),]
         treesReachingAboveBush <- sum(class1perTree>0)
         treesAbovePercent <- round(treesReachingAboveBush / tallyTrees * 100,1)
-        cat(paste0(treesReachingAboveBush, " trees grow above shrub layer (", treesAbovePercent, "%)"))
-        treesThresholdAboveBush <- 80 # percent of all trees must grow above
-        
-        
+          treesThresholdAboveBush <- 80 # percent of all trees must grow above
         if(treesAbovePercent >= treesThresholdAboveBush){
           countRoundsShrubRemoval <- countRoundsShrubRemoval + 1
+          cat(paste0(treesReachingAboveBush, " trees grow above shrub layer (", treesAbovePercent, "%) - R#", countRoundsShrubRemoval, "\n"))
+          
         } else {
           cat(" - resuming in shrub layer.\n")
         }
+          
+           
+        
+        
         
         if(countRoundsShrubRemoval > 10 || (distanceCounter_cm * zScale) > (2*distancelimit.veg)){
           
