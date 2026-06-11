@@ -35,7 +35,7 @@ changeLASVEG <- function() {
 #' @param cutoff.ground vertical threshold up until which is classified as ground (2L) - removed from segmentation as soon as distancelimit.ground is reached
 #' @param cutoff.shrub vertical threshold up until which is classified as shrub (3L) - removed from segmentation as soon as distancelimit.veg is reached (defined by cutoff.shrub - 1.30 m)
 #' @param writeShrubStemVoxelLAS set FLASE for not writing _grounded_shrub_stems_VOX.las (big file, for segmented ground analysis)
-#' @param intensityQuantile NOT IMPLEMENTED YET 
+#' @param intensityQuantile between 0 (no filter) and 0.9 (extreme filter), which quantile of intensity shall be removed from segmentation to avoid bush segmentation - intensity values will be considered again after bush removal
 #'
 #' @param CC_level a connected components parameter for fineness in cloudcompare (default: 10)
 #' @param CC_numberPoints the minimum size in points of a component to not be dropped (default: 1000)
@@ -57,7 +57,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
                       cutoff.ground = 0.5, # in m to which height ground is left in the point cloud
                       cutoff.shrub = 1, # in m 
                       distancelimit.ground = 220, # in cm
-                      intensityQuantile = 100, 
+                      intensityQuantile = 0, 
                       
                       voxelSize = 4, 
                       
@@ -822,7 +822,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           cat("assign 1L (raw), ")
           totalCloud@data$Classification <- 1L # unclassified
           shrubCloudExists <- TRUE
-          cat("3L (veg), ")
+          cat("3L (bush), ")
           totalCloud@data$Classification[totalCloud@data$Z <= cutoff.shrub] <- 3L # ground
           cat("2L (ground), ")
           totalCloud@data$Classification[totalCloud@data$Z < cutoff.ground] <- 2L # low vegetation
@@ -885,7 +885,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       gc()
       cat("done!\n")
     }
-
+    
 
 
     # length(stemCloud@data$X)
@@ -958,6 +958,30 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     frameLAS@data$StemID[frameLAS@data$StemID > 20000] <- 0
   }
 
+  
+  
+  
+  
+  
+  intensityRemoved <- FALSE
+  nextIntensityRound <- FALSE
+  removeIntensityShrub <- FALSE
+  if(intensityQuantile > 0 & intensityQuantile < 0.9){
+    iq <- quantile(frameLAS@data$Intensity, intensityQuantile[1])
+    
+    nPointsOld <- frameLAS@header@PHB$`Number of point records`
+    cat(paste0("Applying intensity filter of quantile ", iq,":\n"))
+    lowIntensityLAS_temp <- filter_poi(frameLAS, "Intensity" < iq)
+    frameLAS <- filter_poi(frameLAS, "Intensity" >= iq)
+    nPointsNew <- frameLAS@header@PHB$`Number of point records`
+    
+    cat("Temporarily removing", thMk(nPointsOld - nPointsNew), "points (",
+        round((nPointsOld - nPointsNew)/nPointsOld, 1), "%) with an intensity lower than", thMk(iq), "...\n")
+    intensityRemoved <- TRUE
+  }
+  
+  
+  
   seeds <- filter_poi(frameLAS, StemID != 0) # getting every detected stempoint as seed
   seeds@data$runJay <- 0
   # head(seeds@data[, c(1:3, 20)])
@@ -1180,8 +1204,16 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       # RUN 2 - 1000
       start <- Sys.time()
 
-      # NEW RULE HERE 8 / 20, no caring for minimum number of stems, if half of maximum distance is already reached! or it will soon be over, expecially with voxel.
-      if (length(nowStems) < minimumNowStems && searchDistance < maximumDistance / 2) {
+      
+      if(nextIntensityRound){
+        nextIntensityRound <- FALSE
+        removeIntensityShrub <- TRUE
+        cat("Adding all seeds again for intensity point completion!\n\n")
+        despr <- 0
+        gc() # garbage collection
+        seedSet <- outLAS@data
+      } else if (length(nowStems) < minimumNowStems && searchDistance < maximumDistance / 2) {
+        # NEW RULE HERE 8 / 20, no caring for minimum number of stems, if half of maximum distance is already reached! or it will soon be over, expecially with voxel.
         cat("Increasing search distance because less than", minimumNowStems, "stems added in last round!\n\n")
         searchDistance <- searchDistance + incrementDistance
         despr <- 0
@@ -1608,12 +1640,23 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
           cat("Shrub points (lower than", cutoff.shrub, "m) removed after round", j, ".\n\n")
           
           
-          
+          # now restoring intensity - one round assigning, then filter away intensity from ground points:
+          if(intensityRemoved){
+            cat("Restoring low intensity values (next round take all in again)\n")
+            blankLAS <<- rbind(blankLAS, lowIntensityLAS_temp)
+            nextIntensityRound <- TRUE
+          }
         }
         
       }
     }
 
+    if(removeIntensityShrub){
+      removeIntensityShrub <- FALSE
+      blankLAS <<- filter_poi(blankLAS, Classification < 2)
+      gc()
+      cat("Removing all shrub points again (of low intensity)\n")
+    }
 
 
 
