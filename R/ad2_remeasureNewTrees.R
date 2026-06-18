@@ -4,10 +4,12 @@
 #' 
 #' @param dir_completedInputLists path to the list of exported trees (new trees > 9000)
 #' @param dirPath path to all processed files after function extractVegetation( )
+#' @param appendix add string(s) with "_" to the fileFinders list to match different year sets
+#' @param allTrees all trees considered, not only +9000 ids
 #' @param tileClipping global setting for all tiles (standard setting 2x2 for small points, if large forest scan, set to 4x4 or 5x5 tiles)
 #' @export
 remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinders_selected = "",
-                              dirPath = paste0(getwd(), "/"), tileClipping = 2, nr_cores = 1){
+                              dirPath = paste0(getwd(), "/"), tileClipping = 2, nr_cores = 1, allTrees = F){
   
   {
     
@@ -108,7 +110,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
       }
       
       
-      try(grabDBH(nowFileFinder, treeList.path = nowTreeList, 
+      try(grabDBH(nowFileFinder, treeList.path = nowTreeList, allTrees = allTrees,  
                   regenerateCylinderLAS = T, tileClipping = tileClipping))
       
     }
@@ -164,7 +166,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
                       nowFileFinder <- uniqueFiles$fileFinders_list[i]
                       nowTreeList <- uniqueFiles$listPath[i]
                       
-                      try(grabDBH(nowFileFinder, treeList.path = nowTreeList, 
+                      try(grabDBH(nowFileFinder, treeList.path = nowTreeList, allTrees = allTrees,  
                                   regenerateCylinderLAS = T, tileClipping = tileClipping))
                     }
   }
