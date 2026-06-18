@@ -20,6 +20,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
     #     ylab = "", xlab = "", main = "initializing plot area", bty = "n")
     
     #dir_completedInputLists <- "D:/completed_220422_in_all/"
+    
     lists <- list.files(dir_completedInputLists, pattern = "_trees_", full.names = T)
     cat("BATCH REMEASURING NEW TREES\n")
     cat("Analyzing directory with completed lists:\n     ", dir_completedInputLists)
@@ -50,21 +51,25 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
     
     
     if(length(fileFinders_selected) < 2 && fileFinders_selected == ""){
-      fileFinders_existing <- basename(list.dirs(dirPath, recursive = F))
-      fileFinders_existing <- fileFinders_existing[grep("_ALLGO", 
-                                                        basename(fileFinders_existing))]
-      
-      if(length(fileFinders_existing) == 0){
-          fileFinders_existing <- basename(list.dirs(dirPath, recursive = F))
-          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "_images") ]
-          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "_in_laz") ]
-          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "_total_ground_veg") ]
-          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "app") ]
-          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "appOld") ]
-          fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "parallel_console") ]
-          fileFinders_existing
-      }
+      fileFinders_existing <- list.files(paste0(dirPath, "_total_ground_veg/"), pattern = "_clusterSlice_100to300.laz")
+      fileFinders_existing <- gsub("_clusterSlice_100to300.laz", "", basename(fileFinders_existing))
+      # 
+      # fileFinders_existing <- basename(list.dirs(dirPath, recursive = F))
+      # fileFinders_existing <- fileFinders_existing[grep("_ALLGO", 
+      #                                                   basename(fileFinders_existing))]
+      # 
+      # if(length(fileFinders_existing) == 0){
+      #     fileFinders_existing <- basename(list.dirs(dirPath, recursive = F))
+      #     fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "_images") ]
+      #     fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "_in_laz") ]
+      #     fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "_total_ground_veg") ]
+      #     fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "app") ]
+      #     fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "appOld") ]
+      #     fileFinders_existing <- fileFinders_existing[ !endsWith(fileFinders_existing, "parallel_console") ]
+      #     fileFinders_existing
+      # }
       cat("Working directory", dirPath, "\ncontaining", length(fileFinders_existing), "fileFinders.\n")
+      print(fileFinders_existing)
       
     } else {
       fileFinders_existing <- fileFinders_selected
