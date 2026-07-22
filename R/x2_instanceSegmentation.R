@@ -1216,7 +1216,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         despr <- 0
         gc() # garbage collection
         seedSet <- outLAS@data
-      } else if (length(nowStems) < minimumNowStems && searchDistance < maximumDistance / 2) {
+      } else if (length(nowStems) < minimumNowStems && searchDistance < maximumDistance / 2 && startRowFinished) {
         # NEW RULE HERE 8 / 20, no caring for minimum number of stems, if half of maximum distance is already reached! or it will soon be over, expecially with voxel.
         cat("Increasing search distance because less than", minimumNowStems, "stems added in last round!\n\n")
         searchDistance <- searchDistance + incrementDistance
