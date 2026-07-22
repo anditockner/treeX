@@ -1085,7 +1085,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     ) # times sqrt(2) for circleish shape on the ground
     cat(paste0(start.times, " Rounds of the start row: ", start.times - last.quart, "x ", round(voxelSize, 0), " cm (simple growth) and ", last.quart, "x ", round(voxelSize * 1.6, 0), " cm (diagonal gr.).\n"))
   } else {
-    start_cm <- 2
+    start_cm <- voxelSize
     start.times <- distancelimit.ground / start_cm / zScale
     startRow <- rep(start_cm / 100, start.times)
     cat("We repeat", start.times, "times the start row at", start_cm / 100, "m\n")
