@@ -522,9 +522,10 @@ createAppFiles <- function(fileFinder = NA,
       trajFiles <- trajFiles[file.exists(trajFiles)]
       
       allTraj <- data.frame()
+      traj <- NULL
       for(i in 1:length(trajFiles)){
         if(!file.exists(trajFiles[i])){
-          next()
+          next
         }
         
         try({
@@ -537,10 +538,14 @@ createAppFiles <- function(fileFinder = NA,
         allTraj <- rbind(allTraj, traj)
         
       }
-      plot(allTraj$y ~ allTraj$x, col = allTraj$col, cex = 0.6, pch = 16, asp = 1)
-      
-      rm(traj)
-      gc()
+      if(is.null(traj)){
+        drawTraj <- F
+        warning("Could not find trajectory (not drawn in bgr pic)\n")
+      } else {
+        plot(allTraj$y ~ allTraj$x, col = allTraj$col, cex = 0.6, pch = 16, asp = 1)
+        rm(traj)
+        gc()
+      }
     }
     
     
