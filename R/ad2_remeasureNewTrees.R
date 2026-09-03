@@ -491,7 +491,7 @@ grabDBH_i <- function(seedLAS, nowMeta,
           
           nowErr <- FALSE
           tryCatch({
-            gam_winkel <- gam(dist ~ s(winkel, bs="cc"), data = auffalten)}, 
+            gam_winkel <- mgcv::gam(dist ~ s(winkel, bs="cc"), data = auffalten)}, 
             error = function(error_condition) {
               #cat("Error in the gam in slice",j,"!\n")
               nowErr <<- TRUE
@@ -1511,7 +1511,7 @@ grabDBH <- function(fileFinder,
     sink()
     fdc <<- foreach(i=firstTreeMeasured:length(clustList$id),  .errorhandling = 'remove', 
                     .export=c('grabDBH_i', 'v.env', 'seedLAS'), 
-                    .packages = c("treeX"))%dopar% {
+                    .packages = c("treeX", "mgcv"))%dopar% {
                       t1 <- Sys.time()
                       sink(file_parallelProtocol, append = T)
                       
