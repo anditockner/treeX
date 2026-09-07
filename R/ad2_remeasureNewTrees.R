@@ -8,7 +8,8 @@
 #' @param allTrees all trees considered, not only +9000 ids
 #' @param tileClipping global setting for all tiles (standard setting 2x2 for small points, if large forest scan, set to 4x4 or 5x5 tiles)
 #' @export
-remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinders_selected = "",
+remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinders_selected = "", 
+                              filterDIST = 50, filterINT = 50, filterKDE = 94, 
                               dirPath = paste0(getwd(), "/"), tileClipping = 2, nr_cores = 1, allTrees = F){
   
   {
@@ -115,7 +116,8 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
       }
       
       
-      try(grabDBH(nowFileFinder, treeList.path = nowTreeList, allTrees = allTrees,  
+      try(grabDBH(nowFileFinder, treeList.path = nowTreeList, allTrees = allTrees, 
+                  filterDIST = filterDIST, filterINT = filterINT, filterKDE = filterKDE,  
                   regenerateCylinderLAS = T, tileClipping = tileClipping))
       
     }
@@ -172,6 +174,7 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
                       nowTreeList <- uniqueFiles$listPath[i]
                       
                       try(grabDBH(nowFileFinder, treeList.path = nowTreeList, allTrees = allTrees,  
+                                  filterDIST = filterDIST, filterINT = filterINT, filterKDE = filterKDE,  
                                   regenerateCylinderLAS = T, tileClipping = tileClipping))
                     }
   }
