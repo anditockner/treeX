@@ -10,15 +10,13 @@ if (.Platform$OS.type == "windows") {
   install.packages("doMC", dep = T)
 }
 
+install.packages("lidR", repos = c("https://r-lidar.r-universe.dev", "https://cloud.r-project.org"))
+
 pak::pak("tiagodc/TreeLS")
 #remotes::install_github("tiagodc/TreeLS")
-#install.packages("TreeLS", dep = T)
 
 pak::pak("ethanyxu/ADPclust")
 #devtools::install_github("ethanyxu/ADPclust")
-#install.packages("ADPclust")
-
-install.packages("lidR", repos = c("https://r-lidar.r-universe.dev", "https://cloud.r-project.org"))
 
 packs_to_install <- c("RANN", "conicfit", "alphashape3d", "alphahull",
                       "plotrix", "dbscan", "data.table",
@@ -30,12 +28,11 @@ packs_to_install <- c("RANN", "conicfit", "alphashape3d", "alphahull",
                       "Rvcg", "rgl")
 
 
-
 #install.packages("doMC", repos="http://R-Forge.R-project.org")
 #devtools::install_github("omegahat/RDCOMClient")
 
 install.packages(packs_to_install, dep = T)
-# copy edci, Distance and mrds manually to R
+
 
 # library("doParallel")
 # library("data.table")
