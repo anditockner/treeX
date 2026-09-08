@@ -13,7 +13,7 @@ Before first use, make sure to also run the script "_install_for_treeX.R" once f
 
 After getting all dependencies, install the package from GitHub via
 
-       devtools::install_github("https://github.com/anditockner/treeX")
+       pak::pak("anditockner/treeX")
 
 
 
