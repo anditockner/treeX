@@ -1,5 +1,5 @@
-install.packages("devtools", repos = "https://cran.rstudio.com/", dep = TRUE)
-library("devtools")
+# install.packages("devtools", repos = "https://cran.rstudio.com/", dep = TRUE)
+# library("devtools")
 
 install.packages("pak")
 library(pak)
@@ -22,9 +22,9 @@ pak::pak("ethanyxu/ADPclust")
 #devtools::install_github("ethanyxu/ADPclust")
 #install.packages("ADPclust")
 
+install.packages("lidR", repos = c("https://r-lidar.r-universe.dev", "https://cloud.r-project.org"))
 
-
-packs_to_install <- c("lidR", "RANN", "conicfit", "alphashape3d", "alphahull",
+packs_to_install <- c("RANN", "conicfit", "alphashape3d", "alphahull",
                       "plotrix", "dbscan", "data.table",
                       "ks", "Metrics", "VoxR", "RCSF", "Morpho", 
                       "densityClust", "mgcv", "spatstat",
