@@ -5,10 +5,6 @@ install.packages("pak")
 library(pak)
 
 if (.Platform$OS.type == "windows") {
-  as <- find_rtools()
-  if(!as){
-    stop("\nRtools not found! It is required for installing TreeLS!\n\n")
-  }
   install.packages("doParallel", dep = T)
 } else {
   install.packages("doMC", dep = T)
