@@ -1891,3 +1891,166 @@ grabDBH <- function(fileFinder,
 }
 
 
+
+
+
+#' Merge multiple re-measured sets to an original big tree list
+#'
+#' When multiple scans are co-registered into a joint coordinate system, 
+#' the big tree list (after app completion) gets split up into as many lists
+#' as there are plots. This function reads each re-measured list
+#' and joins them in a smart and reproducible way with respect
+#' of irregular or obviously wrong tree re-measurements. 
+#' 
+#' @param dirPath directory that holds all possible plots, if fileFinders is empty, this function lists all folders except for arg exludeDirs
+#' @param excludeDirs folders that are ommitted in automatic fileFinder detection, defaults per treeX incluce _images, _total_ground_veg, and app
+#' @param ignoreMissingLists function terminates if one fileFinder has no trees_dbh.txt, set to TRUE to ignore them
+#' @param outFileName set the name for the merged list to write, usually trees_merged_dbh.txt
+#' @param fileFinders in case you want to directly specify, which plots to merge
+#' @param newNumbers assigns new numbers from 1 (strongest tree) to length (weakest tree), is automatically set TRUE if one ID exceeds 65535
+#' 
+#' @export
+mergeTreeLists <- function(outFileName = "", 
+                           excludeDirs = c(""),  fileFinders = "", 
+                           newNumbers = FALSE,
+                           dirPath = paste0(getwd(), "/"), 
+                           ignoreMissingLists = FALSE){
+  
+  
+  if(1 == 2){
+    
+    {
+      fileFinders = ""
+      dirPath = paste0(getwd(), "/")
+      excludeDirs = c("")
+      ignoreMissingLists = FALSE
+      newNumbers = FALSE
+    }
+  }
+  
+  
+  
+  cat("Starting tree merging in folder", dirPath, "\nToday is", format(Sys.time()), "\n\n")
+  
+  if(length(fileFinders) == 1 && fileFinders == ""){
+    if(fileFinders != ""){
+      stop("Cannot merge only one set!\n")
+    }
+    cat("Automatic detection of fileFinders to be merged...")
+    
+    
+    dirList <- list.dirs(dirPath, recursive = F, full.names = F)
+    totalExcludes <- c("_images", "_total_ground_veg", "app")
+    totalExcludes <- c(totalExcludes, excludeDirs)
+    dirList <- dirList[!is.element(dirList, totalExcludes)]
+    lineBreaks <- trunc(length(dirList)/10)
+    cat("Found", length(dirList), "plots:\n    ")
+    cat(
+      sapply(seq(1, length(dirList), by = 10),
+             function(i) paste(dirList[i:min(i + 9, length(dirList))], collapse = ", ")),
+      sep = "\n    "
+    )
+    
+    allowedYes <- c("yes", "y", "1", "j", "ok", "")
+    hi <- readline(prompt = "Please insert yes / ok / 1 to proceed if this seems correct:")
+    if(!is.element(hi, allowedYes)) stop("User not agreed with automatic fileFinder selection!")
+    if(hi == "") hi <- "ENTER"
+    cat("<user input> ", hi, "\n")
+    fileFinders <- dirList
+    cat("Proceeding with", length(fileFinders), "fileFinders.\n\n")
+  }
+  
+  
+  dbhLists <- paste0(dirPath, "/", fileFinders, "/trees_dbh.txt")
+  dbhLists <- gsub("//", "/", dbhLists)
+  
+  missingLists <- dbhLists[!file.exists(dbhLists)]
+  if(length(missingLists)> 0 && !ignoreMissingLists){
+    stop(paste0("Error - following plots have no \"trees_dbh.txt\":\n    ", print(basename(dirname(missingLists)), collapse = ", "), "\nhint: set arg ignoreMissingLists = TRUE"))
+  }
+  
+  cat("Reading now", length(dbhLists), "tree lists to combine:\n")
+  newTrees <- data.frame()
+  
+  for(i in 1:length(dbhLists)){
+    
+    nowTrees <- read.table(dbhLists[i], header = T, sep = "\t")
+    nowTrees$randomCol <- NULL
+    nowTrees$tileName <- NULL
+    nowTrees$plot <- fileFinders[i]
+    nowTrees$comm2 <- nowTrees$comment
+    nowTrees$comment <- NULL
+    
+    
+    if(i > 1){
+      if(paste(colnames(nowTrees), collapse = ", ") != paste(colnames(newTrees), collapse = ", ")){
+        cat("\nColumn name discrepancy:")
+        cat("\nPrevious sets: ", paste0(colnames(newTrees), collapse = ", "))
+        cat("\nNow joined set:", paste0(colnames(nowTrees), collapse = ", "))
+        
+        if(length(colnames(nowTrees)) < length(colnames(newTrees))){
+          stop(paste0("Attention!\nSet ", fileFinders[i], " has no re-measured dbhs (still original dbh list...)"))
+        } else {
+          stop(paste0("Attention!\nDifference in header column numbers!"))
+        }
+      }
+    }
+    newTrees <- rbind(newTrees, nowTrees)
+  }
+  
+  
+  
+  
+  newTrees$deltaDBH <- round(abs(newTrees$dbh - newTrees$dbh.ref),1)
+  newTrees <- newTrees[order(newTrees$deltaDBH, decreasing = F),]
+  outTrees <- newTrees[!duplicated(newTrees$id),]
+  
+  if(max(outTrees$id) > 65535 & !newNumbers){
+    warning("Attention! Max-ID of tree list exceeds the lidR limit of 2 bytes for StemID - generating new Numbers!")
+  }
+  
+  if(newNumbers){
+    cat("Assigning new numbers to the trees in the list... ")
+    
+    maxNumber <- nrow(outTrees)
+    
+    outTrees <- outTrees[order(outTrees$dbh, decreasing = T),]
+    outTrees$oldID <- outTrees$id
+    outTrees$id <- c(1:maxNumber)
+    cat("done! maxnum =", maxNumber,"\n")
+    
+    cat("Tree table in 10 cm classes (abs and rel%):\n")
+    print(    table(trunc(outTrees$dbh/10))   )
+    print(    round(table(trunc(outTrees$dbh/10))/maxNumber*100,2)   )
+    
+    
+  }
+  
+  # if(outFileName == ""){
+  #   outFileName <- basename(dirPath)
+  #   if(is.element(outFileName, c("Baumfindung", "Einzelbaum", "Prozessierung"))){
+  #     outFileName <- basename(dirname(dirPath))
+  #   }
+  #   outFileName <- gsub("_", "", outFileName)
+  #   outFileName <- gsub(" ", "", outFileName)
+  # }
+  
+  if(outFileName != ""){
+    outFileName <- paste0(outFileName, "_")
+  }
+  
+  outFileName <- paste0("trees_", outFileName, "merged_dbh.txt")
+  cat("Writing outFile", paste0(dirPath, outFileName),"")
+  write.table(outTrees, paste0(dirPath, outFileName), 
+              row.names = F, sep = "\t")
+  
+  
+  
+  
+}
+
+
+
+
+
+
