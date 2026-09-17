@@ -8,6 +8,7 @@ if (.Platform$OS.type == "windows") {
   install.packages("doParallel", dep = T)
 } else {
   install.packages("doMC", dep = T)
+  install.packages("mcprogress", dep = T)
 }
 
 install.packages("lidR", repos = c("https://r-lidar.r-universe.dev", "https://cloud.r-project.org"))
@@ -25,7 +26,7 @@ packs_to_install <- c("RANN", "conicfit", "alphashape3d", "alphahull",
                       "flexclust", "matrixStats", "Distance", "lmfor",
                       "geosphere", "recexcavAAR", "DescTools", "foreach", "PBSmodelling",
                       "benchmarkme", "stringi", "raster", "plyr", "dplyr", "png", "jpeg", 
-                      "Rvcg", "rgl")
+                      "Rvcg", "rgl", "getPass", "digest")
 
 
 #install.packages("doMC", repos="http://R-Forge.R-project.org")
