@@ -12,6 +12,7 @@ changeLASVEG <- function() {
 }
 
 
+
 #' Tree crown segmentation
 #'
 #' Classifies all trees and isolates the crown,
@@ -322,6 +323,11 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     }
     clustList <- read.csv(clustList.name, sep = "\t")
     cat("-> Found", length(clustList[, 1]), "seed trees! ")
+    
+    if(max(clustList$id) > 65535){
+      stop(paste0("Error - the input tree list has more than 65k tree IDs - please rearrange the list!\n",
+                  "Tree IDs are saved as 2-byte short in the LAS files and loose their precision!\n"))
+    }
 
     # colnames(clustList)[colnames(clustList)=="cluster"] <- "id"
 
