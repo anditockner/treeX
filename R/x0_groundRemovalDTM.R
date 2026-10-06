@@ -457,11 +457,14 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   })
   
   traj <- NA
-  if(clip.trajectory.distance > 0 || draw.trajectory && txtExists){
-    clipTime <- Sys.time()
-    cat("Reading trajectory... ")
-    try({
-      traj <- read.csv(paste0(dirPath, groundPath, fileFinder, "_traj.txt"), sep = " ")
+  
+  
+  if(trafoMatrix.path != "" & file.exists(trafoMatrix.path) & txtExists & trajPath_toTransform != ""){
+    cat("\n\nTransforming trajectory with file", basename(trafoMatrix.path),"\n")
+    tryCatch({
+      ttf1 <- Sys.time()
+      cat("Reading trajectory for transformation... \n")
+      traj <- read.csv(trajPath_toTransform, sep = " ")
       if(is.element("X.time", colnames(traj))){
         duration_sec <- max(traj$X.time) - min(traj$X.time)
       } else if(is.element("X..world_time", colnames(traj))){
@@ -470,25 +473,6 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
         duration_sec <- max(traj[, 1]) - min(traj[, 1])
       }
       cat("(scan went", round(duration_sec/60,1), "mins)\n")
-    })
-    
-    # GeoSLAM trajectory contains approx. 83 points per second,
-    # we reduce them to 2 points per second for alpha-hulling
-    #traj$X.time[2] - traj$X.time[1] original spacing of points is 1/100 of a second
-    #traj2$X.time[2] - traj2$X.time[1] # now trajectory is spaced every 0.5 seconds
-    
-    traj2 <- traj[seq(from = 1, to = nrow(traj), by = 50),]
-    traj <- traj2
-    traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
-    rm(traj2)
-  }
-  
-  if(trafoMatrix.path != "" & file.exists(trafoMatrix.path) & txtExists & trajPath_toTransform != ""){
-    cat("\n\nTransforming trajectory with file", basename(trafoMatrix.path),"\n")
-    tryCatch({
-      ttf1 <- Sys.time()
-      cat("Reading trajectory for transformation... \n")
-      traj <- read.csv(trajPath_toTransform, sep = " ")
       suppressWarnings(trafoMat <- as.matrix(read.table(trafoMatrix.path)))
       trafoMat <- trafoMat[c(1:4), c(1:4)]
       cat("convert, ")
@@ -518,6 +502,36 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       cat("NO TRANSFORMATION WAS DONE!!!\n\n\n")
       warning("Transformation process was not sucessful!")
     })
+  }
+  
+  if(clip.trajectory.distance > 0 || draw.trajectory && txtExists){
+    if(!is.na(traj)){
+      
+    clipTime <- Sys.time()
+    cat("Reading trajectory... ")
+    try({
+      traj <- read.csv(paste0(dirPath, groundPath, fileFinder, "_traj.txt"), sep = " ")
+      if(is.element("X.time", colnames(traj))){
+        duration_sec <- max(traj$X.time) - min(traj$X.time)
+      } else if(is.element("X..world_time", colnames(traj))){
+        duration_sec <- max(traj$X..world_time) - min(traj$X..world_time)
+      } else {
+        duration_sec <- max(traj[, 1]) - min(traj[, 1])
+      }
+      cat("(scan went", round(duration_sec/60,1), "mins)\n")
+    })
+    
+    # GeoSLAM trajectory contains approx. 83 points per second,
+    # we reduce them to 2 points per second for alpha-hulling
+    #traj$X.time[2] - traj$X.time[1] original spacing of points is 1/100 of a second
+    #traj2$X.time[2] - traj2$X.time[1] # now trajectory is spaced every 0.5 seconds
+    
+    traj2 <- traj[seq(from = 1, to = nrow(traj), by = 50),]
+    traj <- traj2
+    traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
+    rm(traj2)
+    
+    }
   }
   
   
