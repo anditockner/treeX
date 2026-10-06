@@ -262,6 +262,9 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
                               onlyGroundMin = FALSE,
                               dirPath = paste0(getwd(), "/")){
 
+  if(trafoMatrix.path != ""){
+    library("Morpho")
+  }
   
   if(length(LASfile) > 1){
     stop("More than one LASfile provided!\n")
