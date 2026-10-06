@@ -463,10 +463,10 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   trajRead <- F
   
   if(trafoMatrix.path != "" & file.exists(trafoMatrix.path) & txtExists & trajPath_toTransform != ""){
-    cat("\n\nTransforming trajectory with file", basename(trafoMatrix.path),"\n")
+    cat("Transforming trajectory with file", basename(trafoMatrix.path),"\n")
     tryCatch({
       ttf1 <- Sys.time()
-      cat("Reading trajectory for transformation... \n")
+      cat("Reading trajectory for transformation... ")
       traj <- read.csv(trajPath_toTransform, sep = " ")
       trajRead <- T
       if(is.element("X.time", colnames(traj))){
@@ -501,7 +501,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
       rm(traj2)
       
-      cat("")
+      cat("\n\n")
     }, error = function(error_condition) {
       cat("NO TRANSFORMATION WAS DONE!!!\n\n\n")
       warning("Transformation process was not sucessful!")
