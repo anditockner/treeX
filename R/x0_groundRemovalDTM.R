@@ -362,7 +362,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
 
   tempName <- basename(LASfile)
   
-  
+  trajPath_toTransform <- ""
   
   
   # TRAJECTORY SEARCH
@@ -407,7 +407,11 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     
     if(file.exists(trajfile)){
       txtExists <- TRUE
-      file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.txt"), overwrite = T)
+      if(trafoMatrix.path != "" & file.exists(trafoMatrix.path) & txtExists){
+        trajPath_toTransform <- trajfile
+      } else {
+        file.copy(trajfile, paste0(dirPath, groundPath, fileFinder, "_traj.txt"), overwrite = T)
+      }
       cat("ok!    ")
     } else {
       cat("xXx non ")
@@ -478,6 +482,44 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
     rm(traj2)
   }
+  
+  if(trafoMatrix.path != "" & file.exists(trafoMatrix.path) & txtExists & trajPath_toTransform != ""){
+    cat("\n\nTransforming trajectory with file", basename(trafoMatrix.path),"\n")
+    tryCatch({
+      ttf1 <- Sys.time()
+      cat("Reading trajectory for transformation... \n")
+      traj <- read.csv(trajPath_toTransform, sep = " ")
+      suppressWarnings(trafoMat <- as.matrix(read.table(trafoMatrix.path)))
+      trafoMat <- trafoMat[c(1:4), c(1:4)]
+      cat("convert, ")
+      tempCoords <- applyTransform(x = as.matrix(traj[, c(2:4)]), trafo = trafoMat)
+      cat("assign, ")
+      traj$x <- round(tempCoords[,1], 6)
+      traj$y <- round(tempCoords[,2], 6)
+      traj$z <- round(tempCoords[,3], 6)
+      cat("save, ")
+      colnames(traj)[1] <- "%time"
+      write.table(traj, paste0(dirPath, groundPath, fileFinder, "_traj.txt"),
+                  sep = " ", row.names = F, quote = F, na = "")
+      cat("clean, ")
+      rm(tempCoords)
+      gc()
+      
+      cat("done in a ")
+      print.difftime(round(Sys.time() - ttf1, 1))
+      
+      traj2 <- traj[seq(from = 1, to = nrow(traj), by = 50),]
+      traj <- traj2
+      traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
+      rm(traj2)
+      
+      cat("")
+    }, error = function(error_condition) {
+      cat("NO TRANSFORMATION WAS DONE!!!\n\n\n")
+      warning("Transformation process was not sucessful!")
+    })
+  }
+  
   
   #if(tooBig){
   #  cat("tooBig: Reading only every 3rd point: ", LASfile, "...\n", sep = "")
@@ -583,43 +625,6 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   }
 
 
-
-  if(trafoMatrix.path != "" & file.exists(trafoMatrix.path) & txtExists){
-    cat("\n\nTransforming trajectory with file", basename(trafoMatrix.path),"\n")
-    tryCatch({
-      ttf1 <- Sys.time()
-      cat("Reading trajectory for transformation... \n")
-      traj <- read.csv(paste0(dirPath, groundPath, fileFinder, "_traj.txt"), sep = " ")
-      suppressWarnings(trafoMat <- as.matrix(read.table(trafoMatrix.path)))
-      trafoMat <- trafoMat[c(1:4), c(1:4)]
-      cat("convert, ")
-      tempCoords <- applyTransform(x = as.matrix(traj[, c(2:4)]), trafo = trafoMat)
-      cat("assign, ")
-      traj$x <- round(tempCoords[,1], 6)
-      traj$y <- round(tempCoords[,2], 6)
-      traj$z <- round(tempCoords[,3], 6)
-      cat("save, ")
-      colnames(traj)[1] <- "%time"
-      write.table(traj, paste0(dirPath, groundPath, fileFinder, "_traj.txt"),
-                  sep = " ", row.names = F, quote = F, na = "")
-      cat("clean, ")
-      rm(tempCoords)
-      gc()
-
-      cat("done in a ")
-      print.difftime(round(Sys.time() - ttf1, 1))
-      
-      traj2 <- traj[seq(from = 1, to = nrow(traj), by = 50),]
-      traj <- traj2
-      traj$col <- rainbow(length(traj[,1]), end = 0.7, rev = T)
-      rm(traj2)
-      
-      cat("")
-    }, error = function(error_condition) {
-      cat("NO TRANSFORMATION WAS DONE!!!\n\n\n")
-      warning("Transformation process was not sucessful!")
-    })
-  }
 
 
   cat("\n")
