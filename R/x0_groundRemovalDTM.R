@@ -460,7 +460,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   })
   
   traj <- NA
-  
+  trajRead <- F
   
   if(trafoMatrix.path != "" & file.exists(trafoMatrix.path) & txtExists & trajPath_toTransform != ""){
     cat("\n\nTransforming trajectory with file", basename(trafoMatrix.path),"\n")
@@ -468,6 +468,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       ttf1 <- Sys.time()
       cat("Reading trajectory for transformation... \n")
       traj <- read.csv(trajPath_toTransform, sep = " ")
+      trajRead <- T
       if(is.element("X.time", colnames(traj))){
         duration_sec <- max(traj$X.time) - min(traj$X.time)
       } else if(is.element("X..world_time", colnames(traj))){
@@ -508,7 +509,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   }
   
   if(clip.trajectory.distance > 0 || draw.trajectory && txtExists){
-    if(!is.na(traj)){
+    if(!trajRead){
       
     clipTime <- Sys.time()
     cat("Reading trajectory... ")
