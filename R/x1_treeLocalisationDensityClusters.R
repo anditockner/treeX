@@ -284,11 +284,18 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
       }
 
 
+      
+      
+      dtmFile_path <- paste0(dirPath, groundPath, fileFinder, "_ground_min.grd") 
+      if(!file.exists(dtmFile_path)){
+        dtmFile_path <- paste0(dirPath, groundPath, fileFinder, "_ground_clip.grd") 
+      }
+      
 
       tryCatch(
         {
           # read in raster file
-          dtm_z <- raster(paste0(dirPath, groundPath, fileFinder, "_ground_min.grd"))
+          dtm_z <- raster(dtmFile_path)
         }, error = function(error_condition) {
           cat("Error in reading the dtm-model, file not found!")
           return()
@@ -314,7 +321,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
             dtm_a <- raster(paste0(dirPath, groundPath, fileFinder, "_ground_rough.grd"))
           }, error = function(error_condition) {
             cat("Error in reading the rough dtm-model, file not found!")
-            return()
+            #return() return is no use inside a try catch statement!
           })
 
         tryCatch(
@@ -323,7 +330,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
             cat("done!\n")
           }, error = function(error_condition) {
             cat("Error in creating the rough dtm model!")
-            return()
+            #return()
           })
       }
 
@@ -492,13 +499,17 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
 
   # NORMALIZATION
   cat("Normalizing finally height of the cluster slice again... ")
+  
+  dtmFile_path <- paste0(dirPath, groundPath, fileFinder, "_ground_min.grd") 
+  if(!file.exists(dtmFile_path)){
+    dtmFile_path <- paste0(dirPath, groundPath, fileFinder, "_ground_clip.grd") 
+  }
   tryCatch(
     {
       # read in raster file
-      dtm_z <- raster(paste0(dirPath, groundPath, fileFinder, "_ground_min.grd"))
+      dtm_z <- raster(dtmFile_path)
     }, error = function(error_condition) {
       cat("Error in reading the dtm-model, file not found!")
-      return()
     })
   useCoarseGrid <- FALSE
   # NORMALIZATION
