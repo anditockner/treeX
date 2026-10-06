@@ -511,7 +511,6 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   if(clip.trajectory.distance > 0 || draw.trajectory && txtExists){
     if(!trajRead){
       
-    clipTime <- Sys.time()
     cat("Reading trajectory... ")
     try({
       traj <- read.csv(paste0(dirPath, groundPath, fileFinder, "_traj.txt"), sep = " ")
@@ -719,6 +718,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
   # TRAJECTORY CLIPPING SECTION ####
 
   if(clip.trajectory.distance > 0 && txtExists){
+    clipTime <- Sys.time()
     cat("Clipping total cloud to trajectory +", clip.trajectory.distance, "m radius (a=25m)...")
     
     # shifting trajectory for the sake of polygon hulling, goes wrong with gps coordinates!
