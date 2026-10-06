@@ -2991,10 +2991,16 @@ fineCluster <- function(fileFinder, dbhPath, allDBHs = FALSE, nr_cores = 0,
   }
   
   cat(" * attaching z-values from reading _ground_min.grd model\n")
+  
+  dtmFile_path <- paste0(dirPath, groundPath, fileFinder, "_ground_min.grd") 
+  if(!file.exists(dtmFile_path)){
+    dtmFile_path <- paste0(dirPath, groundPath, fileFinder, "_ground_clip.grd") 
+  }
+  
   tryCatch(
     {
       # read in raster file
-      dtm_z <- raster(paste0(dirPath, groundPath, fileFinder, "_ground_min.grd"))
+      dtm_z <- raster(dtmFile_path)
     }, error = function(error_condition) {
       cat("Error in reading the min dtm-model!")
       return()
