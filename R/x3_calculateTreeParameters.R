@@ -77,7 +77,7 @@ measureNewDBH <- function(treeLAS, nowMeta, picPath = getwd(),
   par(mfrow = c(1, 1))
   {
     png(filename = paste0(picPath, thisId, "_circles.png"), width = 1400, height = 800)
-    par(mfrow = c(3, 4), oma = c(1,1,4,1))
+    par(mfrow = c(3, 4), oma = c(1,1,4,1)+.1, mar = c(4,3,4,1)+0.1)
     circles <- NULL
 
     cat("slice ")
@@ -724,7 +724,7 @@ computeTree_i <- function(treeLAS.path,
       png(paste0(crownPathSingles, treeName,".png"), height = 1024, width = 2048, type = "cairo")
       tryCatch(
         {
-          par(mfrow=c(1, 3), oma = c(0, 0, 3, 0))
+          par(mfrow=c(1, 3), oma = c(0, 0, 3, 0)+.1, mar = c(5,4,6,2)+0.1)
           plot(treeLAS@data$X, treeLAS@data$Z, asp = 1, cex = 0.001, ylim = c(down.h, up.h))
           abline(h = c(up.h, down.h), col = "red")
           lines(x = c(nowMeta$x, maxPoint$X), y = c(down.h, up.h), col = "green", lty = 2)
@@ -1029,7 +1029,7 @@ computeTree_i <- function(treeLAS.path,
 
         png(paste0(stemAnalysisPath,"",treeName,"_stem_diameters.png"), 
             height = 200 * ceiling(length(heightGrip)/20), width = 6000, type = "cairo")
-        par(mfrow=c(ceiling(length(heightGrip)/20),20),oma = c(0, 0, 3, 0))
+        par(mfrow=c(ceiling(length(heightGrip)/20),20), oma = c(0, 0, 3, 0), mar = c(2,2,4,1)+0.1)
         plot(1, type = "n", bty = "n", xlab = "", ylab = "", xaxt = "n", yaxt = "n")
         panelToRow <- function(panel){
           if(panel == 28){
@@ -1473,6 +1473,9 @@ computeTree_i <- function(treeLAS.path,
           # cat(paste0("DBH alternative ",round(DBH$d*100,1)," cm at position x="
           #            ,round(DBH$x,2),"  y=",round(DBH$y,2),"  z=",round(nowMeta$z,2),"m\n"))
           cat("HERE DBH ALTERNATIVE IS NOT IMPLEMENTED YET!\n")
+          if(is.element("dbh", colnames(nowMeta))){
+            metaVars$est.DBH <- nowMeta$dbh
+          }
 
           #metaVars$est.height <- round(crownLength+crownStart+groundCutHeight,2)
           metaVars$est.crownLength <- round(crownLength,2)
@@ -2774,7 +2777,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                           png(paste0(crownPathSingles, treeName,".png"), height = 1024, width = 2048, type = "cairo")
                           tryCatch(
                             {
-                              par(mfrow=c(1, 3), oma = c(0, 0, 3, 0))
+                              par(mfrow=c(1, 3), oma = c(0, 0, 3, 0)+.1, mar = c(5,4,6,2)+0.1)
                               plot(treeLAS@data$X, treeLAS@data$Z, asp = 1, cex = 0.001, ylim = c(down.h, up.h))
                               abline(h = c(up.h, down.h), col = "red")
                               lines(x = c(nowMeta$x, maxPoint$X), y = c(down.h, up.h), col = "green", lty = 2)
@@ -2986,7 +2989,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                           png(paste0(crownPathSingles, treeName,".png"), height = 1024, width = 2048, type = "cairo")
                           tryCatch(
                             {
-                              par(mfrow=c(1, 3), oma = c(0, 0, 3, 0))
+                              par(mfrow=c(1, 3), oma = c(0, 0, 3, 0)+.1, mar = c(5,4,6,2)+0.1)
                               plot(treeLAS@data$X, treeLAS@data$Z, asp = 1, cex = 0.001, ylim = c(down.h, up.h))
                               abline(h = c(up.h, down.h), col = "red")
                               lines(x = c(nowMeta$x, maxPoint$X), y = c(down.h, up.h), col = "green", lty = 2)
