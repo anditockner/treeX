@@ -375,7 +375,8 @@ createAppFiles <- function(fileFinder = NA,
                            reduceName = FALSE, # take only first lettter of long_name_now = lnn
                            onlySuffixFileFinder = FALSE, # take only the last underscore example: project_c2b -> c2b for non-registered point-clouds
 
-                           slices = c("_clusterSlice_100to300.laz"),
+                           slicesPath = c("_clusterSlice_100to300.laz"),
+                           redSlicePath = c("_clusterSlice_120to140.laz"),
                            laz.path = NA, slice.cut.low = NA, slice.cut.high = NA,
                            colorVersion = F, 
                            eraseSpecies = F, highlightNew = F, setSpecies = "", 
@@ -395,7 +396,7 @@ createAppFiles <- function(fileFinder = NA,
     reduceName = FALSE # take only first lettter of long_name_now = lnn
     onlySuffixFileFinder = FALSE # take only the last underscore example: project_c2b -> c2b for non-registered point-clouds
     
-    slices = c("_clusterSlice_100to300.laz")
+    slicesPath = c("_clusterSlice_100to300.laz")
     laz.path = NA
     slice.cut.low = NA
     slice.cut.high = NA
@@ -549,10 +550,10 @@ createAppFiles <- function(fileFinder = NA,
     }
     
     
-    #slices <- c("_clusterSlice_100to300.laz", "_clusterSlice_100to200.laz",
+    #slicesPath <- c("_clusterSlice_100to300.laz", "_clusterSlice_100to200.laz",
     #            "_clusterSlice_300to500.laz", "_clusterSlice_50to200.laz") # print all a slice bgr pic
-    #slices <- c("_clusterSlice_100to300.laz", "_clusterSlice_50to200.laz")
-    # slices <- c("_clusterSlice_100to300.laz")
+    #slicesPath <- c("_clusterSlice_100to300.laz", "_clusterSlice_50to200.laz")
+    # slicesPath <- c("_clusterSlice_100to300.laz")
     slices_gr <- c("_ground_100cm_vox.laz")
     if(fullGroundGrey) slices_gr <- "_ground.laz"
     slices_grTRAJ <- c("_ground_100cm_vxtraj.laz")
@@ -736,32 +737,33 @@ createAppFiles <- function(fileFinder = NA,
     
     if(!is.na(fileFinder[1])){
       ## a) FROM FILEFINDER ####
-      for(i in 1:length(slices)){
+      for(i in 1:length(slicesPath)){
         
-        #cat("reading in file", paste0(groundPath, fileFinder, slices[i]), "\n")
-        cat(paste0("Reading in ", slices[i], "... "))
+        #cat("reading in file", paste0(groundPath, fileFinder, slicesPath[i]), "\n")
+        cat(paste0("Reading in ", slicesPath[i], "... "))
         for(j in 1:length(fileFinder)){
           if(j == 1){
-            co <- capture.output(slice <- readLAS(paste0(groundPath, fileFinder[j], slices[i]), 
+            co <- capture.output(slice <- readLAS(paste0(groundPath, fileFinder[j], slicesPath[i]), 
                              select = selector))
           } else {
-            co <- capture.output(newSlice <- readLAS(paste0(groundPath, fileFinder[j], slices[i]), 
+            co <- capture.output(newSlice <- readLAS(paste0(groundPath, fileFinder[j], slicesPath[i]), 
                                                      select = selector))
             slice <- rbind(slice, newSlice)
           }
         }
         if(!colorVersion){
           if(drawRedSlice){
-            cat(paste0("_clusterSlice_120to140.laz... "))
+            cat(paste0(redSlicePath, "... "))
+            #cat(paste0("_clusterSlice_120to140.laz... "))
             #cat("reading in redSlice", paste0(groundPath, fileFinder, "_clusterSlice_120to140.laz"), "\n")
             for(j in 1:length(fileFinder)){
               if(j == 1){
                 co <- capture.output(redSlice <- 
                                        readLAS(paste0(groundPath, 
-                                                      fileFinder[j], "_clusterSlice_120to140.laz"), 
+                                                      fileFinder[j], redSlicePath), 
                                                select = selector))
               } else {
-                co <- capture.output(newRedSlice <- readLAS(paste0(groundPath, fileFinder[j], "_clusterSlice_120to140.laz"), 
+                co <- capture.output(newRedSlice <- readLAS(paste0(groundPath, fileFinder[j], redSlicePath), 
                                                              select = selector))
                 redSlice <- rbind(redSlice, newRedSlice)
               }
@@ -882,7 +884,7 @@ createAppFiles <- function(fileFinder = NA,
               prevYUp <- 5
               slicePrev <- filter_poi(slice, X < prevXRight, X > prevXLeft, Y > prevYDown, Y < prevYUp)
               #plot(slicePrev)
-              png(paste0(picPath.app.temp, fileFinder, slices[i],"_prev_",pixelUnit_cm,"px_cm.png"),
+              png(paste0(picPath.app.temp, fileFinder, slicesPath[i],"_prev_",pixelUnit_cm,"px_cm.png"),
                   width = (prevXRight - prevXLeft)*100*pixelUnit_cm, height = (prevYUp - prevYDown)*100*pixelUnit_cm, type = "cairo")
               par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i')
               plot(1, type = "n", xlim = c(prevXLeft, prevXRight), ylim = c(prevYDown, prevYUp),
@@ -954,21 +956,21 @@ createAppFiles <- function(fileFinder = NA,
         {
           bgrTime <- Sys.time()
           cat("EXHAUSTIVE: plot background image",spanX_cm_drawn*pixelUnit_cm,"x",spanY_cm_drawn*pixelUnit_cm,"pixel (area =", round(spanX_cm_drawn*pixelUnit_cm * spanY_cm_drawn*pixelUnit_cm / 1000000), "Mio)...\n")
-          cat("            resolution is", pixelUnit_cm, "pixel per cm - using slice", gsub(".laz", "", slices[i]), "\n")
+          cat("            resolution is", pixelUnit_cm, "pixel per cm - using slice", gsub(".laz", "", slicesPath[i]), "\n")
           cat("            center point 0 | 0 will be drawn at: \n")
           cat(rep(" ", 26 - nchar(-topLeftX*pixelUnit_cm)), (-topLeftX)*pixelUnit_cm," | ",topLeftY*pixelUnit_cm," pixel count in the image.\n", sep = "")
           cat("(takes time...) ")
         }
         tryCatch(
           {
-            #png(paste0(picPath.app.temp, fileFinder, "_", clip.radius,slices[i],".png"), width = 8000, height = 8000, type = "cairo")
+            #png(paste0(picPath.app.temp, fileFinder, "_", clip.radius,slicesPath[i],".png"), width = 8000, height = 8000, type = "cairo")
             
             if(createTIFF){
-              tiff(paste0(picPath.app.temp, outName, slices[i],".png"), 
+              tiff(paste0(picPath.app.temp, outName, slicesPath[i],".png"), 
                   width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
               
             } else {
-              png(paste0(picPath.app.temp, outName, slices[i],".png"),
+              png(paste0(picPath.app.temp, outName, slicesPath[i],".png"),
                   width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
             }
             par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i')
@@ -1401,7 +1403,7 @@ createAppFiles <- function(fileFinder = NA,
             prevYUp <- 5
             slicePrev <- filter_poi(slice, X < prevXRight, X > prevXLeft, Y > prevYDown, Y < prevYUp)
             #plot(slicePrev)
-            png(paste0(picPath.app.temp, basename(laz.path), slices[1],"_prev_",pixelUnit_cm,"px_cm.png"),
+            png(paste0(picPath.app.temp, basename(laz.path), slicesPath[1],"_prev_",pixelUnit_cm,"px_cm.png"),
                 width = (prevXRight - prevXLeft)*100*pixelUnit_cm, height = (prevYUp - prevYDown)*100*pixelUnit_cm, type = "cairo")
             par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i')
             plot(1, type = "n", xlim = c(prevXLeft, prevXRight), ylim = c(prevYDown, prevYUp),
@@ -1422,26 +1424,26 @@ createAppFiles <- function(fileFinder = NA,
       }
       
       bgrTime <- Sys.time()
-      for(i in 1:length(slices)){
+      for(i in 1:length(slicesPath)){
         ### plotting background image of merged las ####
         cat("EXHAUSTIVE: plot background image",spanX_cm_drawn*pixelUnit_cm,"x",spanY_cm_drawn*pixelUnit_cm,"pixel (area =", round(spanX_cm_drawn*pixelUnit_cm * spanY_cm_drawn*pixelUnit_cm / 1000000), "Mio)...\n")
-        cat("            resolution is", pixelUnit_cm, "pixel per cm - using slice", gsub(".laz", "", slices[i]), "\n")
+        cat("            resolution is", pixelUnit_cm, "pixel per cm - using slice", gsub(".laz", "", slicesPath[i]), "\n")
         cat("            center point 0 | 0 will be drawn at: \n")
         cat(rep(" ", 26 - nchar(-topLeftX*pixelUnit_cm)), (-topLeftX)*pixelUnit_cm," | ",topLeftY*pixelUnit_cm," pixel count in the image.\n", sep = "")
         tryCatch(
           {
-            #png(paste0(picPath.app.temp, fileFinder, "_", clip.radius,slices[i],".png"), width = 8000, height = 8000, type = "cairo")
+            #png(paste0(picPath.app.temp, fileFinder, "_", clip.radius,slicesPath[i],".png"), width = 8000, height = 8000, type = "cairo")
             
             
             tryCatch({
-              png(paste0(picPath.app.temp, basename(laz.path), slices[i],".png"),
+              png(paste0(picPath.app.temp, basename(laz.path), slicesPath[i],".png"),
                   width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
               
             }, error = function(error_condition) {
               cat("Error with that big resolution, halving it!\n")
               pixelUnit_cm <- pixelUnit_cm/2
               cat("New pixelUnit is", pixelUnit_cm, "cm\n")
-              png(paste0(picPath.app.temp, basename(laz.path), slices[i],".png"),
+              png(paste0(picPath.app.temp, basename(laz.path), slicesPath[i],".png"),
                   width = spanX_cm_drawn*pixelUnit_cm, height = spanY_cm_drawn*pixelUnit_cm, type = "cairo")
             })
             
@@ -1670,7 +1672,7 @@ createAppFiles <- function(fileFinder = NA,
     
 
     # copy first slice to main directory
-    fromFile <- paste0(picPath.app.temp, outName, slices[1], ".png")
+    fromFile <- paste0(picPath.app.temp, outName, slicesPath[1], ".png")
     
     # file.copy(fromFile, toFile, overwrite = T)
     
@@ -1731,7 +1733,7 @@ createAppFiles <- function(fileFinder = NA,
     
     coloredLasPath <- paste0(dirPath, "app/coloredLAS/")
     if(!exists(coloredLasPath)) dir.create(coloredLasPath)
-    slices <- c("_clusterSlice_100to300.laz", "_clusterSlice_120to140.laz", "_clusterSlice_300to500.laz", "_ground.laz")
+    slicesPath <- c("_clusterSlice_100to300.laz", "_clusterSlice_120to140.laz", "_clusterSlice_300to500.laz", "_ground.laz")
     {
       cat("\nColoring slices for manual tree finding:")
       cat(":\n")
@@ -1742,14 +1744,14 @@ createAppFiles <- function(fileFinder = NA,
     maxY <- -10000
     minY <- 10000
     
-    for(i in 1:length(slices)){
+    for(i in 1:length(slicesPath)){
       
       if(writeLASuncompressed){
         # uncompressed las file eats a lot of storage
-        sliceOutFile <- paste0(fileFinder, substr(slices[i], 1, nchar(slices[i])-1), "s")
+        sliceOutFile <- paste0(fileFinder, substr(slicesPath[i], 1, nchar(slicesPath[i])-1), "s")
       } else {
         # compressed laz file for sending to another pc
-        sliceOutFile <- paste0(fileFinder, substr(slices[i], 1, nchar(slices[i])-1), "z")
+        sliceOutFile <- paste0(fileFinder, substr(slicesPath[i], 1, nchar(slicesPath[i])-1), "z")
       }
       
       
@@ -1759,7 +1761,7 @@ createAppFiles <- function(fileFinder = NA,
       
       
       ta <- Sys.time()
-      laz.slice <- paste0(groundPath, fileFinder, slices[i])
+      laz.slice <- paste0(groundPath, fileFinder, slicesPath[i])
       co <- capture.output(sliceLAS <- readLAS(laz.slice, select = selector))
       if(i == 1){
         allMaxInt <- max(sliceLAS@data$Intensity)
@@ -1774,7 +1776,7 @@ createAppFiles <- function(fileFinder = NA,
         minY <- min(minY, sliceLAS@header@PHB$`Min Y`)
       }
       
-      if(slices[i] == "_clusterSlice_120to140.laz"){
+      if(slicesPath[i] == "_clusterSlice_120to140.laz"){
         # color RED
         maxInt <- allMaxInt * 0.3
         sliceLAS@data$R <- 255L
@@ -1783,7 +1785,7 @@ createAppFiles <- function(fileFinder = NA,
         sliceLAS@data$B <- sliceLAS@data$G
       } else {
         # color intensity BLACK
-        if(slices[i] == "_clusterSlice_100to300.laz"){
+        if(slicesPath[i] == "_clusterSlice_100to300.laz"){
           maxInt <- allMaxInt * 0.5
           # regular intensity
         } else {
