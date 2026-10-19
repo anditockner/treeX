@@ -1840,7 +1840,8 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                                clipHeight = 3, bottomCut = 1, bushPreparation = FALSE, filterSOR = FALSE,
 
                                do.CrownBase = TRUE,
-                               groundCutHeight = 0, silent = TRUE, retainPointClouds = FALSE, nr_cores = 0,
+                               groundCutHeight = 0, silent = TRUE, retainPointClouds = FALSE, 
+                               nr_cores = 0,
 
 
                                treeNames = NULL,
@@ -1855,6 +1856,9 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
     }
     gstart <- Sys.time()
 
+    if(nr_cores > 10){
+      set_lidr_threads(1)
+    }
     fileFinder <- removeUmlaut(fileFinder)
 
     
@@ -2374,7 +2378,10 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
     library("Rvcg")
     writeLAZ <- TRUE # else will get an error
   }
-
+  
+  if(nr_cores_params > 10){
+    set_lidr_threads(1)
+  }
   if(ipad){
     clipHeight <- 2.2
     bottomCut <- 0.2
