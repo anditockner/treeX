@@ -2144,6 +2144,9 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
                         treeName <- treeNames[i]
                       }
 
+                      if(nr_cores > 10){
+                        set_lidr_threads(1)
+                      }
                       cat(i,"/",loopEnd,"- Starting with tree",treeName,
                           "on",format(Sys.time(), "%Y-%m-%d, %H:%M"),"\n")
 
@@ -2930,6 +2933,9 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
                                              stringsAsFactors=FALSE) #not implemented yet, was interesting!
 
                       #cat("Let's go!\n\n")
+                      if(nr_cores > 10){
+                        set_lidr_threads(1)
+                      }
 
 
                       treeLAS <- filter_poi(las, StemID == trees[i])
