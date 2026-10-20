@@ -938,7 +938,7 @@ grabDBH <- function(fileFinder,
         dev.off()
       }
     }, error = function(error_condition) {
-      cat("Error in reading the dtm-model!\0n")
+      cat("Error in reading the dtm-model!\n")
       return()
     })
   
