@@ -859,25 +859,31 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
     
     # VOXELISATION OF INPUT POINTS ####
     if (voxelSize != 0) {
+      voxTime1 <- Sys.time()
       cat("Reduction into VOXEL with a cube length of", voxelSize, "cm... \n")
 
       seedLAS <- TreeLS::tlsSample(seedLAS, TreeLS::smp.voxelize(voxelSize / 100))
       # TODO: Change that into normal voxels, but then all the rest of the script goes down...
-      cat(" VOXEL POINTS in total ")
-      cat(thMk(seedLAS@header@PHB$`Number of point records`), "seed points and ")
 
-      allocationCloud <- totalCloud
-
+      cat("VOXEL SPLIT into")
+        
       
+      v1<-seedLAS@header@PHB$`Number of point records`
+      cat(sprintf("%11s", format(v1, big.mark=".", decimal.mark = ",")), "seed points\n")
+      
+      allocationCloud <- totalCloud
       groundCloud <- filter_poi(totalCloud, Classification == 2)
       co <- capture.output(groundCloud <- voxelize_points(groundCloud, voxelSize / 100))
       groundCloud@data$Classification <- 2L
-      cat(thMk(groundCloud@header@PHB$`Number of point records`), "ground points and ")
+      v2<-groundCloud@header@PHB$`Number of point records`
+      cat("            and", sprintf("%11s", format(v2, big.mark=".", decimal.mark = ",")), "ground points\n")
       if(shrubCloudExists){
         shrubCloud <- filter_poi(totalCloud, Classification == 3)
         co <- capture.output(shrubCloud <- voxelize_points(shrubCloud, voxelSize / 100))
         shrubCloud@data$Classification <- 3L
-        cat(thMk(shrubCloud@header@PHB$`Number of point records`), "shrub points and ")
+        v3<-shrubCloud@header@PHB$`Number of point records`
+        cat("            and", sprintf("%11s", format(v3, big.mark=".", decimal.mark = ",")), "shrub points\n")
+        
         co <- capture.output(groundCloud <- rbind(groundCloud, shrubCloud))
         if(writeShrubStemVoxelLAS){
           co <- capture.output(shrubCloud <- LAS(shrubCloud@data))
@@ -891,12 +897,19 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       co <- capture.output(vegCloud <- filter_poi(totalCloud, Classification == 1))
       co <- capture.output(vegCloud <- voxelize_points(vegCloud, voxelSize / 100))
       vegCloud@data$Classification <- 1L
-      cat(thMk(vegCloud@header@PHB$`Number of point records`), "vegetation points remain.\n")
-      cat("Joining them with proper Classification (2=ground 1=rest)... ")
+      
+      v4<-vegCloud@header@PHB$`Number of point records`
+      cat("      remaining", sprintf("%11s", format(v4, big.mark=".", decimal.mark = ",")), "vegetation points\n")
+      
+      cat("Joining with proper Classification (2=ground 1=rest)... ")
       totalCloud <- rbind(groundCloud, vegCloud)
       rm(groundCloud, vegCloud)
       gc()
       cat("done!\n")
+      voxTime2 <- Sys.time()
+      timeVoxel <- as.difftime(voxTime2 - voxTime1)
+      cat(paste0("Voxel creation and assignment time required: ",
+                 round(timeVoxel,1), " ", units(timeVoxel),"\n\n"))
     }
     
 
