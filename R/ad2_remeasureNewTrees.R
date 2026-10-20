@@ -911,11 +911,15 @@ grabDBH <- function(fileFinder,
   
   metaList$oldZ <- metaList$z
   
-  cat("Fixing the z-coordintes of the newly found trees.\n")
+  cat("Fixing the z-coordinates of the newly found trees.\n")
   tryCatch(
     {
       # read in raster file
-      dtm_z <- raster(paste0(groundPath, fileFinder, "_ground_min.grd"))
+      dtm_z.path <- paste0(groundPath, fileFinder, "_ground_min.grd")
+      if(!file.exists(dtm_z.path)){
+        dtm_z.path <- paste0(groundPath, fileFinder, "_ground_clip.grd")
+      }
+      dtm_z <- raster(dtm_z.path)
       metaList$z <- round(extract(dtm_z, SpatialPoints(data.frame(x = metaList$x, y = metaList$y))) + 1.3, 3)
       rems <- sum(is.na(metaList$z))
       if(rems != 0){
@@ -934,7 +938,7 @@ grabDBH <- function(fileFinder,
         dev.off()
       }
     }, error = function(error_condition) {
-      cat("Error in reading the dtm-model!")
+      cat("Error in reading the dtm-model!\0n")
       return()
     })
   
