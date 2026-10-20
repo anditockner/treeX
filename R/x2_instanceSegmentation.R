@@ -1632,7 +1632,7 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
         
         
         
-        if(countRoundsShrubRemoval > 10 || (distanceCounter_cm * zScale) > (2*distancelimit.veg)){
+        if(countRoundsShrubRemoval > 20 || (distanceCounter_cm * zScale) > (2*distancelimit.veg)){
           
           useableDistance <- 1
           
