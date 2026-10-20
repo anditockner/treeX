@@ -818,6 +818,9 @@ crownFeel <- function(fileFinder, cutWindow = c(-1000, -1000, 2000), ipad = FALS
       if (!file.exists(dtmFile)) {
         dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_rough.grd")
       }
+      if (!file.exists(dtmFile)) {
+        dtmFile <- paste0(dirPath, groundPath, fileFinder, "_ground_clip.grd")
+      }
       
       tryCatch(
         {
