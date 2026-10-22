@@ -1,8 +1,17 @@
-![treeX logo](https://github.com/user-attachments/assets/b8431b3a-b4d8-485d-a8d8-5ecd2548a17f)
+# treeX <img src="https://raw.githubusercontent.com/anditockner/treeX/refs/heads/main/man/figures/treeXLogo_500.png" align="right" style="width: 250px; min-width: 200px;"/>
 
-R-package for tree detection and instance segmentation from ground-based point clouds. 
+
+**R-package for individual tree processing from ground-based point clouds.**
+
+The functions in treeX were developed to analyze ground-based LiDAR data (PLS, MLS, TLS) from forest plots. 
+It provides a modular framework for ground removal (including the generation of vertical slices), individual tree detection (via density clustering), instance segmentation (via iterative region-growing), and individual tree measurement (crown features are derived via alpha-hulls). 
+
+Automatically derived parameters for diameter at breast height, tree height and crown basal height were benchmarked with conventional measurements in forest inventory (with a root mean square error of less than 2 cm dbh and 2 m height). See the citation section for more information.  
+
+The package and all its functions were developed at the Institute of Forest Growth (WAFO), BOKU University, Vienna. 
 
 A sample workflow can be found in the script "WORKFLOW_sample.R". 
+
 
 # Installation
 
