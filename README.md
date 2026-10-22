@@ -1,7 +1,7 @@
 # treeX <img src="https://raw.githubusercontent.com/anditockner/treeX/refs/heads/main/man/figures/treeXLogo_500.png" align="right" style="width: 250px; min-width: 200px;"/>
 
 
-**R-package for individual tree processing from ground-based point clouds.**
+**R-package for individual tree extraction from ground-based point clouds.**
 
 The functions in treeX were developed to analyze ground-based LiDAR data (PLS, MLS, TLS) from forest plots. 
 It provides a modular framework for ground removal (including the generation of vertical slices), individual tree detection (via density clustering), instance segmentation (via iterative region-growing), and individual tree measurement (crown features are derived via alpha-hulls). 
