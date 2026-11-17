@@ -787,8 +787,3 @@ pullFromFaroConnect <- function(inConnectPath, outNewFolder,
     
   }
 }
-
-
-
-
-}
