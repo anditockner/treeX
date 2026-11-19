@@ -2248,14 +2248,16 @@ createAppFiles <- function(fileFinder = NA,
 #' @param fileFinder name of the set to open in dirPath
 #' @param withGround should ground file (usually quite heavy in data) also be opened? default: TRUE
 #' @param dirPath directory that contains fileFinder folders and _total_ground_veg
-#' @param pathCloudCompare path leading to CloudCompare.exe, default for windows in C ProgramFiles
+#' @param pathCloudCompare path leading to the CloudCompare executable (or its
+#'   directory); by default it is located automatically on Windows
+#'   (C:/Program Files), macOS (/Applications/CloudCompare.app) and Linux (PATH)
 #' @export
-openColoredLAZ <- function(fileFinder, 
-                           withGround = T, 
-                           dirPath = paste0(getwd(), "/"), 
-                           pathCloudCompare = "\"C:/Program Files/CloudCompare/\""){
+openColoredLAZ <- function(fileFinder,
+                           withGround = T,
+                           dirPath = paste0(getwd(), "/"),
+                           pathCloudCompare = NULL){
   #library(lidR)
-  library(PBSmodelling) #open files
+  attachIfAvailable("PBSmodelling") #open files (optional)
   
   # # # open and explore # # #
   # the path for ground and vegetation files
@@ -2324,13 +2326,12 @@ openColoredLAZ <- function(fileFinder,
   }
   
   
-  File.exe <- "Cloudcompare.exe"
-  Path.exe <- paste0(pathCloudCompare, File.exe)
-  (command.exe <- paste0(" ", Path.exe, " ", 
+  Path.exe <- findCloudCompare(pathCloudCompare)
+  (command.exe <- paste0(" ", Path.exe, " ",
                          gsub(",","",toString(lasOpen))))
-  
+
   cat(command.exe)
-  system(command.exe, wait = FALSE)
+  runCommand(command.exe, wait = FALSE)
   
   
 }

@@ -2143,9 +2143,8 @@ computeCrownParams <- function(fileFinder, loopStart = 1, loopEnd = 0,
       registerDoParallel(cl)
       cat("   (on windows system using doParallel)\n")
     } else {
-      library(doMC)
-      registerDoMC(cores = nr_cores)
-      cat("   (on Unix-like system using doMC)\n")
+      doParallel::registerDoParallel(cores = nr_cores)
+      cat("   (on Unix-like system (macOS/Linux) using doParallel fork backend)\n")
     }
     cat("\n")
     
@@ -2931,9 +2930,8 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
       registerDoParallel(cl)
       cat("   (on windows system using doParallel)\n")
     } else {
-      library(doMC)
-      registerDoMC(cores = nr_cores)
-      cat("   (on Unix-like system using doMC)\n")
+      doParallel::registerDoParallel(cores = nr_cores)
+      cat("   (on Unix-like system (macOS/Linux) using doParallel fork backend)\n")
     }
     cat("\n")
     
@@ -2947,7 +2945,7 @@ computeTreeParams <- function(fileFinder, loopStart = 1, loopEnd = 0, getRAM = F
     #### LOAD BIG LAS AND DIVIDE SINGLE TREES  ####
 
     fdc <<- foreach(i=loopStart:loopEnd, .errorhandling = 'remove',
-                    .packages = c("lidR", "TreeLS", "VoxR"), .verbose = FALSE) %dopar% {
+                    .packages = c("lidR", "VoxR"), .verbose = FALSE) %dopar% {
 
 
 

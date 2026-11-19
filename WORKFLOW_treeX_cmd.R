@@ -6,11 +6,13 @@
 # [3] (optional) path for saving output files
 # [4] (optional) string for renaming output files (fileFinder)
 
-# sample line to run it on cmd: 
-# (use R 4.3.2 or 4.3.3)
-# "C:/Programme/R/R-4.5.2/bin/x64/Rscript" 
+# sample line to run it on cmd (Windows):
+# "C:/Programme/R/R-4.5.2/bin/x64/Rscript"
 #        "D:/WORKFLOW_treeX_cmd.R" "D:/input.laz" "D:/config_benchmark.R" "D:/output/" "firstSet"
 # path to R + script workflow           [1]               [2]                [3]          [4]
+#
+# sample line for macOS / Linux (Rscript is on the PATH):
+# Rscript WORKFLOW_treeX_cmd.R ~/data/input.laz ~/data/config_benchmark.R ~/data/output/ firstSet
 
 time1 <- Sys.time()
 args <- commandArgs(trailingOnly = TRUE)

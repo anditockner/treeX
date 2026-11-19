@@ -952,7 +952,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
     cat("Voxelize all ground points with a raster of",vox.gr*100,"cm... ")
     {
       t2 <- Sys.time()
-      gr_vox <- TreeLS::tlsSample(ground, TreeLS::smp.voxelize(vox.gr))
+      gr_vox <- voxelSample(ground, vox.gr)
       t3 <- Sys.time()
       cat("done by treeLS. ")
       groundFullVoxPts <- gr_vox@header@PHB$`Number of point records`
@@ -1139,7 +1139,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
         cat("Voxelize minimal ground points with a raster of",vox.gr*100,"cm... ")
         {
           t2 <- Sys.time()
-          gr_vox <- TreeLS::tlsSample(ground, TreeLS::smp.voxelize(vox.gr))
+          gr_vox <- voxelSample(ground, vox.gr)
           t3 <- Sys.time()
           cat("done by treeLS ")
           groundMinVoxPts <- gr_vox@header@PHB$`Number of point records`
@@ -1215,7 +1215,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       cat("Voxelize minimal ground points with a raster of",vox.gr*100,"cm... ")
       {
         t2 <- Sys.time()
-        gr_vox <- TreeLS::tlsSample(ground, TreeLS::smp.voxelize(vox.gr))
+        gr_vox <- voxelSample(ground, vox.gr)
         t3 <- Sys.time()
         cat("done by treeLS ")
         groundMinVoxPts <- gr_vox@header@PHB$`Number of point records`
@@ -1264,7 +1264,7 @@ extractVegetation <- function(LASfile, fileFinder, groundMergeCut = 0, ipad = FA
       cat("Voxelize all ground points with a raster of",vox.gr*100,"cm... ")
       {
         t2 <- Sys.time()
-        gr_vox <- TreeLS::tlsSample(ground, TreeLS::smp.voxelize(vox.gr))
+        gr_vox <- voxelSample(ground, vox.gr)
         t3 <- Sys.time()
         cat("done by treeLS. ")
         groundFullVoxPts <- gr_vox@header@PHB$`Number of point records`
@@ -1807,7 +1807,7 @@ stemSplit <- function(fileFinder, quantileIntensity = 15, CC_level = 10, CC_numb
         t2 <- Sys.time()
         #cat("lidR done")
         #print.difftime(t2-t1)
-        thin5 <- TreeLS::tlsSample(slice, TreeLS::smp.voxelize(vox.size)) #bei TLS 0.015 # bei PLS ist 0.02 anders # auch da ist das mit smp.voxelize neu # iPAd 0.015
+        thin5 <- voxelSample(slice, vox.size) #bei TLS 0.015 # bei PLS ist 0.02 anders # auch da ist das mit smp.voxelize neu # iPAd 0.015
         t3 <- Sys.time()
         cat("done by treeLS. ")
         print.difftime(round(t3-t2, 1))
@@ -2047,9 +2047,9 @@ stemSplit <- function(fileFinder, quantileIntensity = 15, CC_level = 10, CC_numb
     cat("Processing type is slow but extensive!\n")
   }
 
-  File.exe <- "Cloudcompare.exe"
-  if(!exists("Path.CloudCompare")) Path.CloudCompare <- '"C:/Program Files/CloudCompare/"'
-  Path.exe <- paste0(Path.CloudCompare,File.exe)
+  # resolve the CloudCompare binary cross-platform (Windows, macOS, Linux);
+  # a user-defined Path.CloudCompare (directory or full binary path) still wins
+  Path.exe <- findCloudCompare(if (exists("Path.CloudCompare")) Path.CloudCompare else NULL)
 
 
 
@@ -2059,10 +2059,10 @@ stemSplit <- function(fileFinder, quantileIntensity = 15, CC_level = 10, CC_numb
                         " -C_EXPORT_FMT LAS -EXTRACT_CC ",level," ",numberOfPoints
   )
   if(silent){
-    system(command.exe, show.output.on.console = FALSE)
+    runCommand(command.exe, silent = TRUE)
   } else {
     cat(command.exe,"\n")
-    system(command.exe)
+    runCommand(command.exe)
   }
 
 

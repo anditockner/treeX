@@ -156,9 +156,8 @@ remeasureNewTrees <- function(dir_completedInputLists, appendix = "", fileFinder
       registerDoParallel(cl)
       cat("   (on windows system using doParallel)\n")
     } else {
-      library(doMC)
-      registerDoMC(cores = nr_cores)
-      cat("   (on Unix-like system using doMC)\n")
+      doParallel::registerDoParallel(cores = nr_cores)
+      cat("   (on Unix-like system (macOS/Linux) using doParallel fork backend)\n")
     }
     cat("\n")
     
@@ -1503,9 +1502,8 @@ grabDBH <- function(fileFinder,
       registerDoParallel(cl)
       cat("   (on windows system using doParallel)\n")
     } else {
-      library(doMC)
-      registerDoMC(cores = nr_cores)
-      cat("   (on Unix-like system using doMC)\n")
+      doParallel::registerDoParallel(cores = nr_cores)
+      cat("   (on Unix-like system (macOS/Linux) using doParallel fork backend)\n")
     }
     cat("\n")
     
