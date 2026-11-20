@@ -9,27 +9,13 @@
   }
 }
 
-library("plyr")
-library("dplyr")
-library("lidR")
-library("RANN")
-library("conicfit")
-library("alphashape3d")
-library("alphahull")
-library("plotrix")
-library("dbscan")
-
-if (.Platform$OS.type == "windows") {
-  library(doParallel)
-} else {
-  library(doMC)
-}
-
-library("plyr")
-library("sf")
-library("sp")
-library("spatstat")
-library("Morpho") # for transformation of point clouds
+# NOTE: top-level library() calls were removed here. Attaching packages at the
+# top level of package code runs at *install* time and breaks installation
+# whenever one of them is missing (it also attached the Windows-only backend
+# unconditionally). All required packages are now declared in DESCRIPTION
+# (Depends/Imports) and are attached automatically when treeX is loaded.
+# The parallel backend is chosen at runtime (doParallel on every OS; it forks
+# on macOS/Linux and uses a PSOCK cluster on Windows).
 
 
 
@@ -500,13 +486,14 @@ processPlotsParallel <- function (inputFiles, fileFinders = "",
     registerDoParallel(cl)
     cat("   (on windows system using doParallel)\n")
   } else {
-    library(mcprogress)
-    library(doMC)
-    
-    useProgressBar <- TRUE
-    registerDoMC(cores = nr_plots_parallel)
-    cat("   (on Unix-like system using doMC)\n")
-    
+    # progress bar needs the optional 'mcprogress' package (works with forked workers)
+    if (requireNamespace("mcprogress", quietly = TRUE)) {
+      suppressPackageStartupMessages(library(mcprogress))
+      useProgressBar <- TRUE
+    }
+    doParallel::registerDoParallel(cores = nr_plots_parallel)
+    cat("   (on Unix-like system (macOS/Linux) using doParallel fork backend)\n")
+
   }
   cat("\n")
   
@@ -722,12 +709,10 @@ pullFromFaroConnect <- function(inConnectPath, outNewFolder,
                                 cleanConnectPath = F){
   
   
-  # Hier Ordner mit FARO Connect Dateien
-  inConnectPath <- "D:/Zoran/_in_connect/"
-  
-  # Wohin verschieben?
-  outNewFolder <- "D:/Zoran/_in_laz/"
-  
+  # Hier Ordner mit FARO Connect Dateien / Wohin verschieben?
+  # (previously hard-coded to "D:/Zoran/..." which overwrote the arguments and
+  #  broke the function on macOS/Linux; the function arguments are used now)
+
   if(file.exists(paste0(inConnectPath, "g/sheet/tsc/"))){
     inConnectPath <- paste0(inConnectPath, "g/sheet/tsc/")
   }
@@ -779,7 +764,7 @@ pullFromFaroConnect <- function(inConnectPath, outNewFolder,
     # Set the modification time for the new directory
     if (length(orig_time) > 0) {
       Sys.setFileTime(new_dir, orig_time)
-      Sys.setFileTime("D:/Laser_Tirol_Noflatscher/_in_laz/", orig_time)
+      Sys.setFileTime(outNewFolder, orig_time)
     }
     
     # Deleting processed .geoslam file and rest of folder

@@ -35,7 +35,7 @@ removeUmlaut <- function(inputString){
 #* @param reduceClusterToPoints speeds up diameterBeast by reducing the clusters to a maximum number of points, standard 80.000, if set to 0, no reduction will be done - if fast is TRUE, then it will be reduced to 9.000 points by default
 #* @param fast speeds up diameterBeast by less detailed circle fitting, also reduces the number of points per cluster to 9.000 if not specified in reduceClusterToPoints differently 
 #' @export
-#' @useDynLib edc
+#' @useDynLib treeX, .registration = TRUE
 clustSplit <- function(fileFinder, allDBHs = FALSE, allFiles = FALSE, tidySlice = TRUE, 
                        clipHeight = 3, bottomCut = 1, ipad = FALSE, nr_cores = 0,
                        bushPreparation = FALSE, filterINT = 95, ref = NA, ref.plot_id = NA,
@@ -396,7 +396,7 @@ roughCluster <- function(fileFinder, dbhPath, ipad = FALSE, allFiles = FALSE,
       #cat("lidR done")
       #print.difftime(t2-t1)
       set.seed(12)
-      thin5 <- TreeLS::tlsSample(slice, TreeLS::smp.voxelize(vox.size)) #bei TLS 0.015 # bei PLS ist 0.02 anders # auch da ist das mit smp.voxelize neu # iPAd 0.015
+      thin5 <- voxelSample(slice, vox.size) #bei TLS 0.015 # bei PLS ist 0.02 anders # auch da ist das mit smp.voxelize neu # iPAd 0.015
       t3 <- Sys.time()
       cat("done by treeLS. ")
       print.difftime(round(t3-t2,1))
@@ -588,42 +588,23 @@ diameterBeast_i <- function(clusterIndex, dbhPath, sliVox, reduceClusterToPoints
                             ipad = FALSE, fast = TRUE, allFiles = FALSE){
   
   # ERRORS INDUCED BY LEAVING EMPTY BRACKETS OVER WHOLE PARALLEL ROUTINE! ###
+  # Hard requirements (all declared in DESCRIPTION, so always installed):
   suppressPackageStartupMessages(library("doParallel", character.only = T))
   suppressPackageStartupMessages(library("data.table", character.only = T))
-  suppressPackageStartupMessages(library("ADPclust", character.only = T))
-  suppressPackageStartupMessages(library("densityClust", character.only = T))
-  #suppressPackageStartupMessages(library("dae", character.only = T))
   suppressPackageStartupMessages(library("plyr", character.only = T))
   suppressPackageStartupMessages(library("spatstat", character.only = T))
   suppressPackageStartupMessages(library("alphahull", character.only = T))
   suppressPackageStartupMessages(library("RANN", character.only = T))
-  suppressPackageStartupMessages(library("flexclust", character.only = T))
   suppressPackageStartupMessages(library("sp", character.only = T))
-  suppressPackageStartupMessages(library("matrixStats", character.only = T))
-  #suppressPackageStartupMessages(library("Distance", character.only = T))
-  suppressPackageStartupMessages(library("lmfor", character.only = T))
-  suppressPackageStartupMessages(library("rgl", character.only = T))
   suppressPackageStartupMessages(library("conicfit", character.only = T))
-  suppressPackageStartupMessages(library("MASS", character.only = T))
-  suppressPackageStartupMessages(library("igraph", character.only = T))
-  suppressPackageStartupMessages(library("geosphere", character.only = T))
-  suppressPackageStartupMessages(library("pracma", character.only = T))
-  suppressPackageStartupMessages(library("DescTools", character.only = T))
-  suppressPackageStartupMessages(library("mgcv", character.only = T))
-  suppressPackageStartupMessages(library("recexcavAAR", character.only = T))
-  suppressPackageStartupMessages(library("raster", character.only = T))
-  #suppressPackageStartupMessages(library("rlas", character.only = T))
   suppressPackageStartupMessages(library("lidR", character.only = T))
-  suppressPackageStartupMessages(library("TreeLS", character.only = T))
   suppressPackageStartupMessages(library("dbscan", character.only = T))
-  suppressPackageStartupMessages(library("rgl", character.only = T))
-  suppressPackageStartupMessages(library("conicfit", character.only = T))
-  #suppressPackageStartupMessages(library("VoxR", character.only = T))
-  #suppressPackageStartupMessages(library("spatialEco", character.only = T))
-  #suppressPackageStartupMessages(library("Rdistance", character.only = T))
-  #suppressPackageStartupMessages(library("edci", character.only = T))
-  #tryCatch(suppressPackageStartupMessages(library("edci")), 
-  #         error = function(e){})
+  # Optional packages: attached when installed, silently skipped otherwise.
+  # Several (e.g. recexcavAAR, TreeLS, lmfor) are archived from CRAN and are
+  # often not installable on macOS; none of them is required for this routine.
+  attachIfAvailable(c("ADPclust", "densityClust", "flexclust", "matrixStats",
+                      "lmfor", "rgl", "MASS", "igraph", "geosphere", "pracma",
+                      "DescTools", "mgcv", "recexcavAAR", "raster", "TreeLS"))
   
   
   #tab.neu <- tab.neu[tab.neu$cluster!=0, ] #alle weg die Noise sind
@@ -2230,9 +2211,8 @@ diameterBeast <- function(fileFinder, dbhPath,
       registerDoParallel(cl)
       cat("   (on windows system using doParallel)\n")
     } else {
-      library(doMC)
-      registerDoMC(cores = nr_cores)
-      cat("   (on Unix-like system using doMC)\n")
+      doParallel::registerDoParallel(cores = nr_cores)
+      cat("   (on Unix-like system (macOS/Linux) using doParallel fork backend)\n")
     }
     cat("\n")
     

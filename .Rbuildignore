@@ -1,3 +1,8 @@
 ^treeX\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+^PORTING_NOTES_macOS\.md$
+^INSTALL_macOS_RStudio\.md$
+^WORKFLOW_sample\.R$
+^WORKFLOW_treeX_cmd\.R$
+^_install_for_treeX\.R$

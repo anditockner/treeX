@@ -1,74 +1,65 @@
-# install.packages("devtools", repos = "https://cran.rstudio.com/", dep = TRUE)
-# library("devtools")
+# ---------------------------------------------------------------------------
+# Install script for treeX dependencies
+# Supports Windows, macOS (Intel and Apple Silicon) and Linux.
+# Run this once before installing treeX itself.
+# ---------------------------------------------------------------------------
 
-install.packages("pak")
-library(pak)
+# macOS notes ---------------------------------------------------------------
+# * treeX now compiles a small C++ routine from source; install the Apple
+#   command line tools once if you have not already:   xcode-select --install
+# * For 3D plots the 'rgl' package uses XQuartz: https://www.xquartz.org/
+# * All CRAN packages below are available as macOS binaries, so no further
+#   system libraries are required.
 
-if (.Platform$OS.type == "windows") {
-  install.packages("doParallel", dep = T)
-} else {
-  install.packages("doMC", dep = T)
-  install.packages("mcprogress", dep = T)
+if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")
+
+is_windows <- .Platform$OS.type == "windows"
+is_macos   <- Sys.info()[["sysname"]] == "Darwin"
+
+# --- core dependencies (Depends/Imports of treeX) --------------------------
+core <- c("alphahull", "alphashape3d", "conicfit", "dbscan", "dismo",
+          "doParallel", "dplyr", "foreach", "lidR", "ks", "Metrics",
+          "Morpho", "plotrix", "plyr", "RANN", "sf", "sp", "spatstat",
+          "stringi", "VoxR", "data.table")
+
+# --- optional helpers used by some functions (Suggests) --------------------
+extra <- c("densityClust", "DescTools", "digest", "geosphere",
+           "getPass", "igraph", "jpeg", "MASS", "matrixStats", "mgcv",
+           "PBSmodelling", "png", "pracma", "raster", "rgl", "Rvcg",
+           "RCSF", "flexclust", "benchmarkme")
+
+# progress bar for parallel runs on macOS/Linux (not needed on Windows)
+if (!is_windows) extra <- c(extra, "mcprogress")
+
+install.packages(setdiff(c(core, extra), rownames(installed.packages())),
+                 dependencies = TRUE)
+
+# lidR from r-universe gets you the latest version (optional; CRAN also works)
+# install.packages("lidR", repos = c("https://r-lidar.r-universe.dev",
+#                                    "https://cloud.r-project.org"))
+
+# --- optional: ADPclust (archived on CRAN, GitHub only) --------------------
+# Loaded defensively by treeX when present, but none of its functions are
+# actually called - skipping it is fine.
+if (!requireNamespace("ADPclust", quietly = TRUE)) {
+  tryCatch(pak::pak("ethanyxu/ADPclust"),
+           error = function(e) {
+             message("ADPclust could not be installed - that is fine, ",
+                     "treeX does not require it.")
+           })
 }
 
-install.packages("lidR", repos = c("https://r-lidar.r-universe.dev", "https://cloud.r-project.org"))
+# --- optional: TreeLS (archived on CRAN, GitHub only) ----------------------
+# treeX no longer requires TreeLS: voxel thinning falls back to lidR when
+# TreeLS is absent. Installing it is optional. On macOS its compilation
+# needs the CRAN gfortran toolchain (https://mac.r-project.org/tools/) -
+# without it, linking fails ("ld: library 'emutls_w' not found"); simply
+# skip it in that case.
+tryCatch(pak::pak("tiagodc/TreeLS"),
+         error = function(e) {
+           message("TreeLS could not be installed - that is fine, ",
+                   "treeX will use its lidR-based fallback instead.")
+         })
 
-pak::pak("tiagodc/TreeLS")
-#remotes::install_github("tiagodc/TreeLS")
-
-pak::pak("ethanyxu/ADPclust")
-#devtools::install_github("ethanyxu/ADPclust")
-
-packs_to_install <- c("RANN", "conicfit", "alphashape3d", "alphahull",
-                      "plotrix", "dbscan", "data.table",
-                      "ks", "Metrics", "VoxR", "RCSF", "Morpho", 
-                      "densityClust", "mgcv", "spatstat",
-                      "flexclust", "matrixStats", "Distance", "lmfor",
-                      "geosphere", "recexcavAAR", "DescTools", "foreach", "PBSmodelling",
-                      "benchmarkme", "stringi", "raster", "plyr", "dplyr", "png", "jpeg", 
-                      "Rvcg", "rgl", "getPass", "digest")
-
-
-#install.packages("doMC", repos="http://R-Forge.R-project.org")
-#devtools::install_github("omegahat/RDCOMClient")
-
-install.packages(packs_to_install, dep = T)
-
-
-# library("doParallel")
-# library("data.table")
-# library("ADPclust")
-# library("densityClust")
-# library("dae")
-# library("plyr")
-# library("doParallel")
-# library("data.table")
-# library("ADPclust")
-# library("densityClust")
-# library("dae")
-# library("plyr")
-# library("spatstat")
-# library("alphahull")
-# library("RANN")
-# library("flexclust")
-# library("sp")
-# library("matrixStats")
-# library("Distance")
-# library("Rdistance")
-# library("lmfor")
-# library("rgl")
-# library("conicfit")
-# library("MASS")
-# library("alphahull")
-# library("igraph")
-# library("geosphere")
-# library("pracma")
-# library("DescTools")
-# library("mgcv")
-# library("recexcavAAR")
-# library("raster")
-# library("rlas")
-# library("lidR")
-# library("TreeLS")
-# library("dbscan")
-#
+# --- finally: install treeX itself (compiles its C++ code from source) -----
+# pak::pak("anditockner/treeX")

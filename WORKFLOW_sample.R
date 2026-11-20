@@ -1,12 +1,15 @@
 #devtools::install_github("anditockner/treeX")  
 library(treeX)
 
-dirPath <- "D:/try/" # files and folder structure will be saved here
+# files and folder structure will be saved here
+# (use a path that exists on your system, e.g. "D:/try/" on Windows
+#  or "~/treeX_try/" on macOS/Linux)
+dirPath <- path.expand("~/treeX_try/")
 if(!dir.exists(dirPath)) dir.create(dirPath)
 setwd(dirPath)
 
 #specify the input file
-LASfile <- list.files("D:/try/", pattern = "laz", full.name = T)
+LASfile <- list.files(dirPath, pattern = "laz", full.name = T)
 
 # a characteristic name to save all output files
 fileFinder <- "spzaiil"

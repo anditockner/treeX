@@ -1,9 +1,13 @@
 Package: treeX
 Title: Individual Tree Extraction of Ground-Based Point Clouds
-Version: 1.0.26.42
-Authors@R: 
-    person("Andreas", "Tockner", role = c("aut", "cre"), email = "andreas.tockner@boku.ac.at", 
-           comment = c(ORCID = "0000-0001-6833-6713"))
+Version: 1.0.27
+Authors@R: c(
+    person("Andreas", "Tockner", role = c("aut", "cre"), email = "andreas.tockner@boku.ac.at",
+           comment = c(ORCID = "0000-0001-6833-6713")),
+    person("Antonio", "Guoron", role = "ctb",
+           comment = "macOS adaptation"),
+    person("Tim", "Garlipp", role = "cph",
+           comment = "author of the edci package, source of src/oregMclust.cc"))
 Author: Andreas Tockner [aut, cre]
 Maintainer: Andreas Tockner <andreas.tockner@boku.ac.at>
 Description: Methods for tree detection, instance segmentation and
@@ -13,21 +17,48 @@ License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Imports: 
+Imports:
     data.table
-Depends: 
+Depends:
     alphahull,
     alphashape3d,
     conicfit,
     dbscan,
     dismo,
     doParallel,
+    dplyr,
+    foreach,
     lidR,
     ks,
     Metrics,
+    Morpho,
     plotrix,
+    plyr,
     RANN,
     sf,
+    sp,
     spatstat,
     stringi,
     VoxR
+Suggests:
+    ADPclust,
+    densityClust,
+    DescTools,
+    digest,
+    geosphere,
+    getPass,
+    igraph,
+    jpeg,
+    MASS,
+    matrixStats,
+    mcprogress,
+    mgcv,
+    PBSmodelling,
+    png,
+    pracma,
+    raster,
+    RCSF,
+    rgl,
+    Rvcg,
+    TreeLS
+NeedsCompilation: yes
